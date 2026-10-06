@@ -2,6 +2,7 @@ const tok = () => localStorage.getItem("token") ?? "";
 export async function api<T = any>(path: string, method = "GET", body?: unknown): Promise<T> {
   const r = await fetch((import.meta.env.VITE_API_URL ?? "") + "/api" + path, { method, headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok()}` }, body: body ? JSON.stringify(body) : undefined });
   const j = await r.json().catch(() => ({}));
+  if (r.status === 401 && !location.pathname.startsWith("/login") && !path.startsWith("/auth")) { localStorage.removeItem("token"); location.href = "/login"; }
   if (!r.ok) throw Object.assign(new Error(j.error ?? r.statusText), { status: r.status });
   return j;
 }

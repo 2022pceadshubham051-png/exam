@@ -1,21 +1,30 @@
-import { useEffect, useState } from "react"; import { api, fmt } from "../lib/api";
-import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { useEffect, useState } from "react"; import { TrendingUp, TrendingDown, Target, ListChecks, Trophy, Zap, Gauge, ThumbsUp, TriangleAlert } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid } from "recharts";
+import { api, fmt } from "../lib/api"; import Shell, { Loading } from "../components/Shell";
+
 const periods = [["last5", "Last 5"], ["last10", "Last 10"], ["30d", "30 days"], ["90d", "90 days"], ["all", "All time"]];
-const badge: Record<string, string> = { GREAT: "📈 Great Improvement", IMPROVING: "📈 You're Improving", STABLE: "➡️ Performance Stable", DROPPED: "📉 Performance Dropped", FIRST: "🆕 First Attempt" };
+const tone: Record<string, [string, string]> = { GREAT: ["Great improvement", "pill-ok"], IMPROVING: ["You are improving", "pill-ok"], STABLE: ["Performance stable", "pill-brand"], DROPPED: ["Performance dropped", "pill-bad"], FIRST: ["First attempt", "pill-brand"] };
 export default function Progress() {
-  const [p, setP] = useState("all"); const [d, setD] = useState<any>(null);
-  useEffect(() => { api(`/progress?period=${p}`).then(setD); }, [p]);
+  const [p, setP] = useState("all"); const [d, setD] = useState<any>(null); const [err, setErr] = useState("");
+  useEffect(() => { setD(null); api(`/progress?period=${p}`).then(setD).catch((e) => setErr(e.message)); }, [p]);
   const sgn = (n: number) => (n >= 0 ? "+" : "") + n;
-  const card = (l: string, v: string) => <div className="rounded-xl bg-white dark:bg-slate-900 p-4 shadow"><div className="text-xs text-slate-500">{l}</div><div className="text-2xl font-semibold">{v}</div></div>;
-  const rows = (xs: any[], c: string) => xs.length ? xs.map((t) => <li key={t.topic} className={c}>{t.topic} — {t.accuracy}% <span className="text-xs text-slate-500">({t.total} Qs)</span></li>) : <li className="text-slate-500">Not enough data yet (needs 5+ questions per topic)</li>;
-  return <div className="mx-auto max-w-5xl space-y-6 p-4"><h1 className="text-2xl font-semibold">My Progress</h1>
-    <div className="flex flex-wrap gap-2">{periods.map(([k, l]) => <button key={k} onClick={() => setP(k)} className={`rounded border px-3 py-1 ${p === k ? "bg-blue-600 text-white" : "border-slate-300 dark:border-slate-700"}`}>{l}</button>)}</div>
-    {!d ? <p>Loading…</p> : d.empty ? <p className="text-slate-500">No completed attempts in this period.</p> : <>
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">{card("Current Score", `${d.current.percentage}%`)}{card("Score Change", d.change ? sgn(d.change.percentage) + "%" : "—")}{card("Current Accuracy", `${d.current.accuracy}%`)}{card("Accuracy Change", d.change ? sgn(d.change.accuracy) + "pp" : "—")}{card("Questions Solved", String(d.questionsSolved))}</div>
-      <div className="rounded-xl bg-white dark:bg-slate-900 p-4 shadow"><b>{badge[d.comparison.status]}</b><p>{d.comparison.message}</p></div>
-      <div className="h-72 rounded-xl bg-white dark:bg-slate-900 p-4 shadow"><ResponsiveContainer><LineChart data={d.trends.score.map((s: any, i: number) => ({ attempt: s.attempt, Score: s.value, Accuracy: d.trends.accuracy[i].value, "Attempt rate": d.trends.attemptRate[i].value }))}>
-        <XAxis dataKey="attempt" /><YAxis domain={[0, 100]} /><Tooltip /><Legend /><Line dataKey="Score" stroke="#2563eb" /><Line dataKey="Accuracy" stroke="#16a34a" /><Line dataKey="Attempt rate" stroke="#9333ea" /></LineChart></ResponsiveContainer></div>
-      <div className="grid gap-3 md:grid-cols-2"><div className="rounded-xl bg-white dark:bg-slate-900 p-4 shadow"><h2 className="mb-2 font-semibold">Strengths</h2><ul>{rows(d.strong.slice(0, 5), "text-green-600")}</ul></div>
-        <div className="rounded-xl bg-white dark:bg-slate-900 p-4 shadow"><h2 className="mb-2 font-semibold">Weak Areas</h2><ul>{rows(d.weak.slice(0, 5), "text-red-500")}</ul></div></div>
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">{card("🏆 Best Score", `${d.best.percentage}%`)}{card("🎯 Best Accuracy", `${d.best.accuracy}%`)}{card("⚡ Fastest Complete", d.best.fastestSec ? fmt(d.best.fastestSec) : "—")}{card("Avg Score", `${d.avgPercentage}%`)}</div></>}</div>;
+  const stat = (I: any, l: string, v: string, delta?: number, unit = "") => <div className="stat"><div className="stat-l"><I size={14} />{l}</div><div className="stat-v">{v}</div>
+    {delta !== undefined && <div className="stat-d row" style={{ gap: 4, color: delta >= 0 ? "var(--ok)" : "var(--bad)", fontWeight: 700 }}>{delta >= 0 ? <TrendingUp size={13} /> : <TrendingDown size={13} />}{sgn(delta)}{unit} vs previous</div>}</div>;
+  const rows = (xs: any[], c: string) => xs.length ? xs.map((t) => <li key={t.topic} style={{ listStyle: "none", margin: "0 0 10px" }}><div className="row between" style={{ fontSize: ".9rem" }}><b>{t.topic}</b><span style={{ color: c, fontWeight: 800 }}>{t.accuracy}%</span></div><div className="bar" style={{ marginTop: 5 }}><i style={{ width: `${t.accuracy}%`, background: c }} /></div><span className="sub">{t.total} questions</span></li>) : <li style={{ listStyle: "none" }} className="sub">Not enough data yet. A topic needs at least 5 questions.</li>;
+  const [tl, tc] = d && !d.empty ? tone[d.comparison.status] ?? ["", ""] : ["", ""];
+  return <Shell><div className="stack" style={{ gap: 22 }}>
+    <div className="row between"><div><h1 style={{ fontSize: "1.7rem", fontWeight: 800 }}>My progress</h1><p className="sub">See how your scores and accuracy change over time.</p></div>
+      <div className="seg" style={{ maxWidth: "100%", overflowX: "auto" }}>{periods.map(([k, l]) => <button key={k} onClick={() => setP(k)} className={p === k ? "on" : ""}>{l}</button>)}</div></div>
+    {err && <div className="alert alert-bad">{err}</div>}
+    {!d && !err ? <Loading /> : d?.empty ? <div className="card empty"><Gauge size={36} /><p>No completed attempts in this period yet.</p></div> : d && <>
+      <section className="grid-stats">{stat(Target, "Current score", `${d.current.percentage}%`, d.change?.percentage, "%")}{stat(Gauge, "Current accuracy", `${d.current.accuracy}%`, d.change?.accuracy, " pts")}{stat(ListChecks, "Questions solved", String(d.questionsSolved))}{stat(Trophy, "Average score", `${d.avgPercentage}%`)}</section>
+      <section className="card card-pad stack" style={{ gap: 8 }}><div className="row"><span className={`pill ${tc}`}>{tl}</span></div><p style={{ margin: 0 }}>{d.comparison.message}</p></section>
+      <section className="card card-pad stack"><h2 className="card-title">Trend across attempts</h2><div style={{ height: 300 }}><ResponsiveContainer><LineChart data={d.trends.score.map((s: any, i: number) => ({ attempt: s.attempt, Score: s.value, Accuracy: d.trends.accuracy[i].value, "Attempt rate": d.trends.attemptRate[i].value }))}>
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} /><XAxis dataKey="attempt" tick={{ fill: "var(--muted)", fontSize: 12 }} axisLine={false} tickLine={false} /><YAxis domain={[0, 100]} tick={{ fill: "var(--muted)", fontSize: 12 }} axisLine={false} tickLine={false} />
+        <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12 }} /><Legend /><Line dataKey="Score" stroke="#4f46e5" strokeWidth={3} dot={{ r: 4 }} /><Line dataKey="Accuracy" stroke="#16a34a" strokeWidth={3} dot={{ r: 4 }} /><Line dataKey="Attempt rate" stroke="#c026d3" strokeWidth={3} dot={{ r: 4 }} /></LineChart></ResponsiveContainer></div></section>
+      <div className="grid-auto" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))" }}>
+        <section className="card card-pad"><h2 className="card-title row" style={{ gap: 8, marginBottom: 14 }}><ThumbsUp size={18} color="#16a34a" />Strengths</h2><ul style={{ padding: 0, margin: 0 }}>{rows(d.strong.slice(0, 5), "#16a34a")}</ul></section>
+        <section className="card card-pad"><h2 className="card-title row" style={{ gap: 8, marginBottom: 14 }}><TriangleAlert size={18} color="#dc2626" />Needs work</h2><ul style={{ padding: 0, margin: 0 }}>{rows(d.weak.slice(0, 5), "#dc2626")}</ul></section></div>
+      <section className="grid-stats">{stat(Trophy, "Best score", `${d.best.percentage}%`)}{stat(Target, "Best accuracy", `${d.best.accuracy}%`)}{stat(Zap, "Fastest completion", d.best.fastestSec ? fmt(d.best.fastestSec) : "-")}</section></>}
+  </div></Shell>;
 }
