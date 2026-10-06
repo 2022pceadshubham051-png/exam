@@ -1,8 +1,18 @@
-import React, { type ReactElement } from "react"; import { createRoot } from "react-dom/client"; import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
-import "./index.css"; import Login from "./pages/Login"; import Exam from "./pages/Exam"; import Result from "./pages/Result"; import Dashboard from "./pages/Dashboard"; import Review from "./pages/Review"; import Admin from "./pages/Admin"; import Progress from "./pages/Progress";
+import React, { Component, type ReactElement, type ErrorInfo } from "react";
+import { createRoot } from "react-dom/client"; import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
+import "./index.css"; import Login from "./pages/Login"; import Exam from "./pages/Exam"; import Result from "./pages/Result"; import Dashboard from "./pages/Dashboard"; import Review from "./pages/Review"; import Admin from "./pages/Admin"; import Progress from "./pages/Progress"; import Leaderboard from "./pages/Leaderboard";
 import { getMe } from "./lib/auth";
 
-// Client-side guards are for UX only. The API enforces the real permissions.
+class AppErrorBoundary extends Component<{children: ReactElement},{error: Error|null}> {
+  state={error:null as Error|null};
+  static getDerivedStateFromError(error: Error){ return {error}; }
+  componentDidCatch(error: Error, info: ErrorInfo){ console.error("ExamForge UI error", error, info); }
+  render(){
+    if(this.state.error) return <div className="grid min-h-screen place-items-center p-6"><div className="card card-pad stack" style={{maxWidth:620}}><div className="alert alert-bad"><b>Something went wrong while loading this page.</b></div><p className="sub">The error has been contained so the whole app does not disappear. Reload the page or return to the dashboard.</p><pre className="mono" style={{whiteSpace:"pre-wrap",background:"var(--bg)",padding:12,borderRadius:10,overflow:"auto"}}>{this.state.error.message}</pre><div className="row"><button className="btn btn-primary" onClick={()=>location.reload()}>Reload page</button><button className="btn" onClick={()=>location.href="/dashboard"}>Dashboard</button></div></div></div>;
+    return this.props.children;
+  }
+}
+
 function Guard({ children, admin }: { children: ReactElement; admin?: boolean }) {
   const me = getMe(); const { testId } = useParams();
   if (!me) return <Navigate to={testId ? `/login?test=${testId}` : "/login"} replace />;
@@ -11,12 +21,13 @@ function Guard({ children, admin }: { children: ReactElement; admin?: boolean })
 }
 const Home = () => { const me = getMe(); return <Navigate to={me ? (me.role === "ADMIN" ? "/admin" : "/dashboard") : "/login"} replace />; };
 
-createRoot(document.getElementById("root")!).render(<React.StrictMode><BrowserRouter><Routes>
+createRoot(document.getElementById("root")!).render(<React.StrictMode><AppErrorBoundary><BrowserRouter><Routes>
   <Route path="/login" element={<Login />} />
   <Route path="/dashboard" element={<Guard><Dashboard /></Guard>} />
   <Route path="/progress" element={<Guard><Progress /></Guard>} />
+  <Route path="/leaderboard" element={<Guard><Leaderboard /></Guard>} />
   <Route path="/exam/:testId" element={<Guard><Exam /></Guard>} />
   <Route path="/result/:attemptId" element={<Guard><Result /></Guard>} />
   <Route path="/review/:attemptId" element={<Guard><Review /></Guard>} />
   <Route path="/admin" element={<Guard admin><Admin /></Guard>} />
-  <Route path="*" element={<Home />} /></Routes></BrowserRouter></React.StrictMode>);
+  <Route path="*" element={<Home />} /></Routes></BrowserRouter></AppErrorBoundary></React.StrictMode>);

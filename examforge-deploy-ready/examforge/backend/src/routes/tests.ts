@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/db";
 import { requireAuth, requireAdmin, type AuthedReq } from "../middleware/auth";
+import { buildAdaptiveSelection } from "../services/analytics/adaptive";
 
 export const tests = Router();
 tests.use(requireAuth);
@@ -40,6 +41,54 @@ const fail = (res: any, e: any) =>
     error: e.issues ? e.issues.map((i: any) => `${i.path.join(".")}: ${i.message}`).join("; ") : e.message,
   });
 
+async function adaptiveRecommendation(userId: string, testId: string, desired = 20) {
+  const test = await prisma.test.findUnique({
+    where: { id: testId },
+    include: { sections: { orderBy: { order: "asc" }, include: { questions: { select: { id: true, sectionId: true, topic: true, difficulty: true } } } } },
+  });
+  if (!test) return null;
+  const candidates = test.sections.flatMap((s) => s.questions);
+  const history = await prisma.questionResponse.findMany({
+    where: { attempt: { userId, mode: "EXAM", result: { isNot: null } }, topic: { not: null } },
+    select: { topic: true, isCorrect: true, timeSpentMs: true },
+    take: 5000,
+    orderBy: { updatedAt: "desc" },
+  });
+  return buildAdaptiveSelection(candidates, history, Math.min(Math.max(desired, 5), 50), Math.floor(Math.random() * 2 ** 31));
+}
+
+tests.get("/leaderboard", async (req: AuthedReq, res) => {
+  const limit = Math.min(20, Math.max(5, Number(req.query.limit ?? 10)));
+  const rows = await prisma.testResult.findMany({
+    where: { attempt: { mode: "EXAM" } },
+    orderBy: [{ percentage: "desc" }, { accuracy: "desc" }, { timeTakenSec: "asc" }],
+    take: 3000,
+    include: { attempt: { include: { user: { select: { name: true, displayName: true } }, test: { select: { name: true } } } } },
+  });
+  const byUser = new Map<string, { name: string; attempts: number; total: number; best: number; bestTest: string; accuracy: number; time: number }>();
+  for (const r of rows) {
+    const uid = r.attempt.userId;
+    const name = r.attempt.user.displayName ?? r.attempt.user.name;
+    const prev = byUser.get(uid) ?? { name, attempts: 0, total: 0, best: 0, bestTest: r.attempt.test.name, accuracy: 0, time: 0 };
+    prev.attempts += 1; prev.total += r.percentage; prev.accuracy += r.accuracy; prev.time += r.timeTakenSec;
+    if (r.percentage > prev.best) { prev.best = r.percentage; prev.bestTest = r.attempt.test.name; }
+    byUser.set(uid, prev);
+  }
+  const out = [...byUser.values()]
+    .map((x) => ({ ...x, average: +(x.total / x.attempts).toFixed(1), averageAccuracy: +(x.accuracy / x.attempts).toFixed(1), averageTimeSec: Math.round(x.time / x.attempts) }))
+    .sort((a, b) => b.average - a.average || b.best - a.best || b.averageAccuracy - a.averageAccuracy)
+    .slice(0, limit)
+    .map((x, i) => ({ rank: i + 1, ...x }));
+  res.json(out);
+});
+
+tests.get("/:id/adaptive/recommend", async (req: AuthedReq, res) => {
+  const desired = Number(req.query.count ?? 20);
+  const r = await adaptiveRecommendation(req.user!.id, req.params.id, desired);
+  if (!r) return res.sendStatus(404);
+  res.json(r);
+});
+
 tests.get("/", async (req: AuthedReq, res) => {
   const { q, exam, page = "1" } = req.query as Record<string, string>;
   res.json(
@@ -62,6 +111,19 @@ tests.get("/", async (req: AuthedReq, res) => {
   );
 });
 
+
+tests.get("/:id/leaderboard", async (req, res) => {
+  const t = await prisma.test.findUnique({ where: { id: req.params.id } });
+  if (!t?.leaderboard) return res.json([]);
+  const rows = await prisma.testResult.findMany({
+    where: { attempt: { testId: t.id, mode: "EXAM" } },
+    orderBy: [{ score: "desc" }, { timeTakenSec: "asc" }],
+    take: 50,
+    include: { attempt: { include: { user: { select: { name: true, displayName: true } } } } },
+  });
+  res.json(rows.map((r: any, i: number) => ({ rank: i + 1, name: r.attempt.user.displayName ?? r.attempt.user.name, score: r.score, percentage: r.percentage, accuracy: r.accuracy, timeTakenSec: r.timeTakenSec })));
+});
+
 tests.get("/:id", async (req: AuthedReq, res) => {
   const t = await prisma.test.findUnique({
     where: { id: req.params.id },
@@ -78,14 +140,25 @@ tests.get("/:id", async (req: AuthedReq, res) => {
       },
       attempts: {
         where: { userId: req.user!.id, status: "IN_PROGRESS" },
-        select: { id: true, mode: true, attemptNo: true },
-        take: 1,
+        select: { id: true, mode: true, attemptNo: true, adaptiveQuestionIds: true, startedAt: true },
+        orderBy: { startedAt: "desc" },
+        take: 5,
       },
     },
   });
   if (!t) return res.sendStatus(404);
   const { attempts, ...safe } = t;
-  res.json({ ...safe, activeAttempt: attempts[0] ?? null });
+  const activeExamAttempt = attempts.find((a) => a.mode === "EXAM") ?? null;
+  const activePracticeAttempt = attempts.find((a) => a.mode === "PRACTICE" && !a.adaptiveQuestionIds) ?? null;
+  const activeAdaptiveAttempt = attempts.find((a) => a.mode === "PRACTICE" && !!a.adaptiveQuestionIds) ?? null;
+  res.json({
+    ...safe,
+    activeExamAttempt: activeExamAttempt ? { ...activeExamAttempt, adaptive: false } : null,
+    activePracticeAttempt: activePracticeAttempt ? { ...activePracticeAttempt, adaptive: false } : null,
+    activeAdaptiveAttempt: activeAdaptiveAttempt ? { ...activeAdaptiveAttempt, adaptive: true } : null,
+    // Backward-compatible shape for older frontend builds.
+    activeAttempt: activeExamAttempt ? { ...activeExamAttempt, adaptive: false } : activePracticeAttempt ? { ...activePracticeAttempt, adaptive: false } : activeAdaptiveAttempt ? { ...activeAdaptiveAttempt, adaptive: true } : null,
+  });
 });
 
 tests.post("/", requireAdmin, async (req, res) => {
@@ -110,7 +183,6 @@ tests.put("/:id", requireAdmin, async (req, res) => {
   }
 });
 
-// Permanently remove the complete test tree. This deliberately deletes attempts/results too.
 tests.delete("/:id", requireAdmin, async (req, res) => {
   try {
     await prisma.$transaction(async (tx) => {
@@ -135,7 +207,6 @@ tests.delete("/:id", requireAdmin, async (req, res) => {
   }
 });
 
-// Clone a test, sections and their questions into a fresh draft.
 tests.post("/:id/duplicate", requireAdmin, async (req, res) => {
   try {
     const source = await prisma.test.findUnique({
@@ -146,27 +217,11 @@ tests.post("/:id/duplicate", requireAdmin, async (req, res) => {
     const copy = await prisma.$transaction(async (tx) => {
       const created = await tx.test.create({
         data: {
-          name: `${source.name} Copy`,
-          examName: source.examName,
-          description: source.description,
-          durationSec: source.durationSec,
-          difficulty: source.difficulty,
-          positiveMarks: source.positiveMarks,
-          negativeMarks: source.negativeMarks,
-          passingPercent: source.passingPercent,
-          globalQuestionSec: source.globalQuestionSec,
-          allowSectionBacktrack: source.allowSectionBacktrack,
-          allowSectionSwitch: source.allowSectionSwitch,
-          shuffleQuestions: source.shuffleQuestions,
-          shuffleOptions: source.shuffleOptions,
-          maxTabSwitches: source.maxTabSwitches,
-          requireFullscreen: source.requireFullscreen,
-          showResult: source.showResult,
-          showExplanations: source.showExplanations,
-          leaderboard: source.leaderboard,
-          allowPracticeMode: source.allowPracticeMode,
-          maxAttempts: source.maxAttempts,
-          published: false,
+          name: `${source.name} Copy`, examName: source.examName, description: source.description, durationSec: source.durationSec, difficulty: source.difficulty,
+          positiveMarks: source.positiveMarks, negativeMarks: source.negativeMarks, passingPercent: source.passingPercent, globalQuestionSec: source.globalQuestionSec,
+          allowSectionBacktrack: source.allowSectionBacktrack, allowSectionSwitch: source.allowSectionSwitch, shuffleQuestions: source.shuffleQuestions,
+          shuffleOptions: source.shuffleOptions, maxTabSwitches: source.maxTabSwitches, requireFullscreen: source.requireFullscreen, showResult: source.showResult,
+          showExplanations: source.showExplanations, leaderboard: source.leaderboard, allowPracticeMode: source.allowPracticeMode, maxAttempts: source.maxAttempts, published: false,
         },
       });
       for (const sec of source.sections) {
@@ -174,15 +229,8 @@ tests.post("/:id/duplicate", requireAdmin, async (req, res) => {
         for (const q of sec.questions) {
           await tx.question.create({
             data: {
-              sectionId: cs.id,
-              text: q.text,
-              explanation: q.explanation,
-              subject: q.subject,
-              topic: q.topic,
-              difficulty: q.difficulty,
-              correctKey: q.correctKey,
-              timeLimitSec: q.timeLimitSec,
-              status: q.status === "PUBLISHED" || q.status === "VERIFIED" ? "VERIFIED" : q.status,
+              sectionId: cs.id, text: q.text, explanation: q.explanation, subject: q.subject, topic: q.topic, difficulty: q.difficulty,
+              correctKey: q.correctKey, timeLimitSec: q.timeLimitSec, status: q.status === "PUBLISHED" || q.status === "VERIFIED" ? "VERIFIED" : q.status,
               options: { create: q.options.map((o) => ({ key: o.key, text: o.text })) },
             },
           });
@@ -196,13 +244,11 @@ tests.post("/:id/duplicate", requireAdmin, async (req, res) => {
   }
 });
 
-// Assign bank questions to a section (moves them; one section per question for now)
 tests.post("/:id/sections/:sid/questions", requireAdmin, async (req, res) => {
   const ids = z.array(z.string()).parse(req.body.questionIds);
   res.json(await prisma.question.updateMany({ where: { id: { in: ids }, status: { in: ["VERIFIED", "PUBLISHED"] } }, data: { sectionId: req.params.sid } }));
 });
 
-// Publish gate: every section needs questions and all must be VERIFIED/PUBLISHED
 tests.post("/:id/publish", requireAdmin, async (req, res) => {
   const t = await prisma.test.findUnique({ where: { id: req.params.id }, include: { sections: { include: { questions: { select: { status: true } } } } } });
   if (!t) return res.sendStatus(404);
@@ -218,10 +264,4 @@ tests.post("/:id/unpublish", requireAdmin, async (req, res) => {
   const t = await prisma.test.findUnique({ where: { id: req.params.id } });
   if (!t) return res.sendStatus(404);
   res.json(await prisma.test.update({ where: { id: t.id }, data: { published: false } }));
-});
-
-tests.get("/:id/leaderboard", async (req, res) => {
-  const t = await prisma.test.findUnique({ where: { id: req.params.id } }); if (!t?.leaderboard) return res.json([]);
-  const rows = await prisma.testResult.findMany({ where: { attempt: { testId: t.id, mode: "EXAM" } }, orderBy: [{ score: "desc" }, { timeTakenSec: "asc" }], take: 50, include: { attempt: { include: { user: { select: { name: true, displayName: true } } } } } });
-  res.json(rows.map((r: any, i: number) => ({ rank: i + 1, name: r.attempt.user.displayName ?? r.attempt.user.name, score: r.score, percentage: r.percentage, accuracy: r.accuracy, timeTakenSec: r.timeTakenSec })));
 });
