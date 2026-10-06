@@ -2,7 +2,7 @@ import type { Difficulty } from "@prisma/client";
 
 type Candidate = {
   id: string;
-  sectionId: string;
+  sectionId: string | null;
   topic: string | null;
   difficulty: Difficulty;
 };

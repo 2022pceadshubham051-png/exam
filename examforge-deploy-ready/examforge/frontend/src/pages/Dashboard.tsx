@@ -5,7 +5,41 @@ import { api, fmt } from "../lib/api"; import Shell, { Loading } from "../compon
 const diff: Record<string, string> = { EASY: "pill-ok", MEDIUM: "pill-warn", HARD: "pill-bad" };
 export default function Dashboard() {
   const [tests, setTests] = useState<any[] | null>(null); const [hist, setHist] = useState<any[]>([]); const [leaderboard, setLeaderboard] = useState<any[]>([]); const [q, setQ] = useState(""); const [mode, setMode] = useState<"all" | "practice" | "timed">("all"); const [diffFilter, setDiffFilter] = useState("ALL"); const [err, setErr] = useState("");
-  useEffect(() => { const t = setTimeout(() => { Promise.all([api(`/tests?q=${encodeURIComponent(q)}`), api("/history"), api("/tests/leaderboard?limit=8")]).then(([t, h, l]) => { setTests(t); setHist(h); setLeaderboard(l); setErr(""); }).catch((e) => setErr(e.message)); }, 250); return () => clearTimeout(t); }, [q]);
+  useEffect(() => {
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      setTests(null);
+      api(`/tests?q=${encodeURIComponent(q)}`)
+        .then((data) => {
+          if (cancelled) return;
+          if (!Array.isArray(data)) throw new Error("Unexpected response from the tests API.");
+          setTests(data);
+          setErr("");
+        })
+        .catch((e) => {
+          if (cancelled) return;
+          setTests([]);
+          setErr(e instanceof Error ? e.message : "Unable to load tests.");
+        });
+    }, 250);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [q]);
+
+  useEffect(() => {
+    let cancelled = false;
+    api("/history")
+      .then((data) => { if (!cancelled) setHist(Array.isArray(data) ? data : []); })
+      .catch(() => { if (!cancelled) setHist([]); });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    api("/tests/leaderboard?limit=8")
+      .then((data) => { if (!cancelled) setLeaderboard(Array.isArray(data) ? data : []); })
+      .catch(() => { if (!cancelled) setLeaderboard([]); });
+    return () => { cancelled = true; };
+  }, []);
   const done = hist.filter((a) => a.result); const avg = done.length ? Math.round(done.reduce((s, a) => s + a.result.percentage, 0) / done.length) : null;
   const shownTests = (tests ?? []).filter((t) => (diffFilter === "ALL" || t.difficulty === diffFilter) && (mode === "all" || (mode === "practice" ? t.allowPracticeMode !== false : true)));
   const best = done.length ? Math.max(...done.map((a) => a.result.percentage)) : null;

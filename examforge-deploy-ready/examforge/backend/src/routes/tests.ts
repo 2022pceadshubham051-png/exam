@@ -44,10 +44,19 @@ const fail = (res: any, e: any) =>
 async function adaptiveRecommendation(userId: string, testId: string, desired = 20) {
   const test = await prisma.test.findUnique({
     where: { id: testId },
-    include: { sections: { orderBy: { order: "asc" }, include: { questions: { select: { id: true, sectionId: true, topic: true, difficulty: true } } } } },
+    include: { sections: { orderBy: { order: "asc" }, include: { questions: { select: { id: true, topic: true, difficulty: true } } } } } },
   });
   if (!test) return null;
-  const candidates = test.sections.flatMap((s) => s.questions);
+  // Use the parent section id as the authoritative section id. Prisma's Question.sectionId
+  // is nullable, but a question returned through test.sections always belongs to `s`.
+  const candidates = test.sections.flatMap((s) =>
+    s.questions.map((q) => ({
+      id: q.id,
+      sectionId: s.id,
+      topic: q.topic,
+      difficulty: q.difficulty,
+    }))
+  );
   const history = await prisma.questionResponse.findMany({
     where: { attempt: { userId, mode: "EXAM", result: { isNot: null } }, topic: { not: null } },
     select: { topic: true, isCorrect: true, timeSpentMs: true },
