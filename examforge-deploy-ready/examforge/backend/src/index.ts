@@ -7,7 +7,9 @@ app.use("/api/questions", questions);
 app.use("/api/tests", tests);
 app.use("/api", progress);
 app.use("/api", attempts);
+app.use(helmet(), cors({ origin: process.env.CORS_ORIGIN }), express.json({ limit: "1mb" }));
 app.get("/api/health", (_, res) => res.json({ ok: true }));
+app.use("/api/auth", rateLimit(...), auth);
 // Admin bootstrap from env: no Prisma Studio needed. Password in env is the source of truth.
 async function ensureAdmin() {
   const { ADMIN_USERNAME: username, ADMIN_PASSWORD: pw, ADMIN_EMAIL } = process.env; if (!username || !pw) return;
