@@ -1,0 +1,3 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+@keyframes pulse-warn { 50% { opacity: .5 } } .timer-critical { animation: pulse-warn 1s infinite }
