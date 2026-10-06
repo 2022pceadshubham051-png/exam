@@ -1,0 +1,206 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+enum ReviewStatus {
+  AI_GENERATED
+  PENDING_REVIEW
+  VERIFIED
+  PUBLISHED
+}
+enum AttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  AUTO_SUBMITTED
+}
+enum AttemptMode {
+  EXAM
+  PRACTICE
+}
+
+model User {
+  id String @id @default(cuid())
+  email String @unique
+  username String? @unique
+  passwordHash String
+  name String
+  displayName String?
+  role Role @default(USER)
+  createdAt DateTime @default(now())
+  attempts TestAttempt[]
+}
+
+model Test {
+  id String @id @default(cuid())
+  name String
+  examName String
+  description String?
+  durationSec Int
+  difficulty Difficulty @default(MEDIUM)
+  positiveMarks Float @default(1)
+  negativeMarks Float @default(0.25)
+  passingPercent Float @default(40)
+  globalQuestionSec Int?
+  allowSectionBacktrack Boolean @default(false)
+  allowSectionSwitch Boolean @default(false)
+  shuffleQuestions Boolean @default(false)
+  shuffleOptions Boolean @default(false)
+  maxTabSwitches Int @default(3)
+  requireFullscreen Boolean @default(true)
+  showResult Boolean @default(true)
+  showExplanations Boolean @default(true)
+  leaderboard Boolean @default(true)
+  allowPracticeMode Boolean @default(true)
+  maxAttempts Int?
+  published Boolean @default(false)
+  createdAt DateTime @default(now())
+  sections Section[]
+  attempts TestAttempt[]
+}
+
+model Section {
+  id String @id @default(cuid())
+  testId String
+  test Test @relation(fields: [testId], references: [id], onDelete: Cascade)
+  name String
+  order Int
+  durationSec Int
+  questionSec Int?
+  questions Question[]
+  attempts SectionAttempt[]
+  @@index([testId, order])
+}
+
+model Question {
+  id String @id @default(cuid())
+  sectionId String?
+  section Section? @relation(fields: [sectionId], references: [id])
+  text String
+  explanation String?
+  subject String?
+  topic String?
+  difficulty Difficulty @default(MEDIUM)
+  correctKey String
+  timeLimitSec Int?
+  status ReviewStatus @default(PENDING_REVIEW)
+  createdAt DateTime @default(now())
+  options Option[]
+  responses QuestionResponse[]
+  @@index([subject, topic, difficulty])
+  @@index([status])
+}
+
+model Option {
+  id String @id @default(cuid())
+  questionId String
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  key String
+  text String
+  @@unique([questionId, key])
+}
+
+model TestAttempt {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields: [userId], references: [id])
+  testId String
+  test Test @relation(fields: [testId], references: [id])
+  attemptNo Int
+  mode AttemptMode @default(EXAM)
+  status AttemptStatus @default(IN_PROGRESS)
+  startedAt DateTime @default(now())
+  endedAt DateTime?
+  currentSectionIdx Int @default(0)
+  tabSwitches Int @default(0)
+  shuffleSeed Int
+  adaptiveQuestionIds Json?
+  sections SectionAttempt[]
+  responses QuestionResponse[]
+  result TestResult?
+  @@unique([userId, testId, attemptNo])
+  @@index([userId, startedAt])
+}
+
+model SectionAttempt {
+  id String @id @default(cuid())
+  attemptId String
+  attempt TestAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  sectionId String
+  section Section @relation(fields: [sectionId], references: [id])
+  startedAt DateTime
+  endedAt DateTime?
+  locked Boolean @default(false)
+  @@unique([attemptId, sectionId])
+}
+
+model QuestionResponse {
+  id String @id @default(cuid())
+  attemptId String
+  attempt TestAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  questionId String
+  question Question @relation(fields: [questionId], references: [id])
+  sectionId String
+  selectedKey String?
+  correctKeySnapshot String?
+  isCorrect Boolean?
+  status String @default("NOT_VISITED")
+  timeSpentMs Int @default(0)
+  questionStartedAt DateTime?
+  topic String?
+  difficulty Difficulty?
+  snapshot Json?
+  updatedAt DateTime @updatedAt
+  @@unique([attemptId, questionId])
+  @@index([questionId])
+}
+
+model TestResult {
+  id String @id @default(cuid())
+  attemptId String @unique
+  attempt TestAttempt @relation(fields: [attemptId], references: [id])
+  score Float
+  totalMarks Float
+  percentage Float
+  accuracy Float
+  attemptRate Float
+  correct Int
+  incorrect Int
+  unanswered Int
+  negativeTotal Float
+  timeTakenSec Int
+  sectionStats Json
+  topicStats Json
+  difficultyStats Json
+  rank Int?
+  percentile Float?
+}
+
+model QuestionAnalytics {
+  questionId String @id
+  attempts Int @default(0)
+  correct Int @default(0)
+  avgTimeMs Int @default(0)
+}
+
+model AIQuestionGeneration {
+  id String @id @default(cuid())
+  adminId String
+  prompt Json
+  rawOutput String
+  createdAt DateTime @default(now())
+}

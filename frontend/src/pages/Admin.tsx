@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react"; import { Link } from "react-router-dom";
-import { Plus, Trash2, Copy, Check, CircleCheck, CircleX, TriangleAlert, ArrowLeft, FileText, Layers, Clock, Rocket, Upload, ListChecks, Settings2, Link as LinkIcon, Sparkles, Info, X } from "lucide-react";
+import { Plus, Trash2, Copy, Check, CircleCheck, CircleX, TriangleAlert, ArrowLeft, FileText, Layers, Clock, Rocket, Upload, ListChecks, Settings2, Link as LinkIcon, Sparkles, Info, X, Search, BarChart3 } from "lucide-react";
 import { api } from "../lib/api"; import Shell, { Loading } from "../components/Shell";
 
 const SAMPLE = `Question 1. Which protocol is secure?
@@ -40,18 +40,26 @@ Rules: exactly four options, exactly one correct answer, no bold or markdown, no
 const useCopy = () => { const [k, setK] = useState(""); return [k, (id: string, t: string) => { navigator.clipboard?.writeText(t); setK(id); setTimeout(() => setK(""), 1600); }] as const; };
 type Sec = { name: string; minutes: number };
 const defaults = { name: "", examName: "", description: "", minutes: 60, positiveMarks: 1, negativeMarks: 0.25, passingPercent: 40, difficulty: "MEDIUM", maxTabSwitches: 3,
-  shuffleQuestions: false, shuffleOptions: false, requireFullscreen: true, showResult: true, showExplanations: true, leaderboard: true };
+  globalQuestionSec: "", maxAttempts: "", shuffleQuestions: false, shuffleOptions: false, requireFullscreen: true, showResult: true, showExplanations: true, leaderboard: true,
+  allowPracticeMode: true, allowSectionSwitch: false, allowSectionBacktrack: false };
 
 export default function Admin() {
-  const [list, setList] = useState<any[] | null>(null); const [test, setTest] = useState<any>(null); const [creating, setCreating] = useState(false);
+  const [list, setList] = useState<any[] | null>(null); const [test, setTest] = useState<any>(null); const [creating, setCreating] = useState(false); const [filter, setFilter] = useState("ALL"); const [search, setSearch] = useState("");
   const [msg, setMsg] = useState<{ t: "ok" | "bad" | "info"; m: string } | null>(null); const [del, setDel] = useState<any>(null);
   const flash = (t: "ok" | "bad" | "info", m: string) => { setMsg({ t, m }); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const loadList = useCallback(() => api("/tests").then(setList).catch((e) => flash("bad", e.message)), []);
   const open = useCallback(async (id: string) => { try { setTest(await api(`/tests/${id}`)); setCreating(false); setMsg(null); } catch (e: any) { flash("bad", e.message); } }, []);
   useEffect(() => { loadList(); }, [loadList]);
   const back = () => { setTest(null); setCreating(false); setMsg(null); loadList(); };
-  const remove = async () => { try { await api(`/tests/${del.id}`, "DELETE"); setDel(null); flash("ok", "Test deleted."); loadList(); } catch (e: any) { setDel(null); flash("bad", e.message); } };
+  const remove = async () => { try { await api(`/tests/${del.id}`, "DELETE"); setDel(null); flash("ok", "Exam and all linked attempts/questions were permanently deleted."); loadList(); } catch (e: any) { setDel(null); flash("bad", e.message); } };
+  const duplicate = async (t: any) => { try { const copy = await api(`/tests/${t.id}/duplicate`, "POST"); flash("ok", `Created draft copy: ${copy.name}`); loadList(); } catch (e: any) { flash("bad", e.message); } };
   const totalQ = (t: any) => t.sections.reduce((a: number, s: any) => a + s._count.questions, 0);
+
+  const published = list?.filter((t) => t.published).length ?? 0;
+  const drafts = list?.filter((t) => !t.published).length ?? 0;
+  const questionTotal = list?.reduce((a, t) => a + totalQ(t), 0) ?? 0;
+  const practiceEnabled = list?.filter((t) => t.allowPracticeMode !== false).length ?? 0;
+  const filteredList = (list ?? []).filter((t) => (filter === "ALL" || (filter === "LIVE" ? t.published : !t.published)) && (!search.trim() || `${t.name} ${t.examName}`.toLowerCase().includes(search.trim().toLowerCase())));
 
   return <Shell>
     <div className="stack">
@@ -59,23 +67,25 @@ export default function Admin() {
         <div><h1 style={{ fontSize: "1.7rem", fontWeight: 800 }}>Admin Studio</h1><p className="sub">Create tests, add questions and publish them to students.</p></div>
         {(test || creating) ? <button className="btn" onClick={back}><ArrowLeft size={16} />All tests</button> : <button className="btn btn-primary" onClick={() => { setCreating(true); setMsg(null); }}><Plus size={16} />New test</button>}
       </div>
+      {!test && !creating && list && <section className="grid-stats admin-stats"><div className="stat"><div className="stat-l">Total exams</div><div className="stat-v">{list.length}</div></div><div className="stat"><div className="stat-l">Published</div><div className="stat-v">{published}</div></div><div className="stat"><div className="stat-l">Drafts</div><div className="stat-v">{drafts}</div></div><div className="stat"><div className="stat-l">Practice enabled</div><div className="stat-v">{practiceEnabled}</div></div><div className="stat"><div className="stat-l"><BarChart3 size={14}/>Question inventory</div><div className="stat-v">{questionTotal}</div></div></section>}
       {msg && <div className={`alert alert-${msg.t === "info" ? "info" : msg.t}`}>{msg.t === "ok" ? <CircleCheck size={18} /> : msg.t === "bad" ? <CircleX size={18} /> : <Info size={18} />}<span style={{ flex: 1 }}>{msg.m}</span><button className="btn-ghost btn btn-sm" onClick={() => setMsg(null)}><X size={14} /></button></div>}
 
       {creating && <CreateTest onCreated={(t) => { flash("ok", "Test created. Now add questions."); open(t.id); }} onError={(m) => flash("bad", m)} />}
       {test && <Manage key={test.id} test={test} reload={() => open(test.id)} flash={flash} />}
 
       {!test && !creating && <>
-        {!list ? <Loading /> : list.length ? <div className="grid-auto">{list.map((t) => <article key={t.id} className="card tcard">
-          <div className="row between"><span className="pill pill-brand">{t.examName}</span>{t.published ? <span className="pill pill-ok">Published</span> : <span className="pill pill-warn">Draft</span>}</div>
+        {list && <div className="admin-toolbar card card-pad"><div className="row between" style={{gap:12,flexWrap:"wrap"}}><div><b>Test library</b><div className="sub">Search, filter and manage your live exams without opening each one.</div></div><div className="row" style={{gap:8,flexWrap:"wrap"}}><div className="seg"><button className={filter === "ALL" ? "on" : ""} onClick={() => setFilter("ALL")}>All</button><button className={filter === "LIVE" ? "on" : ""} onClick={() => setFilter("LIVE")}>Published</button><button className={filter === "DRAFT" ? "on" : ""} onClick={() => setFilter("DRAFT")}>Drafts</button></div><div style={{position:"relative",minWidth:220}}><Search size={15} style={{position:"absolute",left:12,top:12,color:"var(--muted)"}}/><input className="input" style={{paddingLeft:36}} placeholder="Search tests" value={search} onChange={(e) => setSearch(e.target.value)}/></div></div></div></div>}
+        {!list ? <Loading /> : filteredList.length ? <div className="grid-auto">{filteredList.map((t) => <article key={t.id} className="card tcard">
+          <div className="row between"><span className="pill pill-brand">{t.examName}</span><div className="row" style={{gap:6}}>{t.allowPracticeMode !== false && <span className="pill pill-brand"><Sparkles size={12}/>Practice</span>}{t.published ? <span className="pill pill-ok">Published</span> : <span className="pill pill-warn">Draft</span>}</div></div>
           <h3 style={{ fontSize: "1.1rem", fontWeight: 800 }}>{t.name}</h3>
           <div className="meta"><span><Clock size={15} />{Math.round(t.durationSec / 60)} min</span><span><FileText size={15} />{totalQ(t)} questions</span><span><Layers size={15} />{t.sections.length} sections</span></div>
-          <div className="row" style={{ marginTop: "auto" }}><button className="btn btn-primary btn-sm" onClick={() => open(t.id)}><Settings2 size={15} />Manage</button>
-            <button className="btn btn-danger btn-sm" onClick={() => setDel(t)}><Trash2 size={15} />Delete</button></div></article>)}</div>
-          : <div className="card empty"><FileText size={36} /><p>You have not created any test yet.</p><button className="btn btn-primary" style={{ marginTop: 12 }} onClick={() => setCreating(true)}><Plus size={16} />Create your first test</button></div>}
+          <div className="row" style={{ marginTop: "auto", flexWrap: "wrap" }}><button className="btn btn-primary btn-sm" onClick={() => open(t.id)}><Settings2 size={15} />Manage</button><button className="btn btn-sm" onClick={() => duplicate(t)}><Copy size={15} />Duplicate</button>
+            <button className="btn btn-danger btn-sm" onClick={() => setDel(t)}><Trash2 size={15} />Delete forever</button></div></article>)}</div>
+          : <div className="card empty"><FileText size={36} /><p>{list.length && (filter !== "ALL" || search) ? "No tests match these filters." : "You have not created any test yet."}</p><button className="btn btn-primary" style={{ marginTop: 12 }} onClick={() => setCreating(true)}><Plus size={16} />Create your first test</button></div>}
       </>}
     </div>
     {del && <div className="modal-bg" onClick={() => setDel(null)}><div className="card modal stack" style={{ gap: 12 }} onClick={(e) => e.stopPropagation()}>
-      <h3 className="card-title">Delete "{del.name}"?</h3><p className="sub">This removes the test and its sections. A test that students have already attempted cannot be deleted.</p>
+      <h3 className="card-title">Delete "{del.name}" permanently?</h3><p className="sub">This is a hard delete. The exam, sections, questions, attempts, results and linked analytics will be removed from the database. This cannot be undone.</p>
       <div className="row" style={{ justifyContent: "flex-end" }}><button className="btn" onClick={() => setDel(null)}>Cancel</button><button className="btn btn-danger" onClick={remove}><Trash2 size={15} />Delete</button></div></div></div>}
   </Shell>;
 }
@@ -98,6 +108,8 @@ function CreateTest({ onCreated, onError }: { onCreated: (t: any) => void; onErr
     try {
       const t = await api("/tests", "POST", { name: f.name.trim(), examName: f.examName.trim(), description: f.description.trim() || undefined, durationSec: Math.round(f.minutes * 60),
         negativeMarks: +f.negativeMarks, positiveMarks: +f.positiveMarks, passingPercent: +f.passingPercent, difficulty: f.difficulty, maxTabSwitches: +f.maxTabSwitches,
+        globalQuestionSec: f.globalQuestionSec === "" ? null : +f.globalQuestionSec, maxAttempts: f.maxAttempts === "" ? null : +f.maxAttempts,
+        allowPracticeMode: f.allowPracticeMode, allowSectionSwitch: f.allowSectionSwitch, allowSectionBacktrack: f.allowSectionBacktrack,
         shuffleQuestions: f.shuffleQuestions, shuffleOptions: f.shuffleOptions, requireFullscreen: f.requireFullscreen, showResult: f.showResult, showExplanations: f.showExplanations, leaderboard: f.leaderboard,
         sections: secs.map((s) => ({ name: s.name.trim(), durationSec: Math.round(+s.minutes * 60) })) });
       onCreated(t);
@@ -116,7 +128,9 @@ function CreateTest({ onCreated, onError }: { onCreated: (t: any) => void; onErr
         <div><label className="label">Total test time <small>(minutes)</small></label><input className="input" type="number" min={1} value={f.minutes} onChange={num("minutes")} /></div>
         <div><label className="label">Marks for a correct answer</label><input className="input" type="number" step="0.25" min={0} value={f.positiveMarks} onChange={num("positiveMarks")} /></div>
         <div><label className="label">Marks cut for a wrong answer</label><input className="input" type="number" step="0.05" min={0} value={f.negativeMarks} onChange={num("negativeMarks")} /><p className="hint">0.25 means a quarter mark is deducted. Use 0 for no negative marking.</p></div>
-        <div><label className="label">Passing percentage</label><input className="input" type="number" min={0} max={100} value={f.passingPercent} onChange={num("passingPercent")} /></div></div>
+        <div><label className="label">Passing percentage</label><input className="input" type="number" min={0} max={100} value={f.passingPercent} onChange={num("passingPercent")} /></div>
+        <div><label className="label">Question timer <small>(seconds, optional)</small></label><input className="input" type="number" min={1} value={f.globalQuestionSec} placeholder="No limit" onChange={num("globalQuestionSec")} /><p className="hint">Leave blank for no per-question timer.</p></div>
+      </div>
     </section>
 
     <section className="card card-pad stack"><div className="row between"><div><h2 className="card-title">Sections</h2><p className="sub">Each section has its own timer. Students cannot go back once a section ends.</p></div>
@@ -137,6 +151,8 @@ function CreateTest({ onCreated, onError }: { onCreated: (t: any) => void; onErr
         <Toggle label="Show result after submit" hint="Score and analysis" v={f.showResult} set={(b) => set("showResult", b)} />
         <Toggle label="Show explanations" hint="In answer review" v={f.showExplanations} set={(b) => set("showExplanations", b)} />
         <Toggle label="Leaderboard" hint="Top scorers list" v={f.leaderboard} set={(b) => set("leaderboard", b)} />
+        <Toggle label="Allow untimed practice" hint="Students can choose Practice mode without a countdown" v={f.allowPracticeMode} set={(b) => set("allowPracticeMode", b)} />
+        <div><label className="label">Maximum exam attempts</label><input className="input" type="number" min={1} value={f.maxAttempts} placeholder="Unlimited" onChange={num("maxAttempts")} /><p className="hint">Practice attempts do not consume this limit.</p></div>
         <div><label className="label">Allowed tab switches</label><input className="input" type="number" min={0} value={f.maxTabSwitches} onChange={num("maxTabSwitches")} /><p className="hint">The test auto-submits after this many.</p></div></div></details>
 
     <div className="row" style={{ justifyContent: "flex-end" }}><button className="btn btn-primary btn-lg" onClick={submit} disabled={busy}>{busy ? "Creating..." : "Create test and add questions"}</button></div>
@@ -152,11 +168,57 @@ function Manage({ test, reload, flash }: { test: any; reload: () => void; flash:
     <section className="card card-pad"><div className="row between"><div><div className="row"><h2 style={{ fontSize: "1.3rem", fontWeight: 800 }}>{test.name}</h2>{test.published ? <span className="pill pill-ok">Published</span> : <span className="pill pill-warn">Draft</span>}</div>
       <p className="sub">{test.examName}</p></div>
       <div className="meta"><span><Clock size={15} />{Math.round(test.durationSec / 60)} min total</span><span><Layers size={15} />{test.sections.length} sections ({secMin} min)</span><span><FileText size={15} />{total} questions</span></div></div></section>
+    <SettingsPanel test={test} reload={reload} flash={flash} />
     <div className="steps" style={{ gridTemplateColumns: "repeat(2,1fr)" }}>
       <button className={`step ${step === 1 ? "on" : ""} ${total ? "done" : ""}`} onClick={() => setStep(1)}><span className="step-n">{total ? <Check size={16} /> : 1}</span><span><b>Add questions</b><small>Paste, preview, approve</small></span></button>
       <button className={`step ${step === 2 ? "on" : ""} ${test.published ? "done" : ""}`} onClick={() => setStep(2)}><span className="step-n">{test.published ? <Check size={16} /> : 2}</span><span><b>Verify and publish</b><small>Make it live for students</small></span></button></div>
     {step === 1 ? <AddQuestions test={test} reload={reload} flash={flash} goPublish={() => setStep(2)} /> : <Publish test={test} reload={reload} flash={flash} />}
   </div>;
+}
+
+function SettingsPanel({ test, reload, flash }: { test: any; reload: () => void; flash: (t: "ok" | "bad" | "info", m: string) => void }) {
+  const [f, setF] = useState({
+    passingPercent: test.passingPercent, positiveMarks: test.positiveMarks, negativeMarks: test.negativeMarks,
+    globalQuestionSec: test.globalQuestionSec ?? "", maxAttempts: test.maxAttempts ?? "",
+    maxTabSwitches: test.maxTabSwitches, requireFullscreen: test.requireFullscreen, showResult: test.showResult,
+    showExplanations: test.showExplanations, leaderboard: test.leaderboard, allowPracticeMode: test.allowPracticeMode,
+    shuffleQuestions: test.shuffleQuestions, shuffleOptions: test.shuffleOptions,
+  });
+  const [busy, setBusy] = useState(false);
+  const set = (k: string, v: any) => setF((x: any) => ({ ...x, [k]: v }));
+  const num = (k: string) => (e: any) => set(k, e.target.value === "" ? "" : +e.target.value);
+  const save = async () => {
+    setBusy(true);
+    try {
+      await api(`/tests/${test.id}`, "PUT", { ...f, globalQuestionSec: f.globalQuestionSec === "" ? null : +f.globalQuestionSec, maxAttempts: f.maxAttempts === "" ? null : +f.maxAttempts });
+      flash("ok", "Exam settings updated."); reload();
+    } catch (e: any) { flash("bad", e.message); } finally { setBusy(false); }
+  };
+  const unpublish = async () => {
+    try { await api(`/tests/${test.id}/unpublish`, "POST"); flash("ok", "Test moved back to draft."); reload(); } catch (e: any) { flash("bad", e.message); }
+  };
+  return <details className="card card-pad">
+    <summary className="settings-summary"><span><b>Exam settings</b><small>Scoring, attempts, practice mode, security and visibility</small></span><Settings2 size={18} /></summary>
+    <div className="form-grid" style={{ marginTop: 18 }}>
+      <div><label className="label">Correct marks</label><input className="input" type="number" min={0} step="0.25" value={f.positiveMarks} onChange={(e) => set("positiveMarks", +e.target.value)} /></div>
+      <div><label className="label">Negative marks</label><input className="input" type="number" min={0} step="0.05" value={f.negativeMarks} onChange={(e) => set("negativeMarks", +e.target.value)} /></div>
+      <div><label className="label">Passing percentage</label><input className="input" type="number" min={0} max={100} value={f.passingPercent} onChange={(e) => set("passingPercent", +e.target.value)} /></div>
+      <div><label className="label">Question timer <small>(seconds)</small></label><input className="input" type="number" min={1} placeholder="No limit" value={f.globalQuestionSec} onChange={num("globalQuestionSec")} /></div>
+      <div><label className="label">Maximum exam attempts</label><input className="input" type="number" min={1} placeholder="Unlimited" value={f.maxAttempts} onChange={num("maxAttempts")} /></div>
+      <div><label className="label">Allowed tab switches</label><input className="input" type="number" min={0} value={f.maxTabSwitches} onChange={(e) => set("maxTabSwitches", +e.target.value)} /></div>
+      <Toggle label="Allow untimed practice" hint="Students get a separate Practice mode" v={f.allowPracticeMode} set={(b) => set("allowPracticeMode", b)} />
+      <Toggle label="Shuffle questions" hint="Different order per attempt" v={f.shuffleQuestions} set={(b) => set("shuffleQuestions", b)} />
+      <Toggle label="Shuffle options" hint="Mix answer order" v={f.shuffleOptions} set={(b) => set("shuffleOptions", b)} />
+      <Toggle label="Require fullscreen" hint="Exam mode only" v={f.requireFullscreen} set={(b) => set("requireFullscreen", b)} />
+      <Toggle label="Show result" hint="Display result after submission" v={f.showResult} set={(b) => set("showResult", b)} />
+      <Toggle label="Show explanations" hint="Show explanations in review" v={f.showExplanations} set={(b) => set("showExplanations", b)} />
+      <Toggle label="Leaderboard" hint="Include exam attempts" v={f.leaderboard} set={(b) => set("leaderboard", b)} />
+    </div>
+    <div className="row" style={{ justifyContent: "flex-end", marginTop: 14 }}>
+      {test.published && <button className="btn" onClick={unpublish}>Unpublish</button>}
+      <button className="btn btn-primary" onClick={save} disabled={busy}>{busy ? "Saving..." : "Save settings"}</button>
+    </div>
+  </details>;
 }
 
 function AddQuestions({ test, reload, flash, goPublish }: { test: any; reload: () => void; flash: (t: "ok" | "bad" | "info", m: string) => void; goPublish: () => void }) {
