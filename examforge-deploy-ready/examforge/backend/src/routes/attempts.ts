@@ -5,7 +5,7 @@ export const attempts = Router(); attempts.use(requireAuth);
 const own = async (req: AuthedReq, id: string) => !!(await prisma.testAttempt.findFirst({ where: { id, userId: req.user!.id }, select: { id: true } }));
 const wrap = (fn: (req: AuthedReq, res: any) => Promise<any>) => (req: AuthedReq, res: any) => fn(req, res).catch((e) => res.status(400).json({ error: e.message }));
 
-attempts.post("/tests/:id/start", wrap(async (req, res) => { const a = await svc.start(req.user!.id, req.params.id); res.json(await svc.view(a.id)); }));
+attempts.post("/tests/:id/start", wrap(async (req, res) => { const mode = req.body?.mode === "PRACTICE" ? "PRACTICE" : "EXAM"; const a = await svc.start(req.user!.id, req.params.id, mode); res.json(await svc.view(a.id)); }));
 attempts.get("/attempts/:id", wrap(async (req, res) => (await own(req, req.params.id)) ? res.json(await svc.view(req.params.id)) : res.sendStatus(404)));
 const ans = z.object({ questionId: z.string(), selectedKey: z.enum(["A", "B", "C", "D"]).nullable(),
   status: z.enum(["VISITED", "ANSWERED", "NOT_ANSWERED", "REVIEW", "ANSWERED_REVIEW"]), timeSpentMs: z.number().int().min(0) });

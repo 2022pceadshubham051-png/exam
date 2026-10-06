@@ -17,19 +17,21 @@ export default function Result() {
   useEffect(() => { api(`/results/${attemptId}`).then(setD).catch((e) => setErr(e.message)); }, [attemptId]);
   if (err) return <Shell><div className="alert alert-bad">{err}</div></Shell>;
   if (!d) return <Shell><Loading text="Calculating your result" /></Shell>;
-  const r = d.result, c = d.comparison; const [tl, tc] = tone[c.status] ?? ["", ""];
+  if (d.showResult === false) return <Shell><div className="card card-pad stack" style={{ maxWidth: 620, margin: "12vh auto" }}><h1 style={{ fontSize: "1.5rem", fontWeight: 800 }}>Result is hidden</h1><p className="sub">The administrator has disabled immediate result viewing for this test. Your attempt has still been saved.</p><div><Link className="btn btn-primary" to="/dashboard"><LayoutDashboard size={16} />Back to dashboard</Link></div></div></Shell>;
+  const r = d.result, c = d.comparison; const [tl, tc] = c ? (tone[c.status] ?? ["", ""]) : ["", ""];
+  const passed = r.percentage >= (d.passingPercent ?? 40);
   const secData = Object.values(r.sectionStats as Record<string, any>).map((s: any, i) => ({ name: s.name ?? `Section ${i + 1}`, Correct: s.correct, Wrong: s.incorrect }));
   const stat = (I: any, l: string, v: string | number, col?: string) => <div className="stat"><div className="stat-l"><I size={14} color={col} />{l}</div><div className="stat-v">{v}</div></div>;
   return <Shell>
     <div className="stack" style={{ gap: 22 }}>
-      <div className="row between"><div><h1 style={{ fontSize: "1.7rem", fontWeight: 800 }}>Your result</h1><p className="sub">Attempt #{d.attemptNo}</p></div>
-        <div className="row"><Link className="btn" to="/dashboard"><LayoutDashboard size={16} />Dashboard</Link><Link className="btn btn-primary" to={`/review/${attemptId}`}><Eye size={16} />Review answers</Link></div></div>
+      <div className="row between"><div><h1 style={{ fontSize: "1.7rem", fontWeight: 800 }}>Your result</h1><p className="sub">Attempt #{d.attemptNo} · <span className="pill">{d.mode === "PRACTICE" ? "Practice" : "Exam"}</span></p></div>
+        <div className="row"><Link className="btn" to="/dashboard"><LayoutDashboard size={16} />Dashboard</Link><Link className="btn" to={`/exam/${d.testId}`}><ArrowRight size={16} />Retake</Link><Link className="btn btn-primary" to={`/review/${attemptId}`}><Eye size={16} />Review answers</Link></div></div>
       <section className="card card-pad row" style={{ gap: 30 }}>
         <Ring value={r.percentage} label="score" />
         <div style={{ flex: 1, minWidth: 220 }}><div className="stat-l">Marks obtained</div><div style={{ fontSize: "2.4rem", fontWeight: 800, letterSpacing: "-.03em" }}>{r.score} <span className="muted" style={{ fontSize: "1.2rem" }}>/ {r.totalMarks}</span></div>
-          <div className="row" style={{ marginTop: 8 }}><span className={`pill ${tc}`}>{tl}</span></div><p className="sub" style={{ marginTop: 10, fontSize: ".92rem" }}>{c.message}</p></div></section>
+          <div className="row" style={{ marginTop: 8, gap: 8 }}><span className={`pill ${tc}`}>{tl}</span><span className={`pill ${passed ? "pill-ok" : "pill-bad"}`}>{passed ? "Passed" : "Below passing score"}</span></div><p className="sub" style={{ marginTop: 10, fontSize: ".92rem" }}>{c.message}</p></div></section>
       <section className="grid-stats">{stat(Target, "Accuracy", `${r.accuracy}%`)}{stat(CircleCheck, "Correct", r.correct, "#16a34a")}{stat(CircleX, "Wrong", r.incorrect, "#dc2626")}{stat(MinusCircle, "Skipped", r.unanswered)}{stat(Clock, "Time taken", fmt(r.timeTakenSec))}</section>
-      {c.delta && <section className="card card-pad stack" style={{ gap: 10 }}><h2 className="card-title row" style={{ gap: 8 }}><Sparkles size={18} />Compared with your last attempt</h2>
+      {c?.delta && <section className="card card-pad stack" style={{ gap: 10 }}><h2 className="card-title row" style={{ gap: 8 }}><Sparkles size={18} />Compared with your last attempt</h2>
         <div className="row" style={{ gap: 8 }}>{[["Score", `${c.delta.percentage >= 0 ? "+" : ""}${c.delta.percentage}%`, c.delta.percentage >= 0], ["Accuracy", `${c.delta.accuracy >= 0 ? "+" : ""}${c.delta.accuracy} pts`, c.delta.accuracy >= 0],
           ["Wrong answers", `${c.delta.incorrect > 0 ? "+" : ""}${c.delta.incorrect}`, c.delta.incorrect <= 0], ["Skipped", `${c.delta.unanswered > 0 ? "+" : ""}${c.delta.unanswered}`, c.delta.unanswered <= 0], ["Time", `${c.delta.timeSec <= 0 ? "-" : "+"}${fmt(Math.abs(c.delta.timeSec))}`, c.delta.timeSec <= 0]]
           .map(([l, v, good]: any) => <span key={l} className={`pill ${good ? "pill-ok" : "pill-bad"}`} style={{ padding: "6px 12px" }}>{good ? <TrendingUp size={13} /> : <TrendingDown size={13} />}{l} {v}</span>)}</div></section>}

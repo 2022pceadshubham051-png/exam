@@ -28,6 +28,10 @@ enum AttemptStatus {
   SUBMITTED
   AUTO_SUBMITTED
 }
+enum AttemptMode {
+  EXAM
+  PRACTICE
+}
 
 model User {
   id String @id @default(cuid())
@@ -61,6 +65,8 @@ model Test {
   showResult Boolean @default(true)
   showExplanations Boolean @default(true)
   leaderboard Boolean @default(true)
+  allowPracticeMode Boolean @default(true)
+  maxAttempts Int?
   published Boolean @default(false)
   createdAt DateTime @default(now())
   sections Section[]
@@ -115,6 +121,7 @@ model TestAttempt {
   testId String
   test Test @relation(fields: [testId], references: [id])
   attemptNo Int
+  mode AttemptMode @default(EXAM)
   status AttemptStatus @default(IN_PROGRESS)
   startedAt DateTime @default(now())
   endedAt DateTime?
