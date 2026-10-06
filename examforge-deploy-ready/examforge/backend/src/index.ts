@@ -2,14 +2,13 @@ import express from "express"; import bcrypt from "bcrypt"; import { prisma } fr
 import { tests } from "./routes/tests"; import { progress } from "./routes/progress"; import { auth } from "./routes/auth"; import { attempts } from "./routes/attempts"; import { questions } from "./routes/questions";
 const app = express();
 app.use(helmet(), cors({ origin: process.env.CORS_ORIGIN }), express.json({ limit: "1mb" }));
+app.get("/api/health", (_, res) => res.json({ ok: true }));
 app.use("/api/auth", rateLimit({ windowMs: 15 * 60_000, max: 50 }), auth);
 app.use("/api/questions", questions);
 app.use("/api/tests", tests);
 app.use("/api", progress);
 app.use("/api", attempts);
-app.use(helmet(), cors({ origin: process.env.CORS_ORIGIN }), express.json({ limit: "1mb" }));
-app.get("/api/health", (_, res) => res.json({ ok: true }));
-app.use("/api/auth", rateLimit(...), auth);
+
 // Admin bootstrap from env: no Prisma Studio needed. Password in env is the source of truth.
 async function ensureAdmin() {
   const { ADMIN_USERNAME: username, ADMIN_PASSWORD: pw, ADMIN_EMAIL } = process.env; if (!username || !pw) return;
