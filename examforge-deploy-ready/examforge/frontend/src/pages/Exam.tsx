@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   Cloud, CloudOff, TriangleAlert, Flag, Eraser, ChevronLeft, ChevronRight, Send,
-  LayoutGrid, X, GraduationCap, Clock3, Sparkles, RotateCcw, Play, BrainCircuit, Zap, Trophy,
+  LayoutGrid, X, GraduationCap, Clock3, Sparkles, Play, BrainCircuit, Zap, Trophy, Trash2, CircleCheck, CircleX, Lightbulb, SkipForward, Eye,
 } from "lucide-react";
 import { api, fmt, type View, type Q } from "../lib/api";
 
@@ -12,7 +12,8 @@ const legend: [string, string][] = [["ANSWERED", "Answered"], ["ANSWERED_REVIEW"
 type ModeChoice = "EXAM" | "PRACTICE" | "ADAPTIVE";
 
 export default function Exam() {
-  const { testId } = useParams(); const nav = useNavigate();
+  const { testId } = useParams(); const nav = useNavigate(); const [sp] = useSearchParams(); const focusTopic = sp.get("topic"); const lastBump = useRef(0);
+  const [reveal, setReveal] = useState<Record<string, { correctKey: string; explanation: string | null }>>({}); const [instant, setInstant] = useState(true);
   const [meta, setMeta] = useState<any | null>(null); const [v, setV] = useState<View | null>(null);
   const [idx, setIdx] = useState(0); const [, tick] = useState(0);
   const [sync, setSync] = useState<"saved" | "offline">("saved"); const [switches, setSwitches] = useState(0);
@@ -24,9 +25,11 @@ export default function Exam() {
   const fetchMeta = useCallback(async () => {
     if (!testId) return;
     const t = await api(`/tests/${testId}`); setMeta(t);
-    if (t.activeAdaptiveAttempt) setModeChoice("ADAPTIVE");
+    if (focusTopic) setModeChoice("ADAPTIVE");
+    else if (sp.get("mode") === "practice" && t.allowPracticeMode !== false) setModeChoice("PRACTICE");
+    else if (t.activeAdaptiveAttempt) setModeChoice("ADAPTIVE");
     else if (t.activePracticeAttempt) setModeChoice("PRACTICE");
-  }, [testId]);
+  }, [testId]); // eslint-disable-line
 
   useEffect(() => { fetchMeta().catch((e: any) => setErr(e.message)); }, [fetchMeta]);
   useEffect(() => {
@@ -40,7 +43,7 @@ export default function Exam() {
       const a = await api<View>(`/attempts/${attemptId}`);
       if (a.status !== "IN_PROGRESS") return nav(`/result/${a.id}`);
       ends.current = { test: a.remaining.test > -1 ? Date.now() + a.remaining.test * 1000 : 0, section: a.remaining.section > -1 ? Date.now() + a.remaining.section * 1000 : 0 };
-      if (!v || v.sectionIdx !== a.sectionIdx || v.id !== a.id) { setIdx(0); local.current = {}; }
+      if (!v || v.sectionIdx !== a.sectionIdx || v.id !== a.id) { setIdx(0); local.current = {}; setReveal({}); }
       setV(a); qStart.current = Date.now(); setErr("");
     } catch (e: any) { if (e.status === 401) nav("/login"); else setErr(e.message); }
   }, [nav, v]);
@@ -49,8 +52,9 @@ export default function Exam() {
     setStarting(true); setErr(""); setModeChoice(choice);
     try {
       const mode = choice === "EXAM" ? "EXAM" : "PRACTICE";
-      const a = await api<View>(`/tests/${testId}/start`, "POST", { mode, adaptive: choice === "ADAPTIVE", questionCount: adaptiveRec?.selectedCount ?? 20 });
-      setV(a); ends.current = { test: a.remaining.test > -1 ? Date.now() + a.remaining.test * 1000 : 0, section: a.remaining.section > -1 ? Date.now() + a.remaining.section * 1000 : 0 };
+      const a = await api<View>(`/tests/${testId}/start`, "POST", { mode, adaptive: choice === "ADAPTIVE", topics: choice === "ADAPTIVE" && focusTopic ? [focusTopic] : undefined, questionCount: adaptiveRec?.selectedCount ?? 20 });
+      if (a.status !== "IN_PROGRESS") return nav(`/result/${a.id}`);
+      setReveal({}); setV(a); ends.current = { test: a.remaining.test > -1 ? Date.now() + a.remaining.test * 1000 : 0, section: a.remaining.section > -1 ? Date.now() + a.remaining.section * 1000 : 0 };
       setIdx(0); local.current = {}; qStart.current = Date.now();
     } catch (e: any) { setErr(e.message); } finally { setStarting(false); }
   };
@@ -75,7 +79,20 @@ export default function Exam() {
   }, [q, v, qKey, flush]);
 
   const go = (to: number) => { if (!v) return; if (to === idx) return; save(q && q.status === "NOT_VISITED" ? { status: "VISITED" } : {}); setIdx(Math.max(0, Math.min(v.questions.length - 1, to))); };
-  const finish = async () => { if (!v) return; await flush(); await api(`/attempts/${v.id}/submit`, "POST").catch(() => {}); localStorage.removeItem(qKey); nav(`/result/${v.id}`); };
+  const finish = async () => {
+    if (!v) return; setErr("");
+    try { await flush(); await api(`/attempts/${v.id}/submit`, "POST"); localStorage.removeItem(qKey); nav(`/result/${v.id}`); }
+    catch (e: any) { setConfirm(false); setErr(`Could not submit: ${e.message}. Your answers are saved, press Submit again.`); }
+  };
+  const nextSection = async () => {
+    if (!v || !window.confirm("Finish this section and move on? You cannot come back to it.")) return;
+    try { await flush(); await api(`/attempts/${v.id}/next-section`, "POST"); await load(v.id); } catch (e: any) { setErr(e.message); }
+  };
+  const discard = async (id: string) => {
+    if (!window.confirm("Discard this unfinished attempt? Its answers will be deleted.")) return;
+    try { await api(`/attempts/${id}`, "DELETE"); localStorage.removeItem(qKey); await fetchMeta(); } catch (e: any) { setErr(e.message); }
+  };
+  const check = async (qid: string) => { if (!v) return; try { const r = await api(`/attempts/${v.id}/check`, "POST", { questionId: qid }); setReveal((m) => ({ ...m, [qid]: r })); } catch (e: any) { setErr(e.message); } };
 
   const timed = v?.mode === "EXAM";
   const qLimit = timed ? q?.timeLimitSec ?? null : null;
@@ -87,13 +104,25 @@ export default function Exam() {
   useEffect(() => { if (timed && v && qSec === 0) { save({}); if (idx < v.questions.length - 1) setIdx(idx + 1); } }, [timed, qSec === 0, idx]); // eslint-disable-line
   useEffect(() => {
     if (!v || !timed) return;
-    const bump = () => { if (document.visibilityState === "hidden" || !document.hasFocus()) api<any>(`/attempts/${v.id}/tab-switch`, "POST").then((r) => { setSwitches(r.tabSwitches); if (r.tabSwitches > r.max) load(v.id); }).catch(() => {}); };
+    const bump = () => { if (Date.now() - lastBump.current < 2500) return; if (document.visibilityState === "hidden" || !document.hasFocus()) { lastBump.current = Date.now(); api<any>(`/attempts/${v.id}/tab-switch`, "POST").then((r) => { setSwitches(r.tabSwitches); if (r.tabSwitches > r.max) load(v.id); }).catch(() => {}); } };
     const block = (e: Event) => e.preventDefault(); const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
     const evs = ["copy", "paste", "cut", "contextmenu"];
     document.addEventListener("visibilitychange", bump); addEventListener("blur", bump); addEventListener("beforeunload", warn); evs.forEach((e) => document.addEventListener(e, block));
     if (v.rules.fullscreen) document.documentElement.requestFullscreen?.().catch(() => {});
     return () => { document.removeEventListener("visibilitychange", bump); removeEventListener("blur", bump); removeEventListener("beforeunload", warn); evs.forEach((e) => document.removeEventListener(e, block)); };
   }, [v?.id, timed]); // eslint-disable-line
+
+  useEffect(() => {
+    if (!v || confirm) return;
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null; if (t && ["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName) && (t as HTMLInputElement).type !== "radio") return;
+      if (e.ctrlKey || e.metaKey || e.altKey || !q) return; const k = e.key.toLowerCase();
+      if (["a", "b", "c", "d", "1", "2", "3", "4"].includes(k)) { const key = "ABCD"["abcd".includes(k) ? "abcd".indexOf(k) : +k - 1]; if (q.options.some((o) => o.key === key) && !reveal[q.id]) save({ selectedKey: key, status: q.status.includes("REVIEW") ? "ANSWERED_REVIEW" : "ANSWERED" }); }
+      else if (k === "arrowright" || k === "n") go(idx + 1); else if (k === "arrowleft" || k === "p") go(idx - 1);
+      else if (k === "m") save({ status: q.status.includes("REVIEW") ? (q.selectedKey ? "ANSWERED" : "NOT_ANSWERED") : (q.selectedKey ? "ANSWERED_REVIEW" : "REVIEW") });
+    };
+    document.addEventListener("keydown", onKey); return () => document.removeEventListener("keydown", onKey);
+  }); // eslint-disable-line
 
   if (err && !meta && !v) return <div className="grid min-h-screen place-items-center p-6"><div className="card card-pad stack" style={{ maxWidth: 560 }}><div className="alert alert-bad"><TriangleAlert size={18} />{err}</div><Link className="btn" to="/dashboard">Back to dashboard</Link></div></div>;
 
@@ -110,13 +139,13 @@ export default function Exam() {
             <span className="pill pill-brand">{meta.examName}</span><h1>{meta.name}</h1>
             <p>{meta.description || "A focused mock test built for deliberate practice and measurable improvement."}</p>
             <div className="meta"><span><Clock3 size={15} />{fmt(meta.durationSec)}</span><span>{qs} questions</span><span>{meta.sections.length} sections</span><span className={`pill ${meta.difficulty === "HARD" ? "pill-bad" : meta.difficulty === "EASY" ? "pill-ok" : "pill-warn"}`}>{meta.difficulty.toLowerCase()}</span></div>
-            <div className="landing-mode-explainer"><div className="row"><Zap size={16} /><b>{modeChoice === "ADAPTIVE" ? "Adaptive session" : modeChoice === "PRACTICE" ? "Practice session" : "Exam session"}</b></div><p>{modeDescription}</p></div>
+            {focusTopic && <div className="alert alert-info" style={{ marginTop: 12 }}><BrainCircuit size={16} /><span>Focused practice on <b>{focusTopic}</b>. Questions on this topic are picked first, hardest-weakness first.</span></div>}<div className="landing-mode-explainer"><div className="row"><Zap size={16} /><b>{modeChoice === "ADAPTIVE" ? "Adaptive session" : modeChoice === "PRACTICE" ? "Practice session" : "Exam session"}</b></div><p>{modeDescription}</p></div>
           </div>
           <div className="landing-side">
             {(activeExam || activePractice || activeAdaptive) && <div className="resume-stack">
-              {activeExam && <div className="resume-card"><div><span className="pill pill-warn">Exam in progress</span><b>Resume your timed attempt</b><small>Attempt #{activeExam.attemptNo} is still open.</small></div><button className="btn btn-primary" onClick={() => load(activeExam.id)}>Resume</button></div>}
-              {activePractice && <div className="resume-card"><div><span className="pill pill-brand">Practice in progress</span><b>Resume untimed practice</b><small>Your answers are already saved.</small></div><button className="btn" onClick={() => load(activePractice.id)}>Resume</button></div>}
-              {activeAdaptive && <div className="resume-card"><div><span className="pill pill-ok">Adaptive in progress</span><b>Resume adaptive session</b><small>Continue your personalised practice.</small></div><button className="btn" onClick={() => load(activeAdaptive.id)}>Resume</button></div>}
+              {activeExam && <div className="resume-card"><div><span className="pill pill-warn">Exam in progress</span><b>Resume your timed attempt</b><small>Attempt #{activeExam.attemptNo} is still open.</small></div><div className="row"><button className="btn btn-primary" onClick={() => load(activeExam.id)}>Resume</button><button className="btn btn-sm btn-danger" title="Discard attempt" onClick={() => discard(activeExam.id)}><Trash2 size={14} /></button></div></div>}
+              {activePractice && <div className="resume-card"><div><span className="pill pill-brand">Practice in progress</span><b>Resume untimed practice</b><small>Your answers are already saved.</small></div><div className="row"><button className="btn" onClick={() => load(activePractice.id)}>Resume</button><button className="btn btn-sm btn-danger" title="Discard session" onClick={() => discard(activePractice.id)}><Trash2 size={14} /></button></div></div>}
+              {activeAdaptive && <div className="resume-card"><div><span className="pill pill-ok">Adaptive in progress</span><b>Resume adaptive session</b><small>Continue your personalised practice.</small></div><div className="row"><button className="btn" onClick={() => load(activeAdaptive.id)}>Resume</button><button className="btn btn-sm btn-danger" title="Discard session" onClick={() => discard(activeAdaptive.id)}><Trash2 size={14} /></button></div></div>}
             </div>}
             <button className={`mode-card ${modeChoice === "EXAM" ? "chosen" : ""}`} onClick={() => setModeChoice("EXAM")}><span className="mode-icon"><Clock3 size={19} /></span><span><b>Exam mode</b><small>Timed, scored and eligible for the leaderboard.</small></span><span className="mode-check">{modeChoice === "EXAM" ? "✓" : ""}</span></button>
             {meta.allowPracticeMode !== false && <button className={`mode-card ${modeChoice === "PRACTICE" ? "chosen" : ""}`} onClick={() => setModeChoice("PRACTICE")}><span className="mode-icon"><Sparkles size={19} /></span><span><b>Practice mode</b><small>Unlimited time. No pressure and no leaderboard impact.</small></span><span className="mode-check">{modeChoice === "PRACTICE" ? "✓" : ""}</span></button>}
@@ -144,16 +173,25 @@ export default function Exam() {
 
   return <div className="flex min-h-screen flex-col select-none">
     <header className="exam-top"><div className="row between exam-top-inner">
-      <div className="row" style={{ gap: 12 }}><span className="logo" style={{ width: 32, height: 32 }}><GraduationCap size={17} /></span><div><b style={{ display: "block", lineHeight: 1.1 }}>{v.sectionName}</b><span className="sub">{v.test.examName} · Section {v.sectionIdx + 1} of {v.sectionCount}</span></div></div>
+      <div className="row" style={{ gap: 12 }}><span className="logo" style={{ width: 32, height: 32 }}><GraduationCap size={17} /></span><div><b style={{ display: "block", lineHeight: 1.1 }}>{v.sectionName}</b><span className="sub">{v.test.examName}{v.mode === "EXAM" ? ` · Section ${v.sectionIdx + 1} of ${v.sectionCount}` : ` · ${v.sectionCount} section${v.sectionCount > 1 ? "s" : ""} together`}</span></div></div>
       <div className="row" style={{ gap: 8 }}>{timed ? <><div className={`timer ${tCls(testSec)}`}><small>Test</small><b>{fmt(testSec)}</b></div><div className={`timer ${tCls(secSec)}`}><small>Section</small><b>{fmt(secSec)}</b></div>{qSec !== null && <div className={`timer ${tCls(qSec)}`}><small>Question</small><b>{fmt(qSec)}</b></div>}</> : <span className={`pill ${v.adaptive ? "pill-ok" : "pill-brand"}`}><Sparkles size={13} />{sessionLabel} · no timer</span>}</div>
-      <div className="row" style={{ gap: 8 }}><span className={`pill ${sync === "saved" ? "pill-ok" : "pill-warn"}`}>{sync === "saved" ? <><Cloud size={13} />Saved</> : <><CloudOff size={13} />Offline saved</>}</span><button className="btn btn-ok btn-sm" onClick={() => setConfirm(true)}><Send size={14} />Submit</button></div>
+      <div className="row" style={{ gap: 8 }}><span className={`pill ${sync === "saved" ? "pill-ok" : "pill-warn"}`}>{sync === "saved" ? <><Cloud size={13} />Saved</> : <><CloudOff size={13} />Offline saved</>}</span>{timed && v.isLastSection === false && <button className="btn btn-sm" onClick={nextSection}><SkipForward size={14} />Next section</button>}<button className="btn btn-ok btn-sm" onClick={() => setConfirm(true)}><Send size={14} />Submit</button></div>
     </div></header>
     {err && <div className="alert alert-bad" style={{ borderRadius: 0 }}><TriangleAlert size={17} />{err}</div>}
     {v.adaptive && <div className="adaptive-banner"><BrainCircuit size={16} /><span><b>Adaptive focus:</b> {v.adaptiveTopics?.slice(0, 4).join(" · ") || "your weaker areas"}</span><span style={{ marginLeft: "auto" }}>This session is untimed and personalised from your previous exam performance.</span></div>}
     {switches > 0 && timed && <div className="alert alert-warn" style={{ borderRadius: 0 }}><TriangleAlert size={17} />You switched away from the test {switches} time{switches > 1 ? "s" : ""}. The test may auto-submit after the configured limit.</div>}
     <div className="flex flex-1" style={{ maxWidth: 1280, margin: "0 auto", width: "100%" }}><main className="flex-1" style={{ padding: "22px 18px 28px", minWidth: 0 }}>
       <div className="row between" style={{ marginBottom: 10 }}><span className="pill pill-brand">Question {idx + 1} of {all.length}</span><span className="sub">{answered} answered · {review} marked</span></div><div className="bar" style={{ marginBottom: 18 }}><i style={{ width: `${pct}%` }} /></div>
-      <div className="card card-pad fade-in" key={q.id}><p style={{ fontSize: "1.1rem", lineHeight: 1.65, fontWeight: 600, whiteSpace: "pre-wrap", margin: "0 0 20px" }}>{q.text}</p><div className="stack" style={{ gap: 10 }}>{q.options.map((o) => <label key={o.key} className={`opt ${q.selectedKey === o.key ? "sel" : ""}`}><input className="sr" type="radio" name="opt" checked={q.selectedKey === o.key} onChange={() => save({ selectedKey: o.key, status: q.status.includes("REVIEW") ? "ANSWERED_REVIEW" : "ANSWERED" })} /><span className="opt-k">{o.key}</span><span style={{ flex: 1 }}>{o.text}</span></label>)}</div></div>
+      {(() => { const rv = reveal[q.id]; const practice = v.mode === "PRACTICE";
+        const pick = (key: string) => { if (rv) return; save({ selectedKey: key, status: q.status.includes("REVIEW") ? "ANSWERED_REVIEW" : "ANSWERED" }); if (practice && instant) setTimeout(() => check(q.id), 350); };
+        return <div className="card card-pad fade-in" key={q.id}>
+          <div className="row" style={{ gap: 6, marginBottom: 10 }}>{q.section && v.mode === "PRACTICE" && <span className="pill">{q.section}</span>}{q.topic && practice && <span className="pill pill-brand">{q.topic}</span>}</div>
+          <p style={{ fontSize: "1.1rem", lineHeight: 1.65, fontWeight: 600, whiteSpace: "pre-wrap", margin: "0 0 20px" }}>{q.text}</p>
+          <div className="stack" style={{ gap: 10 }}>{q.options.map((o) => <label key={o.key} className={`opt ${q.selectedKey === o.key ? "sel" : ""} ${rv && rv.correctKey === o.key ? "right" : rv && q.selectedKey === o.key ? "wrong" : ""}`}><input className="sr" type="radio" name="opt" checked={q.selectedKey === o.key} disabled={!!rv} onChange={() => pick(o.key)} /><span className="opt-k">{o.key}</span><span style={{ flex: 1 }}>{o.text}</span>{rv && rv.correctKey === o.key && <CircleCheck size={18} color="#16a34a" />}{rv && q.selectedKey === o.key && rv.correctKey !== o.key && <CircleX size={18} color="#dc2626" />}</label>)}</div>
+          {practice && <div className="stack" style={{ gap: 10, marginTop: 14 }}>
+            {!rv ? <div className="row"><button className="btn btn-sm" disabled={!q.selectedKey} onClick={() => check(q.id)}><Eye size={14} />Check answer</button><label className="sub row" style={{ gap: 6, cursor: "pointer" }}><input type="checkbox" checked={instant} onChange={(e) => setInstant(e.target.checked)} />Check automatically after I pick</label></div>
+              : <div className={`alert ${q.selectedKey === rv.correctKey ? "alert-ok" : "alert-bad"}`} style={{ alignItems: "flex-start" }}>{q.selectedKey === rv.correctKey ? <CircleCheck size={18} /> : <CircleX size={18} />}<div><b>{q.selectedKey === rv.correctKey ? "Correct!" : `Wrong. Correct answer is ${rv.correctKey}.`}</b>{rv.explanation && <div style={{ marginTop: 4, display: "flex", gap: 6 }}><Lightbulb size={16} style={{ flex: "none", marginTop: 2 }} /><span>{rv.explanation}</span></div>}</div></div>}</div>}
+        </div>; })()}
       <div className="action-bar"><button className="btn" onClick={() => save({ status: q.status.includes("REVIEW") ? (q.selectedKey ? "ANSWERED" : "NOT_ANSWERED") : (q.selectedKey ? "ANSWERED_REVIEW" : "REVIEW") })}><Flag size={15} />{q.status.includes("REVIEW") ? "Unmark" : "Mark for review"}</button><button className="btn" onClick={() => save({ selectedKey: null, status: "NOT_ANSWERED" })}><Eraser size={15} />Clear</button><button className="btn md:hidden" onClick={() => setDrawer(true)}><LayoutGrid size={15} />Palette</button><span style={{ flex: 1 }} /><button className="btn" onClick={() => go(idx - 1)} disabled={idx === 0}><ChevronLeft size={16} />Previous</button><button className="btn btn-primary" onClick={() => go(idx + 1)} disabled={idx === all.length - 1}>Save and next<ChevronRight size={16} /></button></div>
     </main>
     <aside className="hidden md:block" style={{ width: 290, flex: "none", padding: "22px 18px 18px 0" }}><div className="card card-pad" style={{ position: "sticky", top: 84 }}><div className="row between" style={{ marginBottom: 14 }}><h3 className="card-title">Question palette</h3><span className="pill">{sessionLabel}</span></div>{Palette}</div><div className="card card-pad" style={{ marginTop: 14 }}><div className="row" style={{ gap: 8 }}><Trophy size={16} /><b>Time management</b></div><p className="sub" style={{ margin: "7px 0 0" }}>{timed ? "Stay conscious of the section clock. Faster is useful only when accuracy remains stable." : "This session is untimed so you can focus on learning and accuracy."}</p></div></aside>

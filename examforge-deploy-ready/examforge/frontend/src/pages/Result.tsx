@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react"; import { useParams, Link } from "react-router-dom";
-import { Eye, Target, Clock, CircleCheck, CircleX, MinusCircle, TrendingUp, TrendingDown, ArrowRight, Sparkles, LayoutDashboard } from "lucide-react";
+import { useEffect, useState } from "react"; import { useParams, Link, useNavigate } from "react-router-dom";
+import { Eye, Target, Clock, CircleCheck, CircleX, MinusCircle, TrendingUp, TrendingDown, ArrowRight, Sparkles, LayoutDashboard, Trash2, Compass, Trophy } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { api, fmt } from "../lib/api"; import Shell, { Loading } from "../components/Shell";
 
@@ -13,19 +13,24 @@ export function Ring({ value, label }: { value: number; label: string }) {
 }
 
 export default function Result() {
-  const { attemptId } = useParams(); const [d, setD] = useState<any>(null); const [err, setErr] = useState("");
+  const { attemptId } = useParams(); const nav = useNavigate(); const [d, setD] = useState<any>(null); const [err, setErr] = useState(""); const [askDel, setAskDel] = useState(false); const [delErr, setDelErr] = useState(""); const [delBusy, setDelBusy] = useState(false);
   useEffect(() => { api(`/results/${attemptId}`).then(setD).catch((e) => setErr(e.message)); }, [attemptId]);
+  const remove = async () => { setDelBusy(true); setDelErr(""); try { await api(`/attempts/${attemptId}`, "DELETE"); nav("/dashboard", { replace: true }); } catch (e: any) { setDelErr(e.message); setDelBusy(false); } };
   if (err) return <Shell><div className="alert alert-bad">{err}</div></Shell>;
   if (!d) return <Shell><Loading text="Calculating your result" /></Shell>;
   if (d.showResult === false) return <Shell><div className="card card-pad stack" style={{ maxWidth: 620, margin: "12vh auto" }}><h1 style={{ fontSize: "1.5rem", fontWeight: 800 }}>Result is hidden</h1><p className="sub">The administrator has disabled immediate result viewing for this test. Your attempt has still been saved.</p><div><Link className="btn btn-primary" to="/dashboard"><LayoutDashboard size={16} />Back to dashboard</Link></div></div></Shell>;
   const r = d.result, c = d.comparison; const [tl, tc] = c ? (tone[c.status] ?? ["", ""]) : ["", ""];
   const passed = r.percentage >= (d.passingPercent ?? 40);
   const secData = Object.values(r.sectionStats as Record<string, any>).map((s: any, i) => ({ name: s.name ?? `Section ${i + 1}`, Correct: s.correct, Wrong: s.incorrect }));
+  const grp = (o: Record<string, any> | null | undefined) => Object.entries(o ?? {}).map(([k, v]: [string, any]) => ({ key: k, name: v.name ?? k, ...v, total: v.correct + v.incorrect + v.unanswered, rating: Math.max(0, Math.round(v.totalMarks ? (v.score / v.totalMarks) * 100 : 0)) }));
+  const subj = grp(r.subjectStats).sort((a, b) => a.rating - b.rating);
+  const topics = grp(r.topicStats).filter((t) => t.name !== "Unknown").sort((a, b) => a.accuracy - b.accuracy);
+  const col = (n: number) => (n >= 80 ? "#16a34a" : n >= 65 ? "#65a30d" : n >= 50 ? "#d97706" : n >= 35 ? "#ea580c" : "#dc2626");
   const stat = (I: any, l: string, v: string | number, col?: string) => <div className="stat"><div className="stat-l"><I size={14} color={col} />{l}</div><div className="stat-v">{v}</div></div>;
   return <Shell>
     <div className="stack" style={{ gap: 22 }}>
       <div className="row between"><div><h1 style={{ fontSize: "1.7rem", fontWeight: 800 }}>Your result</h1><p className="sub">Attempt #{d.attemptNo} · <span className={`pill ${d.adaptive ? "pill-ok" : d.mode === "PRACTICE" ? "pill-brand" : ""}`}>{d.adaptive ? "Adaptive practice" : d.mode === "PRACTICE" ? "Practice" : "Exam"}</span></p></div>
-        <div className="row"><Link className="btn" to="/dashboard"><LayoutDashboard size={16} />Dashboard</Link><Link className="btn" to={`/exam/${d.testId}`}><ArrowRight size={16} />Retake</Link><Link className="btn btn-primary" to={`/review/${attemptId}`}><Eye size={16} />Review answers</Link></div></div>
+        <div className="row"><Link className="btn" to="/dashboard"><LayoutDashboard size={16} />Dashboard</Link><Link className="btn" to={`/exam/${d.testId}`}><ArrowRight size={16} />Retake</Link><Link className="btn btn-primary" to={`/review/${attemptId}`}><Eye size={16} />Review answers</Link><button className="btn btn-danger" onClick={() => setAskDel(true)}><Trash2 size={16} />Delete</button></div></div>
       <section className="card card-pad row" style={{ gap: 30 }}>
         <Ring value={r.percentage} label="score" />
         <div style={{ flex: 1, minWidth: 220 }}><div className="stat-l">Marks obtained</div><div style={{ fontSize: "2.4rem", fontWeight: 800, letterSpacing: "-.03em" }}>{r.score} <span className="muted" style={{ fontSize: "1.2rem" }}>/ {r.totalMarks}</span></div>
@@ -38,6 +43,12 @@ export default function Result() {
       <section className="card card-pad stack"><h2 className="card-title">Section-wise performance</h2>
         <div style={{ height: 270 }}><ResponsiveContainer><BarChart data={secData} barGap={6}><CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} /><XAxis dataKey="name" tick={{ fill: "var(--muted)", fontSize: 12 }} axisLine={false} tickLine={false} /><YAxis allowDecimals={false} tick={{ fill: "var(--muted)", fontSize: 12 }} axisLine={false} tickLine={false} />
           <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12 }} cursor={{ fill: "var(--surface-2)" }} /><Bar dataKey="Correct" fill="#16a34a" radius={[8, 8, 0, 0]} /><Bar dataKey="Wrong" fill="#dc2626" radius={[8, 8, 0, 0]} /></BarChart></ResponsiveContainer></div></section>
-      <div><Link className="btn" to="/progress">See overall progress<ArrowRight size={16} /></Link></div>
+      {d.rank && d.field > 1 && <section className="card card-pad row" style={{ gap: 14 }}><Trophy size={22} color="#d97706" /><div><b>Rank #{d.rank} of {d.field} official attempts on this test</b>{d.percentile !== null && <div className="sub">You scored higher than {d.percentile}% of other attempts.</div>}</div></section>}
+      {subj.length > 0 && <section className="card card-pad stack"><div><h2 className="card-title">Subject-wise rating <small className="muted" style={{ fontWeight: 500 }}>(auto-detected)</small></h2><p className="sub">Each question is classified automatically (Reasoning, Maths, English, GA, ...). Rating = marks scored out of 100 in that subject.</p></div>
+        <div className="stack" style={{ gap: 12 }}>{subj.map((x: any) => <div key={x.name}><div className="row between"><b>{x.name}</b><span><b style={{ color: col(x.rating) }}>{x.rating}</b><span className="muted">/100</span> <span className="sub">· {x.correct}✓ {x.incorrect}✗ {x.unanswered}− · {x.total} Q</span></span></div><div className="bar" style={{ marginTop: 5 }}><i style={{ width: `${Math.max(2, x.rating)}%`, background: col(x.rating) }} /></div></div>)}</div></section>}
+      {topics.length > 0 && <section className="card card-pad stack"><div><h2 className="card-title">Topic-wise accuracy</h2><p className="sub">Weakest topics first.</p></div>
+        <div className="card table-wrap" style={{ boxShadow: "none" }}><table className="t"><thead><tr><th>Topic</th><th>Questions</th><th>Correct</th><th>Wrong</th><th>Accuracy</th><th>Avg time</th></tr></thead><tbody>{topics.map((t: any) => <tr key={t.name}><td><b>{t.name}</b></td><td>{t.total}</td><td>{t.correct}</td><td>{t.incorrect}</td><td><span className={`pill ${t.accuracy >= 70 ? "pill-ok" : t.accuracy >= 40 ? "pill-warn" : "pill-bad"}`}>{t.accuracy}%</span></td><td>{t.avgTimeSec}s</td></tr>)}</tbody></table></div></section>}
+      <div className="row"><Link className="btn" to="/progress">See overall progress<ArrowRight size={16} /></Link><Link className="btn btn-primary" to="/coach"><Compass size={16} />What should I improve next?</Link></div>
+      {askDel && <div className="modal-bg" onClick={() => !delBusy && setAskDel(false)}><div className="card modal stack" style={{ gap: 12 }} onClick={(e) => e.stopPropagation()}><h3 className="card-title">Delete this attempt?</h3><p className="sub">The attempt, answers and result are removed from your history, progress and Smart Coach. This cannot be undone.</p>{delErr && <div className="alert alert-bad">{delErr}</div>}<div className="row" style={{ justifyContent: "flex-end" }}><button className="btn" disabled={delBusy} onClick={() => setAskDel(false)}>Cancel</button><button className="btn btn-danger" disabled={delBusy} onClick={remove}><Trash2 size={15} />{delBusy ? "Deleting..." : "Delete"}</button></div></div></div>}
     </div></Shell>;
 }

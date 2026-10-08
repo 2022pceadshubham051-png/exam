@@ -41,6 +41,8 @@ model User {
   name String
   displayName String?
   role Role @default(USER)
+  targetExam String?
+  targetScore Int?
   createdAt DateTime @default(now())
   attempts TestAttempt[]
 }
@@ -161,8 +163,10 @@ model QuestionResponse {
   status String @default("NOT_VISITED")
   timeSpentMs Int @default(0)
   questionStartedAt DateTime?
+  subject String?
   topic String?
   difficulty Difficulty?
+  ord Int @default(0)
   snapshot Json?
   updatedAt DateTime @updatedAt
   @@unique([attemptId, questionId])
@@ -186,6 +190,7 @@ model TestResult {
   sectionStats Json
   topicStats Json
   difficultyStats Json
+  subjectStats Json?
   rank Int?
   percentile Float?
 }

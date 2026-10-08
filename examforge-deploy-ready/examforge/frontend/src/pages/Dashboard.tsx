@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react"; import { Link } from "react-router-dom";
-import { Search, Clock, FileText, Layers, Play, Target, Trophy, ClipboardList, ArrowRight, Eye, Sparkles, SlidersHorizontal, Medal } from "lucide-react";
+import { Search, Clock, FileText, Layers, Play, Target, Trophy, ClipboardList, ArrowRight, Eye, Sparkles, SlidersHorizontal, Medal, Trash2, Compass, X, TriangleAlert, CircleCheck } from "lucide-react";
 import { api, fmt } from "../lib/api"; import Shell, { Loading } from "../components/Shell";
 
 const diff: Record<string, string> = { EASY: "pill-ok", MEDIUM: "pill-warn", HARD: "pill-bad" };
 export default function Dashboard() {
   const [tests, setTests] = useState<any[] | null>(null); const [hist, setHist] = useState<any[]>([]); const [leaderboard, setLeaderboard] = useState<any[]>([]); const [q, setQ] = useState(""); const [mode, setMode] = useState<"all" | "practice" | "timed">("all"); const [diffFilter, setDiffFilter] = useState("ALL"); const [err, setErr] = useState("");
+  const [sel, setSel] = useState<Set<string>>(new Set()); const [histMode, setHistMode] = useState<"all" | "EXAM" | "PRACTICE">("all"); const [histTest, setHistTest] = useState("ALL"); const [ask, setAsk] = useState<null | { title: string; body: any; label: string }>(null); const [note, setNote] = useState<null | { ok: boolean; m: string }>(null); const [busyDel, setBusyDel] = useState(false);
+  const loadHist = () => api("/history").then((data) => setHist(Array.isArray(data) ? data : [])).catch(() => setHist([]));
   useEffect(() => {
     let cancelled = false;
     const timer = setTimeout(() => {
@@ -42,6 +44,12 @@ export default function Dashboard() {
   }, []);
   const done = hist.filter((a) => a.result); const avg = done.length ? Math.round(done.reduce((s, a) => s + a.result.percentage, 0) / done.length) : null;
   const shownTests = (tests ?? []).filter((t) => (diffFilter === "ALL" || t.difficulty === diffFilter) && (mode === "all" || (mode === "practice" ? t.allowPracticeMode !== false : true)));
+  const shownHist = hist.filter((a) => (histMode === "all" || a.mode === histMode) && (histTest === "ALL" || a.test.id === histTest));
+  const doDelete = async () => {
+    if (!ask) return; setBusyDel(true);
+    try { const r = await api("/history/delete", "POST", ask.body); setNote({ ok: true, m: `Deleted ${r.deleted} attempt${r.deleted === 1 ? "" : "s"}.${r.skipped ? ` ${r.skipped} official attempt(s) were kept because their test has an attempt limit.` : ""}` }); setSel(new Set()); await loadHist(); }
+    catch (e: any) { setNote({ ok: false, m: e.message }); } finally { setBusyDel(false); setAsk(null); }
+  };
   const best = done.length ? Math.max(...done.map((a) => a.result.percentage)) : null;
   return <Shell>
     <div className="stack" style={{ gap: 26 }}>
@@ -79,19 +87,30 @@ export default function Dashboard() {
         <div className="card card-pad stack"><div className="row between"><div><h2 className="card-title row" style={{ gap: 8 }}><Trophy size={18} />Global leaderboard</h2><p className="sub">Top official exam performers. Practice sessions are excluded.</p></div><Link className="btn btn-sm" to="/progress">My performance<ArrowRight size={14} /></Link></div>
           {leaderboard.length ? <div className="leaderboard-list">{leaderboard.map((r) => <div className="leaderboard-row" key={r.rank}><span className={`rank-badge rank-${r.rank}`}>{r.rank <= 3 ? <Medal size={14} /> : `#${r.rank}`}</span><div style={{ minWidth: 0, flex: 1 }}><b style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</b><span className="sub">{r.attempts} official attempt{r.attempts > 1 ? "s" : ""}</span></div><div className="leader-score"><b>{r.average}%</b><small>avg · best {r.best}%</small></div></div>)}</div> : <div className="empty compact"><Trophy size={28} /><p>No leaderboard data yet.</p></div>}
         </div>
-        <div className="card card-pad adaptive-home"><div className="adaptive-home-icon"><Sparkles size={21} /></div><div><span className="pill pill-brand">Adaptive learning</span><h2 className="card-title" style={{ marginTop: 8 }}>Turn your mistakes into the next test.</h2><p className="sub">Open any test and choose <b>Adaptive practice</b>. ExamForge prioritises weaker topics and slower areas from your official attempts.</p></div><Link className="btn btn-primary" to={shownTests[0] ? `/exam/${shownTests[0].id}` : "/progress"}>{shownTests[0] ? "Start adaptive practice" : "View performance"}<ArrowRight size={15} /></Link></div>
+        <div className="card card-pad adaptive-home"><div className="adaptive-home-icon"><Sparkles size={21} /></div><div><span className="pill pill-brand">Adaptive learning</span><h2 className="card-title" style={{ marginTop: 8 }}>Turn your mistakes into the next test.</h2><p className="sub">Open the <Link to="/coach">Smart Coach</Link> to see your weak subjects rated out of 100, or open any test and choose <b>Adaptive practice</b>. ExamForge prioritises weaker topics and slower areas from your official attempts.</p></div><Link className="btn btn-primary" to={shownTests[0] ? `/exam/${shownTests[0].id}` : "/progress"}>{shownTests[0] ? "Start adaptive practice" : "View performance"}<ArrowRight size={15} /></Link></div>
       </section>
 
       <section className="stack" style={{ gap: 14 }}>
-        <h2 className="card-title" style={{ fontSize: "1.25rem" }}>Test history</h2>
-        {hist.length ? <div className="card table-wrap"><table className="t"><thead><tr><th>Test</th><th>Attempt</th><th>Score</th><th>Accuracy</th><th>Right / Wrong / Skipped</th><th>Mode</th><th>Time</th><th>Date</th><th /></tr></thead>
-          <tbody>{hist.map((a) => <tr key={a.id}><td><b>{a.test.name}</b></td><td>#{a.attemptNo}</td>
+        <div className="row between" style={{ alignItems: "flex-end" }}><div><h2 className="card-title" style={{ fontSize: "1.25rem" }}>Test history</h2><p className="sub">Select attempts to delete them. Deleting removes the attempt, its answers and result from your history, progress and Smart Coach.</p></div>
+          {hist.length > 0 && <div className="row" style={{ gap: 8, flexWrap: "wrap" }}><div className="seg">{([["all", "All"], ["EXAM", "Exams"], ["PRACTICE", "Practice"]] as const).map(([k, l]) => <button key={k} className={histMode === k ? "on" : ""} onClick={() => { setHistMode(k); setSel(new Set()); }}>{l}</button>)}</div>
+            <select className="input" style={{ width: 190 }} value={histTest} onChange={(e) => { setHistTest(e.target.value); setSel(new Set()); }} aria-label="Filter history by test"><option value="ALL">All tests</option>{[...new Map(hist.map((a) => [a.test.id, a.test.name])).entries()].map(([id, n]) => <option key={id} value={id}>{n}</option>)}</select></div>}</div>
+        {note && <div className={`alert ${note.ok ? "alert-ok" : "alert-bad"}`}>{note.ok ? <CircleCheck size={17} /> : <TriangleAlert size={17} />}<span style={{ flex: 1 }}>{note.m}</span><button className="btn btn-ghost btn-sm" onClick={() => setNote(null)}><X size={14} /></button></div>}
+        {shownHist.length ? <div className="card table-wrap"><table className="t"><thead><tr><th style={{ width: 34 }}><input type="checkbox" className="hist-check" aria-label="Select all" checked={shownHist.length > 0 && shownHist.every((a) => sel.has(a.id))} onChange={(e) => setSel(e.target.checked ? new Set(shownHist.map((a) => a.id)) : new Set())} /></th><th>Test</th><th>Attempt</th><th>Score</th><th>Accuracy</th><th>Right / Wrong / Skipped</th><th>Mode</th><th>Time</th><th>Date</th><th /></tr></thead>
+          <tbody>{shownHist.map((a) => <tr key={a.id}><td><input type="checkbox" className="hist-check" aria-label="Select attempt" checked={sel.has(a.id)} onChange={() => { const n = new Set(sel); n.has(a.id) ? n.delete(a.id) : n.add(a.id); setSel(n); }} /></td><td><b>{a.test.name}</b></td><td>#{a.attemptNo}</td>
             <td>{a.result ? <span className={`pill ${a.result.percentage >= 40 ? "pill-ok" : "pill-bad"}`}>{a.result.percentage}%</span> : <span className="pill pill-warn">In progress</span>}</td>
             <td>{a.result ? `${a.result.accuracy}%` : "-"}</td><td>{a.result ? `${a.result.correct} / ${a.result.incorrect} / ${a.result.unanswered}` : "-"}</td>
-            <td>{a.result ? <span className={`pill ${a.mode === "PRACTICE" ? "pill-brand" : ""}`}>{a.mode === "PRACTICE" ? "Practice" : "Exam"}</span> : "-"}</td><td>{a.result ? fmt(a.result.timeTakenSec) : "-"}</td><td>{new Date(a.startedAt).toLocaleDateString()}</td>
-            <td>{a.result ? <Link className="btn btn-sm" to={`/result/${a.id}`}><Eye size={14} />Result</Link> : null}</td></tr>)}</tbody></table></div>
-          : <div className="card empty"><ClipboardList size={34} /><p>No attempts yet. Start a test above.</p></div>}
+            <td><span className={`pill ${a.mode === "PRACTICE" ? "pill-brand" : ""}`}>{a.mode === "PRACTICE" ? (a.adaptiveQuestionIds ? "Adaptive" : "Practice") : "Exam"}</span></td><td>{a.result ? fmt(a.result.timeTakenSec) : "-"}</td><td>{new Date(a.startedAt).toLocaleDateString()}</td>
+            <td><div className="row" style={{ gap: 6, flexWrap: "nowrap" }}>{a.result ? <Link className="btn btn-sm" to={`/result/${a.id}`}><Eye size={14} />Result</Link> : <Link className="btn btn-sm btn-primary" to={`/exam/${a.test.id}`}>Resume</Link>}<button className="btn btn-sm btn-danger" title="Delete this attempt" aria-label="Delete attempt" onClick={() => setAsk({ title: `Delete attempt #${a.attemptNo} of "${a.test.name}"?`, body: { ids: [a.id] }, label: "Delete attempt" })}><Trash2 size={14} /></button></div></td></tr>)}</tbody></table></div>
+          : <div className="card empty"><ClipboardList size={34} /><p>{hist.length ? "No attempts match this filter." : "No attempts yet. Start a test above."}</p></div>}
+        {hist.length > 0 && <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+          <button className="btn btn-sm btn-danger" onClick={() => setAsk({ title: "Delete ALL practice and adaptive sessions?", body: { mode: "PRACTICE" }, label: "Delete all practice" })}><Trash2 size={14} />Clear all practice</button>
+          <button className="btn btn-sm btn-danger" onClick={() => setAsk({ title: "Delete your ENTIRE attempt history?", body: { all: true }, label: "Delete everything" })}><Trash2 size={14} />Clear entire history</button>
+          <Link className="btn btn-sm" to="/coach"><Compass size={14} />What should I improve?</Link></div>}
       </section>
+      {sel.size > 0 && <div className="bulk-bar"><b>{sel.size} selected</b><span style={{ flex: 1 }} /><button className="btn btn-sm" onClick={() => setSel(new Set())}>Cancel</button><button className="btn btn-sm btn-danger" onClick={() => setAsk({ title: `Delete ${sel.size} selected attempt${sel.size > 1 ? "s" : ""}?`, body: { ids: [...sel] }, label: `Delete ${sel.size}` })}><Trash2 size={14} />Delete selected</button></div>}
     </div>
+    {ask && <div className="modal-bg" onClick={() => !busyDel && setAsk(null)}><div className="card modal stack" style={{ gap: 12 }} onClick={(e) => e.stopPropagation()}>
+      <h3 className="card-title">{ask.title}</h3><p className="sub">This permanently removes the attempt(s), answers, results and their effect on your progress and Smart Coach. It cannot be undone. Tests with an attempt limit keep their official attempts.</p>
+      <div className="row" style={{ justifyContent: "flex-end" }}><button className="btn" disabled={busyDel} onClick={() => setAsk(null)}>Cancel</button><button className="btn btn-danger" disabled={busyDel} onClick={doDelete}><Trash2 size={15} />{busyDel ? "Deleting..." : ask.label}</button></div></div></div>}
   </Shell>;
 }

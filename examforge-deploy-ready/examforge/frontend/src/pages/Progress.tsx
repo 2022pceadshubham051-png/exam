@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { TrendingUp, TrendingDown, Target, ListChecks, Trophy, Zap, Gauge, ThumbsUp, TriangleAlert, Timer, BrainCircuit, Medal } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid, BarChart, Bar } from "recharts";
-import { api, fmt } from "../lib/api";
+import { Link } from "react-router-dom"; import { Compass } from "lucide-react"; import { api, fmt } from "../lib/api";
 import Shell, { Loading } from "../components/Shell";
 
 const periods = [["last5", "Last 5"], ["last10", "Last 10"], ["30d", "30 days"], ["90d", "90 days"], ["all", "All time"]];
@@ -15,8 +15,8 @@ const profileText: Record<string, string> = {
 };
 
 export default function Progress() {
-  const [p, setP] = useState("all"); const [d, setD] = useState<any>(null); const [err, setErr] = useState("");
-  useEffect(() => { setD(null); api(`/progress?period=${p}`).then(setD).catch((e) => setErr(e.message)); }, [p]);
+  const [p, setP] = useState("all"); const [scope, setScope] = useState<"exam" | "practice" | "all">("exam"); const [d, setD] = useState<any>(null); const [err, setErr] = useState("");
+  useEffect(() => { setD(null); setErr(""); api(`/progress?period=${p}&scope=${scope}`).then(setD).catch((e) => setErr(e.message)); }, [p, scope]);
   const sgn = (n: number) => (n >= 0 ? "+" : "") + n;
   const stat = (I: any, l: string, v: string, delta?: number, unit = "") => <div className="stat"><div className="stat-l"><I size={14} />{l}</div><div className="stat-v">{v}</div>
     {delta !== undefined && <div className="stat-d row" style={{ gap: 4, color: delta >= 0 ? "var(--ok)" : "var(--bad)", fontWeight: 700 }}>{delta >= 0 ? <TrendingUp size={13} /> : <TrendingDown size={13} />}{sgn(delta)}{unit} vs previous</div>}</div>;
@@ -26,13 +26,14 @@ export default function Progress() {
 
   return <Shell><div className="stack" style={{ gap: 22 }}>
     <div className="row between"><div><h1 style={{ fontSize: "1.7rem", fontWeight: 800 }}>My progress</h1><p className="sub">See your score trend, weak areas and how efficiently you spend time.</p></div>
+      <div className="row" style={{ gap: 8 }}><div className="seg">{([["exam", "Exams"], ["practice", "Practice"], ["all", "Both"]] as const).map(([k, l]) => <button key={k} onClick={() => setScope(k)} className={scope === k ? "on" : ""}>{l}</button>)}</div><Link className="btn btn-sm btn-primary" to="/coach"><Compass size={14} />Smart Coach</Link></div>
       <div className="seg" style={{ maxWidth: "100%", overflowX: "auto" }}>{periods.map(([k, l]) => <button key={k} onClick={() => setP(k)} className={p === k ? "on" : ""}>{l}</button>)}</div></div>
     {err && <div className="alert alert-bad">{err}</div>}
-    {!d && !err ? <Loading /> : d?.empty ? <div className="card empty"><Gauge size={36} /><p>No completed exam attempts in this period yet.</p></div> : d && <>
+    {!d && !err ? <Loading /> : d?.empty ? <div className="card empty"><Gauge size={36} /><p>No completed attempts in this period yet.</p></div> : d && <>
       <section className="grid-stats">{stat(Target, "Current score", `${d.current.percentage}%`, d.change?.percentage, "%")}{stat(Gauge, "Current accuracy", `${d.current.accuracy}%`, d.change?.accuracy, " pts")}{stat(ListChecks, "Questions solved", String(d.questionsSolved))}{stat(Trophy, "Average score", `${d.avgPercentage}%`)}</section>
       <section className="card card-pad stack" style={{ gap: 8 }}><div className="row"><span className={`pill ${tc}`}>{tl}</span></div><p style={{ margin: 0 }}>{d.comparison.message}</p></section>
 
-      <section className="card card-pad stack"><div className="row between"><div><h2 className="card-title">Performance trend</h2><p className="sub">Official exam attempts only.</p></div><span className="pill pill-brand">{d.attempts} attempts</span></div><div style={{ height: 300 }}><ResponsiveContainer><LineChart data={d.trends.score.map((s: any, i: number) => ({ attempt: s.attempt, Score: s.value, Accuracy: d.trends.accuracy[i].value, "Attempt rate": d.trends.attemptRate[i].value }))}>
+      <section className="card card-pad stack"><div className="row between"><div><h2 className="card-title">Performance trend</h2><p className="sub">{scope === "exam" ? "Official exam attempts only." : scope === "practice" ? "Practice and adaptive sessions only." : "Exam and practice attempts together."}</p></div><span className="pill pill-brand">{d.attempts} attempts</span></div><div style={{ height: 300 }}><ResponsiveContainer><LineChart data={d.trends.score.map((s: any, i: number) => ({ attempt: s.attempt, Score: s.value, Accuracy: d.trends.accuracy[i].value, "Attempt rate": d.trends.attemptRate[i].value }))}>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} /><XAxis dataKey="attempt" tick={{ fill: "var(--muted)", fontSize: 12 }} axisLine={false} tickLine={false} /><YAxis domain={[0, 100]} tick={{ fill: "var(--muted)", fontSize: 12 }} axisLine={false} tickLine={false} />
         <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12 }} /><Legend /><Line dataKey="Score" stroke="#4f46e5" strokeWidth={3} dot={{ r: 4 }} /><Line dataKey="Accuracy" stroke="#16a34a" strokeWidth={3} dot={{ r: 4 }} /><Line dataKey="Attempt rate" stroke="#c026d3" strokeWidth={3} dot={{ r: 4 }} /></LineChart></ResponsiveContainer></div></section>
 

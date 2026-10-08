@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react"; import { Link, NavLink } from "react-router-dom";
-import { Sun, Moon, LogOut, LayoutDashboard, TrendingUp, ShieldCheck, GraduationCap, Trophy } from "lucide-react";
+import { Sun, Moon, LogOut, LayoutDashboard, TrendingUp, ShieldCheck, GraduationCap, Trophy, Compass } from "lucide-react";
 import { getMe, logout, toggleTheme, isDark } from "../lib/auth";
 
 export const Logo = ({ size = 18 }: { size?: number }) => <span className="logo"><GraduationCap size={size} /></span>;
@@ -13,6 +13,7 @@ export default function Shell({ children, narrow }: { children: ReactNode; narro
       <nav className="nav-links">
         <NavLink to="/dashboard" className={cls}><LayoutDashboard size={17} /><span>Tests</span></NavLink>
         <NavLink to="/progress" className={cls}><TrendingUp size={17} /><span>My Progress</span></NavLink>
+        <NavLink to="/coach" className={cls}><Compass size={17} /><span>Smart Coach</span></NavLink>
         <NavLink to="/leaderboard" className={cls}><Trophy size={17} /><span>Leaderboard</span></NavLink>
         {me?.role === "ADMIN" && <NavLink to="/admin" className={cls}><ShieldCheck size={17} /><span>Admin</span></NavLink>}
       </nav>

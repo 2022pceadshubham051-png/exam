@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react"; import { Link } from "react-router-dom";
-import { Plus, Trash2, Copy, Check, CircleCheck, CircleX, TriangleAlert, ArrowLeft, FileText, Layers, Clock, Rocket, Upload, ListChecks, Settings2, Link as LinkIcon, Sparkles, Info, X, Search, BarChart3 } from "lucide-react";
-import { api } from "../lib/api"; import Shell, { Loading } from "../components/Shell";
+import { Plus, Trash2, Copy, Check, CircleCheck, CircleX, TriangleAlert, ArrowLeft, FileText, Layers, Clock, Rocket, Upload, ListChecks, Settings2, Link as LinkIcon, Sparkles, Info, X, Search, BarChart3, Pencil, Wand2, RotateCcw, Save } from "lucide-react";
+import { api, fmt } from "../lib/api"; import Shell, { Loading } from "../components/Shell";
 
 const SAMPLE = `Question 1. Which protocol is secure?
 A) HTTP
@@ -97,6 +97,14 @@ function Toggle({ label, hint, v, set }: { label: string; hint: string; v: boole
 /* ---------------------------------------------------------------- create */
 function CreateTest({ onCreated, onError }: { onCreated: (t: any) => void; onError: (m: string) => void }) {
   const [f, setF] = useState<any>(defaults); const [secs, setSecs] = useState<Sec[]>([{ name: "", minutes: 20 }]); const [busy, setBusy] = useState(false);
+  const [exams, setExams] = useState<any[]>([]); useEffect(() => { api("/coach/exams").then((r) => setExams(r.exams)).catch(() => {}); }, []);
+  const applyTemplate = (id: string) => {
+    const ex = exams.find((e) => e.id === id); if (!ex) return;
+    const perQ = ex.totalMarks / ex.totalQuestions; let mins = ex.subjects.map((s: any) => Math.max(1, Math.round((ex.durationMin * s.questions) / ex.totalQuestions)));
+    let diff = mins.reduce((a: number, b: number) => a + b, 0) - ex.durationMin; for (let i = mins.length - 1; diff > 0 && i >= 0; i--) { const cut = Math.min(diff, mins[i] - 1); mins[i] -= cut; diff -= cut; }
+    setF((o: any) => ({ ...o, examName: ex.name, name: o.name || `${ex.name} ${ex.stage} Mock 1`, minutes: ex.durationMin, positiveMarks: +perQ.toFixed(2), negativeMarks: +(perQ * ex.negativeRatio).toFixed(2), description: o.description || `${ex.subjects.length} subjects · ${ex.totalQuestions} questions · ${ex.stage}` }));
+    setSecs(ex.subjects.map((s: any, i: number) => ({ name: s.name, minutes: mins[i] })));
+  };
   const set = (k: string, v: any) => setF((o: any) => ({ ...o, [k]: v })); const num = (k: string) => (e: any) => set(k, e.target.value === "" ? "" : +e.target.value);
   const sum = secs.reduce((a, s) => a + (+s.minutes || 0), 0); const over = sum > f.minutes;
   const upd = (i: number, p: Partial<Sec>) => setSecs(secs.map((s, j) => (j === i ? { ...s, ...p } : s)));
@@ -116,6 +124,8 @@ function CreateTest({ onCreated, onError }: { onCreated: (t: any) => void; onErr
     } catch (e: any) { onError(e.message); } finally { setBusy(false); }
   };
   return <div className="stack fade-in">
+    {exams.length > 0 && <section className="card card-pad stack"><div><h2 className="card-title row" style={{ gap: 8 }}><Wand2 size={18} />Start from a real exam pattern <small className="muted" style={{ fontWeight: 500 }}>(optional)</small></h2><p className="sub">Fills exam name, time, marking and one section per subject with the right timing. You can still change everything below.</p></div>
+      <select className="input" defaultValue="" onChange={(e) => applyTemplate(e.target.value)}><option value="">Choose SSC / Railway / IMD pattern...</option>{exams.map((e) => <option key={e.id} value={e.id}>{e.name} · {e.stage} ({e.totalQuestions} Q, {e.durationMin} min)</option>)}</select></section>}
     <section className="card card-pad stack"><div><h2 className="card-title">Basic details</h2><p className="sub">What students will see on the test card.</p></div>
       <div className="form-grid"><div><label className="label">Test name</label><input className="input" placeholder="e.g. Reasoning Mock 1" value={f.name} onChange={(e) => set("name", e.target.value)} /></div>
         <div><label className="label">Exam name</label><input className="input" placeholder="e.g. SSC CGL" value={f.examName} onChange={(e) => set("examName", e.target.value)} /><p className="hint">Used to group and filter tests.</p></div></div>
@@ -161,7 +171,7 @@ function CreateTest({ onCreated, onError }: { onCreated: (t: any) => void; onErr
 
 /* ---------------------------------------------------------------- manage */
 function Manage({ test, reload, flash }: { test: any; reload: () => void; flash: (t: "ok" | "bad" | "info", m: string) => void }) {
-  const [step, setStep] = useState<1 | 2>(test.sections.some((s: any) => s._count.questions) ? 2 : 1);
+  const [step, setStep] = useState<1 | 2 | 3>(test.sections.some((s: any) => s._count.questions) ? 2 : 1);
   const total = test.sections.reduce((a: number, s: any) => a + s._count.questions, 0);
   const secMin = Math.round(test.sections.reduce((a: number, s: any) => a + s.durationSec, 0) / 60);
   return <div className="stack fade-in">
@@ -169,10 +179,12 @@ function Manage({ test, reload, flash }: { test: any; reload: () => void; flash:
       <p className="sub">{test.examName}</p></div>
       <div className="meta"><span><Clock size={15} />{Math.round(test.durationSec / 60)} min total</span><span><Layers size={15} />{test.sections.length} sections ({secMin} min)</span><span><FileText size={15} />{total} questions</span></div></div></section>
     <SettingsPanel test={test} reload={reload} flash={flash} />
-    <div className="steps" style={{ gridTemplateColumns: "repeat(2,1fr)" }}>
+    <StructurePanel key={test.sections.map((x: any) => `${x.id}${x.name}${x.durationSec}${x._count.questions}`).join("|") + test.name + test.durationSec} test={test} reload={reload} flash={flash} />
+    <div className="steps" style={{ gridTemplateColumns: "repeat(3,1fr)" }}>
       <button className={`step ${step === 1 ? "on" : ""} ${total ? "done" : ""}`} onClick={() => setStep(1)}><span className="step-n">{total ? <Check size={16} /> : 1}</span><span><b>Add questions</b><small>Paste, preview, approve</small></span></button>
-      <button className={`step ${step === 2 ? "on" : ""} ${test.published ? "done" : ""}`} onClick={() => setStep(2)}><span className="step-n">{test.published ? <Check size={16} /> : 2}</span><span><b>Verify and publish</b><small>Make it live for students</small></span></button></div>
-    {step === 1 ? <AddQuestions test={test} reload={reload} flash={flash} goPublish={() => setStep(2)} /> : <Publish test={test} reload={reload} flash={flash} />}
+      <button className={`step ${step === 2 ? "on" : ""} ${test.published ? "done" : ""}`} onClick={() => setStep(2)}><span className="step-n">{test.published ? <Check size={16} /> : 2}</span><span><b>Verify and publish</b><small>Make it live for students</small></span></button>
+      <button className={`step ${step === 3 ? "on" : ""}`} onClick={() => setStep(3)}><span className="step-n"><Pencil size={15} /></span><span><b>Manage questions</b><small>Edit, delete, auto-tag</small></span></button></div>
+    {step === 1 ? <AddQuestions test={test} reload={reload} flash={flash} goPublish={() => setStep(2)} /> : step === 2 ? <Publish test={test} reload={reload} flash={flash} /> : <QuestionManager test={test} reload={reload} flash={flash} />}
   </div>;
 }
 
@@ -254,6 +266,7 @@ function AddQuestions({ test, reload, flash, goPublish }: { test: any; reload: (
           <div className="seg">{([["all", "All"], ["ok", "Ready"], ["bad", "Need fixing"]] as const).map(([k, l]) => <button key={k} className={filter === k ? "on" : ""} onClick={() => setFilter(k)}>{l}</button>)}</div></div>
         <div className="stack" style={{ gap: 10 }}>{shown.map(({ q, i }) => <div key={i} className="qcard" style={{ borderColor: ok(q) ? "color-mix(in srgb,#16a34a 50%,var(--border))" : "color-mix(in srgb,#dc2626 55%,var(--border))" }}>
           <div className="row between" style={{ alignItems: "flex-start", flexWrap: "nowrap" }}><div style={{ fontWeight: 700 }}>Q{q.index}. {q.text}</div>{ok(q) ? <span className="pill pill-ok">Ready</span> : <span className="pill pill-bad">Fix</span>}</div>
+          {q.detected && <div className="row" style={{ gap: 6, marginTop: 6 }}><span className="tag-chip"><Wand2 size={11} />{q.detected.subjectName}</span><span className="pill">{q.detected.topic}</span><span className="sub">{Math.round(q.detected.confidence * 100)}% sure (auto-detected)</span></div>}
           <div style={{ display: "grid", gap: 5, marginTop: 8 }}>{q.options.map((o: any) => <div key={o.key} className="row" style={{ flexWrap: "nowrap", color: q.correctKey === o.key ? "var(--ok)" : undefined, fontWeight: q.correctKey === o.key ? 700 : 500, fontSize: ".9rem" }}>
             <span style={{ width: 22 }}>{o.key}.</span><span>{o.text}</span>{q.correctKey === o.key && <Check size={15} />}</div>)}</div>
           {q.errors.map((e: string) => <div key={e} className="alert alert-bad" style={{ marginTop: 8, padding: "8px 11px" }}><TriangleAlert size={15} />{e}</div>)}
@@ -287,5 +300,74 @@ function Publish({ test, reload, flash }: { test: any; reload: () => void; flash
     {test.published && <section className="card card-pad stack"><div><h2 className="card-title">Share with students</h2><p className="sub">Students who open this link log in and land directly on this test.</p></div>
       <div className="row" style={{ flexWrap: "nowrap" }}><input className="input mono" readOnly value={link} onFocus={(e) => e.target.select()} /><button className="btn" onClick={() => copy("l", link)}>{copied === "l" ? <Check size={16} /> : <LinkIcon size={16} />}{copied === "l" ? "Copied" : "Copy"}</button></div>
       <Link className="btn btn-sm" style={{ width: "fit-content" }} to={`/exam/${test.id}`}>Try the test yourself</Link></section>}
+  </div>;
+}
+
+
+/* ---------------------------------------------------------------- structure: name/time/sections/reset */
+function StructurePanel({ test, reload, flash }: { test: any; reload: () => void; flash: (t: "ok" | "bad" | "info", m: string) => void }) {
+  const [f, setF] = useState({ name: test.name, examName: test.examName, description: test.description ?? "", minutes: Math.round(test.durationSec / 60), difficulty: test.difficulty });
+  const [secs, setSecs] = useState<any[]>(test.sections.map((s: any) => ({ id: s.id, name: s.name, minutes: Math.round(s.durationSec / 60), n: s._count.questions })));
+  const [stats, setStats] = useState<any>(null); const [busy, setBusy] = useState(false); const [askReset, setAskReset] = useState(false);
+  useEffect(() => { api(`/tests/${test.id}/analytics`).then(setStats).catch(() => {}); }, [test.id]);
+  const run = async (fn: () => Promise<any>, ok: string) => { setBusy(true); try { await fn(); flash("ok", ok); reload(); } catch (e: any) { flash("bad", e.message); } finally { setBusy(false); } };
+  const saveBasics = () => run(() => api(`/tests/${test.id}`, "PUT", { name: f.name.trim(), examName: f.examName.trim(), description: f.description.trim() || undefined, durationSec: Math.round(+f.minutes * 60), difficulty: f.difficulty }), "Test details saved.");
+  const saveSec = (s: any) => run(() => api(`/tests/${test.id}/sections/${s.id}`, "PUT", { name: s.name.trim(), durationSec: Math.round(+s.minutes * 60) }), `Section "${s.name}" saved.`);
+  const delSec = (s: any) => run(() => api(`/tests/${test.id}/sections/${s.id}`, "DELETE"), `Section "${s.name}" removed.`);
+  const addSec = () => run(() => api(`/tests/${test.id}/sections`, "POST", { name: `Section ${secs.length + 1}`, durationSec: 15 * 60 }), "Section added.");
+  const reset = () => run(async () => { const r = await api(`/tests/${test.id}/reset-attempts`, "POST"); setAskReset(false); flash("ok", `Deleted ${r.deleted} student attempts.`); }, "Attempts reset.");
+  return <details className="card card-pad"><summary className="settings-summary"><span><b>Name, timing and sections</b><small>Rename the test, change section times, add or remove sections, reset student attempts</small></span><Settings2 size={18} /></summary>
+    <div className="stack" style={{ marginTop: 18 }}>
+      {stats && stats.attempts > 0 && <div className="grid-stats"><div className="stat"><div className="stat-l">Official attempts</div><div className="stat-v">{stats.attempts}</div></div><div className="stat"><div className="stat-l">Avg score</div><div className="stat-v">{stats.avgPercentage}%</div></div><div className="stat"><div className="stat-l">Pass rate</div><div className="stat-v">{stats.passRate}%</div></div><div className="stat"><div className="stat-l">Avg time</div><div className="stat-v">{fmt(stats.avgTimeSec)}</div></div></div>}
+      <div className="form-grid"><div><label className="label">Test name</label><input className="input" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></div><div><label className="label">Exam name</label><input className="input" value={f.examName} onChange={(e) => setF({ ...f, examName: e.target.value })} /></div>
+        <div><label className="label">Total time (min)</label><input className="input" type="number" min={1} value={f.minutes} onChange={(e) => setF({ ...f, minutes: +e.target.value })} /></div>
+        <div><label className="label">Difficulty</label><select className="input" value={f.difficulty} onChange={(e) => setF({ ...f, difficulty: e.target.value })}><option>EASY</option><option>MEDIUM</option><option>HARD</option></select></div></div>
+      <div><label className="label">Description</label><input className="input" value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} /></div>
+      <div><button className="btn btn-primary btn-sm" disabled={busy} onClick={saveBasics}><Save size={14} />Save details</button></div>
+      <div className="stack" style={{ gap: 8 }}><b>Sections</b>{secs.map((s, i) => <div key={s.id} className="row" style={{ flexWrap: "nowrap" }}><input className="input" value={s.name} onChange={(e) => setSecs(secs.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} /><input className="input" type="number" min={1} style={{ width: 100 }} value={s.minutes} onChange={(e) => setSecs(secs.map((x, j) => j === i ? { ...x, minutes: +e.target.value } : x))} /><span className="sub" style={{ whiteSpace: "nowrap" }}>min · {s.n} Q</span>
+        <button className="btn btn-sm" disabled={busy} onClick={() => saveSec(s)}><Save size={14} /></button><button className="btn btn-sm btn-danger" disabled={busy || secs.length < 2} title="Remove (must be empty)" onClick={() => delSec(s)}><Trash2 size={14} /></button></div>)}
+        <div><button className="btn btn-sm" disabled={busy} onClick={addSec}><Plus size={14} />Add section</button></div></div>
+      <div className="alert alert-warn" style={{ alignItems: "center" }}><TriangleAlert size={16} /><span style={{ flex: 1 }}>Reset removes every student's attempts, results and leaderboard entries for this test, but keeps the test and its questions.</span><button className="btn btn-sm btn-danger" onClick={() => setAskReset(true)}><RotateCcw size={14} />Reset attempts</button></div>
+    </div>
+    {askReset && <div className="modal-bg" onClick={() => setAskReset(false)}><div className="card modal stack" style={{ gap: 12 }} onClick={(e) => e.stopPropagation()}><h3 className="card-title">Reset all attempts of "{test.name}"?</h3><p className="sub">This cannot be undone.</p><div className="row" style={{ justifyContent: "flex-end" }}><button className="btn" onClick={() => setAskReset(false)}>Cancel</button><button className="btn btn-danger" onClick={reset}>Reset</button></div></div></div>}
+  </details>;
+}
+
+/* ---------------------------------------------------------------- question manager */
+function QuestionManager({ test, reload, flash }: { test: any; reload: () => void; flash: (t: "ok" | "bad" | "info", m: string) => void }) {
+  const [data, setData] = useState<any[] | null>(null); const [subjects, setSubjects] = useState<any[]>([]); const [sec, setSec] = useState("ALL"); const [q, setQ] = useState(""); const [edit, setEdit] = useState<any>(null); const [del, setDel] = useState<any>(null); const [busy, setBusy] = useState(false);
+  const load = useCallback(() => api(`/tests/${test.id}/questions`).then(setData).catch((e) => flash("bad", e.message)), [test.id]); // eslint-disable-line
+  useEffect(() => { load(); api("/coach/exams").then((r) => setSubjects(r.subjects)).catch(() => {}); }, [load]);
+  const autotag = async (force: boolean) => { setBusy(true); try { const r = await api("/questions/autotag", "POST", { testId: test.id, force }); flash("ok", `Auto-detected tags for ${r.total} questions (${r.changed} updated). ${Object.entries(r.summary).map(([k, v]) => `${k}: ${v}`).join(" · ")}`); load(); } catch (e: any) { flash("bad", e.message); } finally { setBusy(false); } };
+  const save = async () => {
+    setBusy(true);
+    try { await api(`/questions/${edit.id}`, "PUT", { text: edit.text, explanation: edit.explanation || null, subject: edit.subject || null, topic: edit.topic || null, difficulty: edit.difficulty, correctKey: edit.correctKey, options: edit.options.map((o: any) => ({ key: o.key, text: o.text })) }); flash("ok", "Question updated."); setEdit(null); load(); }
+    catch (e: any) { flash("bad", e.message); } finally { setBusy(false); }
+  };
+  const remove = async () => { setBusy(true); try { const r = await api(`/questions/${del.id}`, "DELETE"); flash("ok", r.detached ? "Question removed from the test (students' history is preserved)." : "Question deleted."); setDel(null); load(); reload(); } catch (e: any) { flash("bad", e.message); } finally { setBusy(false); } };
+  if (!data) return <Loading />;
+  const needle = q.trim().toLowerCase();
+  return <div className="stack">
+    <section className="card card-pad stack"><div className="row between"><div><h2 className="card-title">Manage questions</h2><p className="sub">Fix wrong answers, change topics, delete bad questions. Auto-tag detects subject and topic for every question so Smart Coach can rate students out of 100.</p></div>
+      <div className="row"><button className="btn btn-sm" disabled={busy} onClick={() => autotag(false)}><Wand2 size={14} />Auto-tag missing</button><button className="btn btn-sm" disabled={busy} onClick={() => { if (window.confirm("Re-detect subject and topic for ALL questions, replacing existing tags?")) autotag(true); }}>Re-tag all</button></div></div>
+      <div className="row"><div className="seg" style={{ maxWidth: "100%", overflowX: "auto" }}><button className={sec === "ALL" ? "on" : ""} onClick={() => setSec("ALL")}>All</button>{data.map((s) => <button key={s.id} className={sec === s.id ? "on" : ""} onClick={() => setSec(s.id)}>{s.name} ({s.questions.length})</button>)}</div>
+        <div style={{ position: "relative", minWidth: 220, flex: 1 }}><Search size={15} style={{ position: "absolute", left: 12, top: 12, color: "var(--muted)" }} /><input className="input" style={{ paddingLeft: 36 }} placeholder="Search question text or topic" value={q} onChange={(e) => setQ(e.target.value)} /></div></div></section>
+    {data.filter((s) => sec === "ALL" || s.id === sec).map((s) => <section key={s.id} className="stack" style={{ gap: 10 }}><h3 className="card-title">{s.name} <span className="pill">{s.questions.length}</span></h3>
+      {s.questions.filter((x: any) => !needle || `${x.text} ${x.topic ?? ""}`.toLowerCase().includes(needle)).map((x: any, i: number) => <div key={x.id} className="qcard">
+        <div className="row between" style={{ alignItems: "flex-start", flexWrap: "nowrap" }}><div style={{ fontWeight: 700 }}>{i + 1}. {x.text}</div><div className="row" style={{ flexWrap: "nowrap", gap: 6 }}><button className="btn btn-sm" onClick={() => setEdit({ ...x, options: [...x.options].sort((a: any, b: any) => a.key.localeCompare(b.key)) })}><Pencil size={14} />Edit</button><button className="btn btn-sm btn-danger" onClick={() => setDel(x)}><Trash2 size={14} /></button></div></div>
+        <div style={{ display: "grid", gap: 3, marginTop: 6, fontSize: ".88rem" }}>{x.options.map((o: any) => <div key={o.key} style={{ color: o.key === x.correctKey ? "var(--ok)" : undefined, fontWeight: o.key === x.correctKey ? 700 : 500 }}>{o.key}. {o.text}{o.key === x.correctKey && " ✓"}</div>)}</div>
+        <div className="row" style={{ gap: 6, marginTop: 8 }}>{x.subject ? <span className="tag-chip">{subjects.find((z) => z.key === x.subject)?.name ?? x.subject}</span> : <span className="pill pill-warn">no subject</span>}{x.topic ? <span className="pill">{x.topic}</span> : <span className="pill pill-warn">no topic</span>}<span className="pill">{x.difficulty.toLowerCase()}</span>
+          {x.analytics && <span className={`pill ${x.analytics.attempts >= 5 && x.analytics.correctPct < 20 ? "pill-bad" : ""}`}>{x.analytics.correctPct}% correct · {x.analytics.attempts} attempts · {x.analytics.avgSec}s{x.analytics.attempts >= 5 && x.analytics.correctPct < 20 ? " · check the answer key!" : ""}</span>}</div></div>)}</section>)}
+    {edit && <div className="modal-bg" onClick={() => !busy && setEdit(null)}><div className="card modal stack" style={{ gap: 10, maxWidth: 640, maxHeight: "90vh", overflow: "auto" }} onClick={(e) => e.stopPropagation()}>
+      <h3 className="card-title">Edit question</h3>
+      <textarea className="textarea" rows={3} value={edit.text} onChange={(e) => setEdit({ ...edit, text: e.target.value })} />
+      {edit.options.map((o: any, i: number) => <div key={o.key} className="row" style={{ flexWrap: "nowrap" }}><label className="row" style={{ gap: 6, flexWrap: "nowrap", width: 70 }}><input type="radio" name="ck" checked={edit.correctKey === o.key} onChange={() => setEdit({ ...edit, correctKey: o.key })} /><b>{o.key}</b></label><input className="input" value={o.text} onChange={(e) => setEdit({ ...edit, options: edit.options.map((z: any, j: number) => j === i ? { ...z, text: e.target.value } : z) })} /></div>)}
+      <p className="hint">Select the radio next to the correct option.</p>
+      <div className="form-grid"><div><label className="label">Subject</label><select className="input" value={edit.subject ?? ""} onChange={(e) => setEdit({ ...edit, subject: e.target.value })}><option value="">(auto)</option>{subjects.map((z) => <option key={z.key} value={z.key}>{z.name}</option>)}</select></div>
+        <div><label className="label">Topic</label><input className="input" value={edit.topic ?? ""} onChange={(e) => setEdit({ ...edit, topic: e.target.value })} /></div>
+        <div><label className="label">Difficulty</label><select className="input" value={edit.difficulty} onChange={(e) => setEdit({ ...edit, difficulty: e.target.value })}><option>EASY</option><option>MEDIUM</option><option>HARD</option></select></div></div>
+      <div><label className="label">Explanation</label><textarea className="textarea" rows={2} value={edit.explanation ?? ""} onChange={(e) => setEdit({ ...edit, explanation: e.target.value })} /></div>
+      <div className="row" style={{ justifyContent: "flex-end" }}><button className="btn" disabled={busy} onClick={() => setEdit(null)}>Cancel</button><button className="btn btn-primary" disabled={busy} onClick={save}><Save size={15} />Save</button></div></div></div>}
+    {del && <div className="modal-bg" onClick={() => setDel(null)}><div className="card modal stack" style={{ gap: 12 }} onClick={(e) => e.stopPropagation()}><h3 className="card-title">Delete this question?</h3><p className="sub">{del.text.slice(0, 140)}</p><p className="sub">If students already answered it, it is removed from the test but their history stays intact.</p><div className="row" style={{ justifyContent: "flex-end" }}><button className="btn" onClick={() => setDel(null)}>Cancel</button><button className="btn btn-danger" disabled={busy} onClick={remove}><Trash2 size={15} />Delete</button></div></div></div>}
   </div>;
 }

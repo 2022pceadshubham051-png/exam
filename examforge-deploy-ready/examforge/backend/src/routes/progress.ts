@@ -15,8 +15,9 @@ function median(xs: number[]) {
 
 progress.get("/progress", async (req: AuthedReq, res) => {
   const period = (["last5", "last10", "30d", "90d", "all"].includes(String(req.query.period)) ? req.query.period : "all") as any;
+  const scope = ["exam", "practice", "all"].includes(String(req.query.scope)) ? String(req.query.scope) : "exam";
   const all = await prisma.testAttempt.findMany({
-    where: { userId: req.user!.id, mode: "EXAM", result: { isNot: null } },
+    where: { userId: req.user!.id, ...(scope === "all" ? {} : { mode: scope === "practice" ? "PRACTICE" : "EXAM" }), result: { isNot: null } },
     orderBy: { startedAt: "asc" },
     include: { result: true, test: { select: { name: true } } },
   });
@@ -60,6 +61,7 @@ progress.get("/progress", async (req: AuthedReq, res) => {
   const fastest = sums.filter((s) => s.unanswered === 0).sort((a, b) => a.timeTakenSec - b.timeTakenSec)[0];
   res.json({
     empty: false,
+    scope,
     attempts: sums.length,
     questionsSolved: resp.length,
     comparison: compareAttempts(last, prev),

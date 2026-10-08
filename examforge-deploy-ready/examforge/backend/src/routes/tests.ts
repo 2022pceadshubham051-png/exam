@@ -44,7 +44,7 @@ const fail = (res: any, e: any) =>
 async function adaptiveRecommendation(userId: string, testId: string, desired = 20) {
   const test = await prisma.test.findUnique({
     where: { id: testId },
-    include: { sections: { orderBy: { order: "asc" }, include: { questions: { select: { id: true, topic: true, difficulty: true } } } } } },
+    include: { sections: { orderBy: { order: "asc" }, include: { questions: { select: { id: true, topic: true, difficulty: true } } } } },
   });
   if (!test) return null;
   // Use the parent section id as the authoritative section id. Prisma's Question.sectionId
@@ -155,7 +155,7 @@ tests.get("/:id", async (req: AuthedReq, res) => {
       },
     },
   });
-  if (!t) return res.sendStatus(404);
+  if (!t || (!t.published && req.user!.role !== "ADMIN")) return res.sendStatus(404);
   const { attempts, ...safe } = t;
   const activeExamAttempt = attempts.find((a) => a.mode === "EXAM") ?? null;
   const activePracticeAttempt = attempts.find((a) => a.mode === "PRACTICE" && !a.adaptiveQuestionIds) ?? null;
@@ -209,7 +209,7 @@ tests.delete("/:id", requireAdmin, async (req, res) => {
         await tx.question.deleteMany({ where: { id: { in: questionIds } } });
       }
       await tx.test.delete({ where: { id: t.id } });
-    });
+    }, { timeout: 60_000, maxWait: 15_000 });
     res.json({ ok: true, permanentlyDeleted: true });
   } catch (e: any) {
     fail(res, e);
@@ -273,4 +273,57 @@ tests.post("/:id/unpublish", requireAdmin, async (req, res) => {
   const t = await prisma.test.findUnique({ where: { id: req.params.id } });
   if (!t) return res.sendStatus(404);
   res.json(await prisma.test.update({ where: { id: t.id }, data: { published: false } }));
+});
+
+// ---------------------------------------------------------------- admin: question manager, sections, analytics, reset
+tests.get("/:id/questions", requireAdmin, async (req, res) => {
+  const t = await prisma.test.findUnique({ where: { id: req.params.id }, include: { sections: { orderBy: { order: "asc" }, include: { questions: { orderBy: { createdAt: "asc" }, include: { options: { orderBy: { key: "asc" } } } } } } } });
+  if (!t) return res.sendStatus(404);
+  const ids = t.sections.flatMap((s) => s.questions.map((q) => q.id));
+  const g = ids.length ? await prisma.questionResponse.groupBy({ by: ["questionId", "isCorrect"], where: { questionId: { in: ids }, isCorrect: { not: null }, attempt: { mode: "EXAM" } }, _count: { _all: true }, _avg: { timeSpentMs: true } }) : [];
+  const stat = new Map<string, { attempts: number; correct: number; ms: number }>();
+  for (const r of g) { const e = stat.get(r.questionId) ?? { attempts: 0, correct: 0, ms: 0 }; const n = r._count._all; e.attempts += n; if (r.isCorrect) e.correct += n; e.ms += (r._avg.timeSpentMs ?? 0) * n; stat.set(r.questionId, e); }
+  res.json(t.sections.map((s) => ({ id: s.id, name: s.name, questions: s.questions.map((q) => { const e = stat.get(q.id); return { ...q, analytics: e ? { attempts: e.attempts, correctPct: +((e.correct / e.attempts) * 100).toFixed(0), avgSec: Math.round(e.ms / e.attempts / 1000) } : null }; }) })));
+});
+
+const secBody = z.object({ name: z.string().min(1).optional(), durationSec: z.number().int().positive().optional(), questionSec: z.number().int().positive().nullish() });
+tests.put("/:id/sections/:sid", requireAdmin, async (req, res) => {
+  try { res.json(await prisma.section.update({ where: { id: req.params.sid }, data: secBody.parse(req.body) })); } catch (e) { fail(res, e); }
+});
+tests.post("/:id/sections", requireAdmin, async (req, res) => {
+  try {
+    const b = secBody.required({ name: true, durationSec: true }).parse(req.body);
+    const last = await prisma.section.aggregate({ where: { testId: req.params.id }, _max: { order: true } });
+    res.json(await prisma.section.create({ data: { testId: req.params.id, name: b.name, durationSec: b.durationSec, questionSec: b.questionSec ?? null, order: (last._max.order ?? -1) + 1 } }));
+  } catch (e) { fail(res, e); }
+});
+tests.delete("/:id/sections/:sid", requireAdmin, async (req, res) => {
+  try {
+    const n = await prisma.question.count({ where: { sectionId: req.params.sid } });
+    if (n) throw new Error(`Section still has ${n} questions. Delete or move them first.`);
+    const used = await prisma.sectionAttempt.count({ where: { sectionId: req.params.sid } });
+    if (used) throw new Error("Students already attempted this section, so it cannot be removed.");
+    const count = await prisma.section.count({ where: { testId: req.params.id } });
+    if (count <= 1) throw new Error("A test needs at least one section.");
+    await prisma.section.delete({ where: { id: req.params.sid } });
+    res.json({ ok: true });
+  } catch (e) { fail(res, e); }
+});
+
+// Wipe every student attempt of one test (keeps the test + questions). Useful for re-launching a test.
+tests.post("/:id/reset-attempts", requireAdmin, async (req, res) => {
+  try {
+    const n = await prisma.$transaction(async (tx) => {
+      await tx.testResult.deleteMany({ where: { attempt: { testId: req.params.id } } });
+      return tx.testAttempt.deleteMany({ where: { testId: req.params.id } });
+    }, { timeout: 60_000, maxWait: 15_000 });
+    res.json({ deleted: n.count });
+  } catch (e) { fail(res, e); }
+});
+
+tests.get("/:id/analytics", requireAdmin, async (req, res) => {
+  const results = await prisma.testResult.findMany({ where: { attempt: { testId: req.params.id, mode: "EXAM" } }, select: { percentage: true, accuracy: true, timeTakenSec: true } });
+  const t = await prisma.test.findUnique({ where: { id: req.params.id }, select: { passingPercent: true } });
+  const n = results.length; const avg = (f: (r: any) => number) => (n ? +(results.reduce((a, r) => a + f(r), 0) / n).toFixed(1) : 0);
+  res.json({ attempts: n, avgPercentage: avg((r) => r.percentage), avgAccuracy: avg((r) => r.accuracy), avgTimeSec: Math.round(avg((r) => r.timeTakenSec)), passRate: n ? +((results.filter((r) => r.percentage >= (t?.passingPercent ?? 40)).length / n) * 100).toFixed(1) : 0 });
 });
