@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { confetti, floatText } from "../components/Confetti"; import { sfx, addBonusXp } from "../lib/game";
+import LogoMark from "../components/LogoMark"; import { confetti, floatText, comicBurst } from "../components/Confetti"; import ExamBuddy, { buddySay } from "../components/Buddy"; import { sfx, addBonusXp } from "../lib/game";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   Cloud, CloudOff, TriangleAlert, Flag, Eraser, ChevronLeft, ChevronRight, Send,
-  LayoutGrid, X, GraduationCap, Clock3, Sparkles, Play, BrainCircuit, Zap, Trophy, Trash2, CircleCheck, CircleX, Lightbulb, SkipForward, Eye,
+  LayoutGrid, X, Clock3, Sparkles, Play, BrainCircuit, Zap, Trophy, Trash2, CircleCheck, CircleX, Lightbulb, SkipForward, Eye,
 } from "lucide-react";
 import { api, fmt, type View, type Q } from "../lib/api";
 
@@ -60,13 +60,29 @@ export default function Exam() {
     } catch (e: any) { setErr(e.message); } finally { setStarting(false); }
   };
 
-  const flush = useCallback(async () => {
-    if (!v) return; const queue: Pending[] = JSON.parse(localStorage.getItem(qKey) ?? "[]");
-    while (queue.length) {
-      try { await api(`/attempts/${v.id}/answer`, "POST", queue[0]); queue.shift(); localStorage.setItem(qKey, JSON.stringify(queue)); }
-      catch (e: any) { if (e.status) { queue.shift(); localStorage.setItem(qKey, JSON.stringify(queue)); } else { setSync("offline"); return; } }
-    }
-    setSync("saved");
+  // Single-flight autosave queue. Several flushes running at once used to re-send stale answers after newer ones
+  // (changing A -> B quickly could end up saved as A) and could drop queued items. Now exactly one loop drains the
+  // queue, always re-reading it from storage, and callers (like Submit) can await it.
+  const inflight = useRef<Promise<void> | null>(null); const again = useRef(false);
+  const flush = useCallback((): Promise<void> => {
+    if (!v) return Promise.resolve();
+    if (inflight.current) { again.current = true; return inflight.current; }
+    const read = (): Pending[] => { try { const q = JSON.parse(localStorage.getItem(qKey) ?? "[]"); return Array.isArray(q) ? q : []; } catch { return []; } };
+    const drop = () => { const q = read(); q.shift(); localStorage.setItem(qKey, JSON.stringify(q)); };
+    const run = async () => {
+      do {
+        again.current = false;
+        for (;;) {
+          const head = read()[0]; if (!head) break;
+          try { await api(`/attempts/${v.id}/answer`, "POST", head); drop(); }
+          catch (e: any) { if (e.status) drop(); else { setSync("offline"); return; } }
+        }
+      } while (again.current);
+      setSync("saved");
+    };
+    const p = run().finally(() => { inflight.current = null; });
+    inflight.current = p;
+    return p;
   }, [v, qKey]);
 
   useEffect(() => { addEventListener("online", flush); return () => removeEventListener("online", flush); }, [flush]);
@@ -93,7 +109,7 @@ export default function Exam() {
     if (!window.confirm("Discard this unfinished attempt? Its answers will be deleted.")) return;
     try { await api(`/attempts/${id}`, "DELETE"); localStorage.removeItem(qKey); await fetchMeta(); } catch (e: any) { setErr(e.message); }
   };
-  const check = async (qid: string) => { if (!v) return; try { const r = await api(`/attempts/${v.id}/check`, "POST", { questionId: qid }); setReveal((m) => ({ ...m, [qid]: r })); const mine = (local.current[qid] ?? v.questions.find((x) => x.id === qid))?.selectedKey; if (mine === r.correctKey) { sfx("right"); const c = combo + 1; setCombo(c); floatText(c >= 2 ? `🔥 ${c} combo! +10 XP` : "+10 XP", "good"); addBonusXp(10); confetti(c >= 3 ? 60 : 26, { x: 0.5, y: 0.45 }); } else { sfx("wrong"); setCombo(0); floatText("Oops! Learn from it", "bad"); } } catch (e: any) { setErr(e.message); } };
+  const check = async (qid: string) => { if (!v) return; try { const r = await api(`/attempts/${v.id}/check`, "POST", { questionId: qid }); setReveal((m) => ({ ...m, [qid]: r })); const mine = (local.current[qid] ?? v.questions.find((x) => x.id === qid))?.selectedKey; if (mine === r.correctKey) { sfx("right"); comicBurst("good"); const c = combo + 1; buddySay(c >= 3 ? `${c} in a row! You are on fire!` : ["Nailed it!", "Yes! Correct!", "Great job!"][c % 3], "cheer"); setCombo(c); floatText(c >= 2 ? `🔥 ${c} combo! +10 XP` : "+10 XP", "good"); addBonusXp(10); confetti(c >= 3 ? 60 : 26, { x: 0.5, y: 0.45 }); } else { sfx("wrong"); comicBurst("bad"); buddySay("It's okay! Read the explanation and learn.", "sad", 3200); setCombo(0); floatText("Oops! Learn from it", "bad"); } } catch (e: any) { setErr(e.message); } };
 
   const timed = v?.mode === "EXAM";
   const qLimit = timed ? q?.timeLimitSec ?? null : null;
@@ -102,6 +118,7 @@ export default function Exam() {
   const testSec = timed && ends.current.test ? Math.max(0, Math.round((ends.current.test - Date.now()) / 1000)) : -1;
   useEffect(() => { const i = setInterval(() => tick((n) => n + 1), 250); return () => clearInterval(i); }, []);
   useEffect(() => { if (timed && v && secSec === 0) flush().then(() => load(v.id)); }, [timed, secSec === 0]); // eslint-disable-line
+  useEffect(() => { if (timed && testSec === 60) { buddySay("Only 1 minute left! Hurry up!", "think", 4000); sfx("wrong"); } if (timed && testSec === 300) buddySay("5 minutes left. Stay focused!", "think", 3000); }, [testSec]); // eslint-disable-line
   useEffect(() => { if (timed && v && qSec === 0) { save({}); if (idx < v.questions.length - 1) setIdx(idx + 1); } }, [timed, qSec === 0, idx]); // eslint-disable-line
   useEffect(() => {
     if (!v || !timed) return;
@@ -110,7 +127,7 @@ export default function Exam() {
     const evs = ["copy", "paste", "cut", "contextmenu"];
     document.addEventListener("visibilitychange", bump); addEventListener("blur", bump); addEventListener("beforeunload", warn); evs.forEach((e) => document.addEventListener(e, block));
     if (v.rules.fullscreen) document.documentElement.requestFullscreen?.().catch(() => {});
-    return () => { document.removeEventListener("visibilitychange", bump); removeEventListener("blur", bump); removeEventListener("beforeunload", warn); evs.forEach((e) => document.removeEventListener(e, block)); };
+    return () => { document.removeEventListener("visibilitychange", bump); removeEventListener("blur", bump); removeEventListener("beforeunload", warn); evs.forEach((e) => document.removeEventListener(e, block)); if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {}); };
   }, [v?.id, timed]); // eslint-disable-line
 
   useEffect(() => {
@@ -134,7 +151,7 @@ export default function Exam() {
     const modeDescription = modeChoice === "EXAM" ? "Full exam conditions with the configured timer and rules." : modeChoice === "PRACTICE" ? "Untimed solving with no countdown. Learn at your own pace." : "Adaptive practice automatically prioritises weaker topics and slower areas from your previous exam attempts.";
     return <div className="exam-landing">
       <div className="exam-landing-inner">
-        <Link to="/dashboard" className="brand"><span className="logo"><GraduationCap size={18} /></span>ExamForge</Link>
+        <Link to="/dashboard" className="brand"><LogoMark size={34} />ExamForge</Link>
         <section className="landing-hero card">
           <div className="landing-main">
             <span className="pill pill-brand">{meta.examName}</span><h1>{meta.name}</h1>
@@ -172,9 +189,9 @@ export default function Exam() {
   const pct = Math.round(((idx + 1) / all.length) * 100);
   const sessionLabel = v.adaptive ? "Adaptive practice" : v.mode === "PRACTICE" ? "Practice" : "Exam";
 
-  return <div className="flex min-h-screen flex-col select-none">
+  return <div className="flex min-h-screen flex-col select-none"><ExamBuddy />
     <header className="exam-top"><div className="row between exam-top-inner">
-      <div className="row" style={{ gap: 12 }}><span className="logo" style={{ width: 32, height: 32 }}><GraduationCap size={17} /></span><div><b style={{ display: "block", lineHeight: 1.1 }}>{v.sectionName}</b><span className="sub">{v.test.examName}{v.mode === "EXAM" ? ` · Section ${v.sectionIdx + 1} of ${v.sectionCount}` : ` · ${v.sectionCount} section${v.sectionCount > 1 ? "s" : ""} together`}</span></div></div>
+      <div className="row" style={{ gap: 12 }}><LogoMark size={34} /><div><b style={{ display: "block", lineHeight: 1.1 }}>{v.sectionName}</b><span className="sub">{v.test.examName}{v.mode === "EXAM" ? ` · Section ${v.sectionIdx + 1} of ${v.sectionCount}` : ` · ${v.sectionCount} section${v.sectionCount > 1 ? "s" : ""} together`}</span></div></div>
       <div className="row" style={{ gap: 8 }}>{timed ? <><div className={`timer ${tCls(testSec)}`}><small>Test</small><b>{fmt(testSec)}</b></div><div className={`timer ${tCls(secSec)}`}><small>Section</small><b>{fmt(secSec)}</b></div>{qSec !== null && <div className={`timer ${tCls(qSec)}`}><small>Question</small><b>{fmt(qSec)}</b></div>}</> : <span className={`pill ${v.adaptive ? "pill-ok" : "pill-brand"}`}><Sparkles size={13} />{sessionLabel} · no timer</span>}</div>
       <div className="row" style={{ gap: 8 }}><span className={`pill ${sync === "saved" ? "pill-ok" : "pill-warn"}`}>{sync === "saved" ? <><Cloud size={13} />Saved</> : <><CloudOff size={13} />Offline saved</>}</span>{timed && v.isLastSection === false && <button className="btn btn-sm" onClick={nextSection}><SkipForward size={14} />Next section</button>}<button className="btn btn-ok btn-sm" onClick={() => setConfirm(true)}><Send size={14} />Submit</button></div>
     </div></header>

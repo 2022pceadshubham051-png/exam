@@ -33,7 +33,8 @@ questions.get("/", async (req, res) => {
   const { subject, topic, status, q, page = "1", sectionId } = req.query as Record<string, string>;
   res.json(await prisma.question.findMany({ where: { subject, topic, sectionId, status: status as any, text: q ? { contains: q, mode: "insensitive" } : undefined }, include: { options: true }, skip: (+page - 1) * 25, take: 25, orderBy: { createdAt: "desc" } }));
 });
-questions.patch("/:id/status", async (req, res) => res.json(await prisma.question.update({ where: { id: req.params.id }, data: { status: req.body.status } })));
+const statusBody = z.object({ status: z.enum(["AI_GENERATED", "PENDING_REVIEW", "VERIFIED", "PUBLISHED"]) });
+questions.patch("/:id/status", async (req, res) => res.json(await prisma.question.update({ where: { id: req.params.id }, data: statusBody.parse(req.body) })));
 
 // Edit a question (text, options, answer, topic, difficulty, explanation)
 const edit = z.object({
@@ -63,7 +64,7 @@ questions.delete("/:id", async (req, res) => {
 });
 
 // Bulk verification step of AI Generated -> Pending Review -> Verified -> Published
-questions.post("/verify", async (req, res) => res.json(await prisma.question.updateMany({ where: { section: { testId: String(req.body.testId) }, status: "PENDING_REVIEW" }, data: { status: "VERIFIED" } })));
+questions.post("/verify", async (req, res) => res.json(await prisma.question.updateMany({ where: { section: { testId: z.string().min(1).parse(req.body?.testId) }, status: "PENDING_REVIEW" }, data: { status: "VERIFIED" } })));
 
 // Auto-detect subject + topic for every question of a test (only fills blanks unless force=true)
 questions.post("/autotag", async (req, res) => {

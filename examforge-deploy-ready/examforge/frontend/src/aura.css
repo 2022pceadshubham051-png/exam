@@ -1,0 +1,95 @@
+/* AURA: the default look. Cool blue / teal / indigo palette, soft glass, gentle shadows. Loaded before astra.css so Astra still wins when active. */
+.aura {
+  --ink: #1b2a52; --bg: #eef4ff; --surface: #ffffff; --surface-2: #f2f6ff; --text: #0f1b3d; --muted: #5d6b8f; --border: rgb(99 130 200 / .22);
+  --brand: #4f7cff; --brand-2: #22b8e6; --brand-soft: #e6eeff; --ok-soft: #d9f7ea; --bad-soft: #ffe1e6; --warn-soft: #fff2cf; --info-soft: #dff3ff;
+  --head: #eaf1ff; --s1: #e4edff; --s2: #dff7f4; --s3: #ece6ff; --s4: #def2ff;
+  --clay-out: 0 12px 32px rgb(60 90 170 / .12); --clay-out-sm: 0 4px 14px rgb(60 90 170 / .10); --clay-in: 0 0 0 0 transparent; --clay-pressed: inset 0 2px 6px rgb(60 90 170 / .16);
+  --shadow: 0 12px 32px rgb(60 90 170 / .12); --shadow-1: 0 4px 14px rgb(60 90 170 / .10); --ring: 0 0 0 4px rgb(79 124 255 / .22);
+}
+.aura.dark {
+  --bg: #0a1020; --surface: #111a31; --surface-2: #172240; --text: #e8efff; --muted: #93a3c9; --border: rgb(140 170 255 / .16);
+  --brand: #6f98ff; --brand-soft: #1b2b57; --ok-soft: #12382d; --bad-soft: #43202a; --warn-soft: #3d3216; --info-soft: #14354d;
+  --head: #16213d; --s1: #162a58; --s2: #123a3d; --s3: #2a2358; --s4: #133a5a;
+  --clay-out: 0 12px 32px rgb(0 0 0 / .4); --clay-out-sm: 0 4px 14px rgb(0 0 0 / .35); --clay-pressed: inset 0 2px 6px rgb(0 0 0 / .45);
+  --shadow: 0 12px 32px rgb(0 0 0 / .4); --shadow-1: 0 4px 14px rgb(0 0 0 / .35);
+}
+.aura body { background: linear-gradient(180deg, #e9f2ff 0%, #f3f8ff 45%, #eaf7fb 100%) fixed; font-family: "Plus Jakarta Sans", "Nunito", system-ui, sans-serif; font-weight: 500; }
+.aura.dark body { background: linear-gradient(180deg, #080d1b 0%, #0c1530 55%, #0a1e2c 100%) fixed; }
+.aura h1, .aura h2, .aura h3, .aura .brand, .aura .btn, .aura .pill, .aura .stat-v, .aura .card-title, .aura .nav-link, .aura .seg button, .aura .lvl-chip, .aura .coin-chip, .aura table.t th, .aura .qb { font-family: "Plus Jakarta Sans", "Nunito", sans-serif; }
+.aura h1, .aura h2, .aura h3 { letter-spacing: -.02em; }
+.aura .sub, .aura .muted { font-weight: 500; }
+
+/* surfaces */
+.aura .card, .aura .stat, .aura .mode-card, .aura .step, .aura .resume-card, .aura .landing-mode-explainer, .aura .leaderboard-row, .aura .qcard, .aura .ans, .aura .action-bar, .aura .bulk-bar, .aura .podium-card {
+  border: 1px solid var(--border) !important; box-shadow: var(--clay-out) !important; border-radius: 22px; }
+.aura .alert, .aura .timer { border: none !important; box-shadow: none !important; }
+.aura .leaderboard-row { box-shadow: var(--clay-out-sm) !important; }
+.aura .stat:nth-child(4n+1) { background: var(--s1); } .aura .stat:nth-child(4n+2) { background: var(--s2); } .aura .stat:nth-child(4n+3) { background: var(--s3); } .aura .stat:nth-child(4n+4) { background: var(--s4); }
+.aura .stat .stat-l { color: var(--muted); opacity: 1; } .aura .stat-v { text-shadow: none; color: var(--text); }
+.aura .mode-card.chosen, .aura .step.on { background: var(--brand-soft); border-color: var(--brand) !important; box-shadow: 0 10px 28px rgb(79 124 255 / .25) !important; }
+.aura table.t th { background: var(--head); color: var(--muted); border-bottom: 1px solid var(--border); font-size: .74rem; text-transform: uppercase; letter-spacing: .05em; }
+.aura table.t tbody tr:not(:last-child) td { box-shadow: inset 0 -1px 0 var(--border); }
+.aura .tcard:hover, .aura .tcard:hover { background: var(--surface); border-color: color-mix(in srgb, var(--brand) 55%, var(--border)) !important; box-shadow: 0 18px 40px rgb(79 124 255 / .22) !important; }
+.aura .tcard::before { content: "LV " counter(lv); top: -11px; right: 16px; color: #fff; background: linear-gradient(135deg, #4f7cff, #22b8e6); border: none; box-shadow: 0 6px 14px rgb(79 124 255 / .4); font-family: "Plus Jakarta Sans", sans-serif; font-weight: 800; }
+
+/* nav */
+.aura .nav, .aura .exam-top { border: 1px solid var(--border) !important; box-shadow: var(--clay-out-sm) !important; background: color-mix(in srgb, var(--surface) 82%, transparent); backdrop-filter: blur(14px); border-radius: 22px; }
+.aura .nav-link { font-weight: 600; } .aura .nav-link:hover { background: var(--surface-2); }
+.aura .nav-link.active { background: var(--brand-soft); color: var(--brand); border: none; box-shadow: none; }
+.aura .brand { text-shadow: none; color: var(--text); }
+.aura .logo { border: none; box-shadow: 0 6px 16px rgb(79 124 255 / .45); background: linear-gradient(135deg, #4f7cff, #22b8e6); }
+.aura .lvl-chip { background: linear-gradient(135deg, #4f7cff, #22b8e6); color: #fff; border: none; box-shadow: 0 6px 14px rgb(79 124 255 / .4); }
+.aura .coin-chip { background: var(--surface); color: var(--text); border: 1px solid var(--border); box-shadow: var(--clay-out-sm); }
+.aura .coin { border-color: #b97d00; }
+
+/* buttons */
+.aura .btn { background: var(--surface); color: var(--text); border: 1px solid var(--border); box-shadow: 0 2px 6px rgb(60 90 170 / .10); font-weight: 700; border-radius: 14px; }
+.aura .btn:hover:not(:disabled) { background: var(--surface-2); transform: translateY(-2px); box-shadow: 0 8px 18px rgb(60 90 170 / .18); border-color: color-mix(in srgb, var(--brand) 40%, var(--border)); }
+.aura .btn:active:not(:disabled) { transform: scale(.96); box-shadow: 0 1px 3px rgb(60 90 170 / .15); }
+.aura .btn-primary, .aura .btn-primary:hover:not(:disabled) { color: #fff; border: none; text-shadow: none; background: linear-gradient(135deg, #4f7cff, #22b8e6); box-shadow: 0 8px 20px rgb(79 124 255 / .38); }
+.aura .btn-primary:hover:not(:disabled) { box-shadow: 0 12px 26px rgb(79 124 255 / .5); filter: brightness(1.06); }
+.aura .btn-ok, .aura .btn-ok:hover:not(:disabled) { color: #fff; border: none; text-shadow: none; background: linear-gradient(135deg, #1fbf8f, #22b8e6); box-shadow: 0 8px 20px rgb(31 191 143 / .35); }
+.aura .btn-danger { color: var(--bad); } .aura .btn-ghost { background: transparent; border-color: transparent; box-shadow: none; }
+.aura .btn-sm, .aura .btn-lg { box-shadow: 0 2px 6px rgb(60 90 170 / .10); } .aura .btn-primary.btn-sm, .aura .btn-primary.btn-lg { box-shadow: 0 8px 20px rgb(79 124 255 / .38); }
+.aura .astra-btn { color: var(--brand); animation: none; }
+
+/* inputs, chips */
+.aura .input, .aura .select, .aura .textarea { background: var(--surface); color: var(--text); border: 1px solid var(--border); box-shadow: none; border-radius: 14px; font-weight: 500; }
+.aura .input:focus, .aura .select:focus, .aura .textarea:focus { border-color: var(--brand); box-shadow: var(--ring); background: var(--surface); }
+.aura .pill, .aura .tag-chip { border: none; box-shadow: none; background: var(--surface-2); color: var(--muted); font-weight: 700; }
+.aura .pill-brand, .aura .tag-chip { background: var(--brand-soft); color: var(--brand); } .aura .pill-ok { background: var(--ok-soft); color: var(--ok); } .aura .pill-bad { background: var(--bad-soft); color: var(--bad); } .aura .pill-warn { background: var(--warn-soft); color: var(--warn); }
+.aura .seg { border: 1px solid var(--border); box-shadow: none; background: var(--surface-2); border-radius: 16px; }
+.aura .seg button { color: var(--muted); } .aura .seg button.on { background: var(--surface); color: var(--brand); border: none; box-shadow: var(--clay-out-sm); }
+.aura .alert-ok { background: var(--ok-soft); color: var(--ok); } .aura .alert-bad { background: var(--bad-soft); color: var(--bad); } .aura .alert-warn { background: var(--warn-soft); color: var(--warn); } .aura .alert-info { background: var(--info-soft); color: var(--info); }
+.aura .bar, .aura .xpbar { border: none; height: 10px; background: var(--surface-2); box-shadow: none; padding: 0; }
+.aura .bar > i { background: linear-gradient(90deg, #4f7cff, #22b8e6, #1fd1b0); box-shadow: 0 0 10px rgb(34 184 230 / .5); }
+.aura .xpbar { background: rgb(255 255 255 / .28); } .aura .xpbar > i { background: linear-gradient(90deg, #a8fff0, #fff); box-shadow: 0 0 12px rgb(255 255 255 / .7); }
+
+/* options + palette */
+.aura .opt { border: 1.5px solid var(--border) !important; box-shadow: var(--clay-out-sm) !important; background: var(--surface); border-radius: 18px; }
+.aura .opt:hover { background: var(--brand-soft); border-color: var(--brand) !important; }
+.aura .opt.sel { background: var(--brand-soft); border-color: var(--brand) !important; color: var(--text); box-shadow: 0 8px 22px rgb(79 124 255 / .25) !important; }
+.aura .opt.right { background: var(--ok-soft) !important; color: var(--ok); border-color: #2bb673 !important; box-shadow: 0 8px 22px rgb(43 182 115 / .3) !important; }
+.aura .opt.wrong { background: var(--bad-soft) !important; color: var(--bad); border-color: #f0556f !important; box-shadow: 0 8px 22px rgb(240 85 111 / .3) !important; }
+.aura .opt-k { background: var(--surface-2); color: var(--text); border: none !important; box-shadow: none !important; } .aura .opt.sel .opt-k { background: var(--brand); color: #fff; }
+.aura .qb { border: 1px solid var(--border); box-shadow: none; border-radius: 12px; } .aura .qb.cur { box-shadow: 0 0 0 3px var(--brand); transform: scale(1.08); }
+.aura .timer { background: var(--surface-2); color: var(--text); }
+
+/* hero + auth */
+.aura .hero, .aura .leaderboard-hero, .aura .auth-hero { border: none; border-radius: 28px; background: linear-gradient(120deg, #3b6cff 0%, #2aa6ff 52%, #1fd1c1 100%); background-size: 200% 200%; box-shadow: 0 22px 50px rgb(59 108 255 / .35) !important; }
+.aura.dark .hero, .aura.dark .leaderboard-hero, .aura.dark .auth-hero { background: linear-gradient(120deg, #1d3fa8 0%, #1672b8 52%, #0f8f8a 100%); box-shadow: 0 22px 50px rgb(0 0 0 / .5) !important; }
+.aura .auth-hero { border-radius: 0 36px 36px 0; }
+.aura .hero h1, .aura .leaderboard-hero h1, .aura .auth-hero h1 { -webkit-text-stroke: 0; text-shadow: 0 2px 16px rgb(0 40 120 / .3); }
+.aura .xp-card { background: rgb(255 255 255 / .16); color: #fff; border: 1px solid rgb(255 255 255 / .3); box-shadow: none; backdrop-filter: blur(8px); }
+.aura .mock { border: 1px solid rgb(255 255 255 / .35); box-shadow: 0 16px 40px rgb(0 40 120 / .3); background: rgb(255 255 255 / .16); }
+.aura .modal { border: 1px solid var(--border); box-shadow: 0 30px 80px rgb(20 40 100 / .35) !important; border-radius: 26px; }
+.aura .modal-bg { background: rgb(10 20 50 / .5); }
+.aura .stars span.on { -webkit-text-stroke: 0; }
+.aura .mascot { filter: drop-shadow(0 8px 12px rgb(60 90 200 / .3)); }
+.aura .tu-stage { background: var(--surface-2); }
+
+/* calm world: aurora glow only */
+.aura .sun, .aura .moon, .aura .stars-bg, .aura .cloud, .aura .bird, .aura .hill, .aura .walker, .aura .bg-fx { display: none !important; }
+.aura .nebula { display: block; position: absolute; inset: -10%; background: radial-gradient(38% 34% at 15% 20%, rgb(79 124 255 / .20), transparent 70%), radial-gradient(34% 30% at 85% 30%, rgb(34 211 200 / .18), transparent 70%), radial-gradient(40% 34% at 60% 95%, rgb(150 120 255 / .16), transparent 70%); animation: nebula 26s ease-in-out infinite alternate; }
+.aura.dark .nebula { opacity: .8; }
+.aura .page, .aura .page-narrow { padding-bottom: 80px; }

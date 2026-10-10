@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react"; import { Link } from "react-router-dom";
-import { Plus, Trash2, Copy, Check, CircleCheck, CircleX, TriangleAlert, ArrowLeft, FileText, Layers, Clock, Rocket, Upload, ListChecks, Settings2, Link as LinkIcon, Sparkles, Info, X, Search, BarChart3, Pencil, Wand2, RotateCcw, Save } from "lucide-react";
+import { Plus, Trash2, Copy, Check, CircleCheck, CircleX, TriangleAlert, ArrowLeft, FileText, Layers, Clock, Rocket, Upload, ListChecks, Settings2, Link as LinkIcon, Sparkles, Info, X, Search, BarChart3, Pencil, Wand2, RotateCcw, Save, Download } from "lucide-react";
 import { api, fmt } from "../lib/api"; import Shell, { Loading } from "../components/Shell";
 
 const SAMPLE = `Question 1. Which protocol is secure?
@@ -48,7 +48,7 @@ export default function Admin() {
   const [msg, setMsg] = useState<{ t: "ok" | "bad" | "info"; m: string } | null>(null); const [del, setDel] = useState<any>(null);
   const flash = (t: "ok" | "bad" | "info", m: string) => { setMsg({ t, m }); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const loadList = useCallback(() => api("/tests").then(setList).catch((e) => flash("bad", e.message)), []);
-  const open = useCallback(async (id: string) => { try { setTest(await api(`/tests/${id}`)); setCreating(false); setMsg(null); } catch (e: any) { flash("bad", e.message); } }, []);
+  const open = useCallback(async (id: string, keepMsg = false) => { try { setTest(await api(`/tests/${id}`)); setCreating(false); if (!keepMsg) setMsg(null); } catch (e: any) { flash("bad", e.message); } }, []);
   useEffect(() => { loadList(); }, [loadList]);
   const back = () => { setTest(null); setCreating(false); setMsg(null); loadList(); };
   const remove = async () => { try { await api(`/tests/${del.id}`, "DELETE"); setDel(null); flash("ok", "Exam and all linked attempts/questions were permanently deleted."); loadList(); } catch (e: any) { setDel(null); flash("bad", e.message); } };
@@ -70,8 +70,8 @@ export default function Admin() {
       {!test && !creating && list && <section className="grid-stats admin-stats"><div className="stat"><div className="stat-l">Total exams</div><div className="stat-v">{list.length}</div></div><div className="stat"><div className="stat-l">Published</div><div className="stat-v">{published}</div></div><div className="stat"><div className="stat-l">Drafts</div><div className="stat-v">{drafts}</div></div><div className="stat"><div className="stat-l">Practice enabled</div><div className="stat-v">{practiceEnabled}</div></div><div className="stat"><div className="stat-l"><BarChart3 size={14}/>Question inventory</div><div className="stat-v">{questionTotal}</div></div></section>}
       {msg && <div className={`alert alert-${msg.t === "info" ? "info" : msg.t}`}>{msg.t === "ok" ? <CircleCheck size={18} /> : msg.t === "bad" ? <CircleX size={18} /> : <Info size={18} />}<span style={{ flex: 1 }}>{msg.m}</span><button className="btn-ghost btn btn-sm" onClick={() => setMsg(null)}><X size={14} /></button></div>}
 
-      {creating && <CreateTest onCreated={(t) => { flash("ok", "Test created. Now add questions."); open(t.id); }} onError={(m) => flash("bad", m)} />}
-      {test && <Manage key={test.id} test={test} reload={() => open(test.id)} flash={flash} />}
+      {creating && <CreateTest onCreated={(t) => { flash("ok", "Test created. Now add questions."); open(t.id, true); }} onError={(m) => flash("bad", m)} />}
+      {test && <Manage key={test.id} test={test} reload={() => open(test.id, true)} flash={flash} />}
 
       {!test && !creating && <>
         {list && <div className="admin-toolbar card card-pad"><div className="row between" style={{gap:12,flexWrap:"wrap"}}><div><b>Test library</b><div className="sub">Search, filter and manage your live exams without opening each one.</div></div><div className="row" style={{gap:8,flexWrap:"wrap"}}><div className="seg"><button className={filter === "ALL" ? "on" : ""} onClick={() => setFilter("ALL")}>All</button><button className={filter === "LIVE" ? "on" : ""} onClick={() => setFilter("LIVE")}>Published</button><button className={filter === "DRAFT" ? "on" : ""} onClick={() => setFilter("DRAFT")}>Drafts</button></div><div style={{position:"relative",minWidth:220}}><Search size={15} style={{position:"absolute",left:12,top:12,color:"var(--muted)"}}/><input className="input" style={{paddingLeft:36}} placeholder="Search tests" value={search} onChange={(e) => setSearch(e.target.value)}/></div></div></div></div>}
@@ -315,10 +315,24 @@ function StructurePanel({ test, reload, flash }: { test: any; reload: () => void
   const saveSec = (s: any) => run(() => api(`/tests/${test.id}/sections/${s.id}`, "PUT", { name: s.name.trim(), durationSec: Math.round(+s.minutes * 60) }), `Section "${s.name}" saved.`);
   const delSec = (s: any) => run(() => api(`/tests/${test.id}/sections/${s.id}`, "DELETE"), `Section "${s.name}" removed.`);
   const addSec = () => run(() => api(`/tests/${test.id}/sections`, "POST", { name: `Section ${secs.length + 1}`, durationSec: 15 * 60 }), "Section added.");
+  const exportCsv = async () => {
+    setBusy(true);
+    try {
+      const rows = await api<any[]>(`/tests/${test.id}/results`);
+      // Text cells starting with = + - @ would run as formulas in Excel, so they get a leading apostrophe.
+      const esc = (v: any) => { let t = v == null ? "" : String(v); if (typeof v === "string" && /^[=+\-@\t\r]/.test(t)) t = "'" + t; return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
+      const head = ["Rank", "Name", "Email", "Attempt", "Score", "Total marks", "Percentage", "Accuracy", "Correct", "Wrong", "Skipped", "Time (sec)", "Submitted"];
+      const lines = [head, ...rows.map((r, i) => [i + 1, r.name, r.email, r.attemptNo, r.score, r.totalMarks, r.percentage, r.accuracy, r.correct, r.incorrect, r.unanswered, r.timeTakenSec, r.submittedAt ?? ""])];
+      const url = URL.createObjectURL(new Blob(["\ufeff" + lines.map((l) => l.map(esc).join(",")).join("\n")], { type: "text/csv;charset=utf-8" }));
+      const a = document.createElement("a"); a.href = url; a.download = `${test.name.replace(/[^\w-]+/g, "_")}-results.csv`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+      flash("ok", `Downloaded ${rows.length} result${rows.length === 1 ? "" : "s"}.`);
+    } catch (e: any) { flash("bad", e.message); } finally { setBusy(false); }
+  };
   const reset = () => run(async () => { const r = await api(`/tests/${test.id}/reset-attempts`, "POST"); setAskReset(false); flash("ok", `Deleted ${r.deleted} student attempts.`); }, "Attempts reset.");
   return <details className="card card-pad"><summary className="settings-summary"><span><b>Name, timing and sections</b><small>Rename the test, change section times, add or remove sections, reset student attempts</small></span><Settings2 size={18} /></summary>
     <div className="stack" style={{ marginTop: 18 }}>
       {stats && stats.attempts > 0 && <div className="grid-stats"><div className="stat"><div className="stat-l">Official attempts</div><div className="stat-v">{stats.attempts}</div></div><div className="stat"><div className="stat-l">Avg score</div><div className="stat-v">{stats.avgPercentage}%</div></div><div className="stat"><div className="stat-l">Pass rate</div><div className="stat-v">{stats.passRate}%</div></div><div className="stat"><div className="stat-l">Avg time</div><div className="stat-v">{fmt(stats.avgTimeSec)}</div></div></div>}
+      {stats && stats.attempts > 0 && <div><button className="btn btn-sm" disabled={busy} onClick={exportCsv}><Download size={14} />Download results (CSV)</button></div>}
       <div className="form-grid"><div><label className="label">Test name</label><input className="input" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></div><div><label className="label">Exam name</label><input className="input" value={f.examName} onChange={(e) => setF({ ...f, examName: e.target.value })} /></div>
         <div><label className="label">Total time (min)</label><input className="input" type="number" min={1} value={f.minutes} onChange={(e) => setF({ ...f, minutes: +e.target.value })} /></div>
         <div><label className="label">Difficulty</label><select className="input" value={f.difficulty} onChange={(e) => setF({ ...f, difficulty: e.target.value })}><option>EASY</option><option>MEDIUM</option><option>HARD</option></select></div></div>

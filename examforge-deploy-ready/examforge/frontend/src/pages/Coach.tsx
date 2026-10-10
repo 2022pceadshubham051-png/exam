@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react"; import { Link } from "react-router-dom";
+import { Owl } from "../components/Buddies";
 import { Compass, Target, Gauge, TrendingUp, ThumbsUp, TriangleAlert, Play, Clock, BookOpen, Zap, Flame, ListChecks, Info, CalendarDays, Sparkles } from "lucide-react";
 import { api } from "../lib/api"; import Shell, { Loading } from "../components/Shell"; import { Ring } from "./Result";
 
@@ -41,7 +42,7 @@ export default function Coach() {
   const bp = d?.exam;
 
   return <Shell><div className="stack" style={{ gap: 22 }}>
-    <section className="hero"><div className="blob" style={{ width: 220, height: 220, background: "#22d3ee", right: -40, top: -60 }} />
+    <section className="hero"><div className="blob" style={{ width: 220, height: 220, background: "#22d3ee", right: -40, top: -60 }} /><div className="hero-mascot"><Owl size={128} /></div>
       <span className="pill pill-brand" style={{ position: "relative" }}><Compass size={14} />Smart Coach</span>
       <h1 style={{ marginTop: 10 }}>What should you work on next?</h1>
       <p>Pick your exam. ExamForge auto-detects the subject and topic of every question you solve (Reasoning, Maths, English, GA, Technical...), rates each one out of 100 and ranks what will add the most marks.</p></section>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"; import { Link } from "react-router-dom";
 import { Search, Clock, FileText, Layers, Play, Target, Trophy, ClipboardList, ArrowRight, Eye, Sparkles, SlidersHorizontal, Medal, Trash2, Compass, X, TriangleAlert, CircleCheck } from "lucide-react";
 import { api, fmt } from "../lib/api"; import Shell, { Loading } from "../components/Shell";
-import Mascot from "../components/Mascot"; import CountUp, { Wave } from "../components/CountUp"; import { confetti } from "../components/Confetti"; import { levelFromXp, xpFromAttempts, streakDays, saveLevel, savedLevel, saveXp, sfx } from "../lib/game";
+import Mascot from "../components/Mascot"; import { showLevelUp } from "../components/LevelUp"; import CountUp, { Wave } from "../components/CountUp"; import { confetti } from "../components/Confetti"; import { levelFromXp, xpFromAttempts, streakDays, saveLevel, savedLevel, saveXp, sfx } from "../lib/game";
 
 const diff: Record<string, string> = { EASY: "pill-ok", MEDIUM: "pill-warn", HARD: "pill-bad" };
 export default function Dashboard() {
@@ -12,7 +12,7 @@ export default function Dashboard() {
     let cancelled = false;
     const timer = setTimeout(() => {
       setTests(null);
-      api(`/tests?q=${encodeURIComponent(q)}`)
+      api(`/tests?limit=100&q=${encodeURIComponent(q)}`)
         .then((data) => {
           if (cancelled) return;
           if (!Array.isArray(data)) throw new Error("Unexpected response from the tests API.");
@@ -52,7 +52,7 @@ export default function Dashboard() {
     catch (e: any) { setNote({ ok: false, m: e.message }); } finally { setBusyDel(false); setAsk(null); }
   };
   const xp = xpFromAttempts(done), lv = levelFromXp(xp), streak = streakDays(done);
-  useEffect(() => { if (!hist.length) return; const prev = savedLevel(); if (prev && lv.level > prev) { confetti(120); sfx("level"); } saveLevel(lv.level); saveXp(xp); }, [lv.level, hist.length]); // eslint-disable-line
+  useEffect(() => { if (!hist.length) return; const prev = savedLevel(); if (prev && lv.level > prev) showLevelUp(lv.level, lv.title); saveLevel(lv.level); saveXp(xp); }, [lv.level, hist.length]); // eslint-disable-line
   const best = done.length ? Math.max(...done.map((a) => a.result.percentage)) : null;
   return <Shell>
     <div className="stack" style={{ gap: 26 }}>
@@ -103,10 +103,10 @@ export default function Dashboard() {
         {note && <div className={`alert ${note.ok ? "alert-ok" : "alert-bad"}`}>{note.ok ? <CircleCheck size={17} /> : <TriangleAlert size={17} />}<span style={{ flex: 1 }}>{note.m}</span><button className="btn btn-ghost btn-sm" onClick={() => setNote(null)}><X size={14} /></button></div>}
         {shownHist.length ? <div className="card table-wrap"><table className="t"><thead><tr><th style={{ width: 34 }}><input type="checkbox" className="hist-check" aria-label="Select all" checked={shownHist.length > 0 && shownHist.every((a) => sel.has(a.id))} onChange={(e) => setSel(e.target.checked ? new Set(shownHist.map((a) => a.id)) : new Set())} /></th><th>Test</th><th>Attempt</th><th>Score</th><th>Accuracy</th><th>Right / Wrong / Skipped</th><th>Mode</th><th>Time</th><th>Date</th><th /></tr></thead>
           <tbody>{shownHist.map((a) => <tr key={a.id}><td><input type="checkbox" className="hist-check" aria-label="Select attempt" checked={sel.has(a.id)} onChange={() => { const n = new Set(sel); n.has(a.id) ? n.delete(a.id) : n.add(a.id); setSel(n); }} /></td><td><b>{a.test.name}</b></td><td>#{a.attemptNo}</td>
-            <td>{a.result ? <span className={`pill ${a.result.percentage >= 40 ? "pill-ok" : "pill-bad"}`}>{a.result.percentage}%</span> : <span className="pill pill-warn">In progress</span>}</td>
+            <td>{a.result ? <span className={`pill ${a.result.percentage >= 40 ? "pill-ok" : "pill-bad"}`}>{a.result.percentage}%</span> : a.resultHidden ? <span className="pill">Hidden</span> : <span className="pill pill-warn">In progress</span>}</td>
             <td>{a.result ? `${a.result.accuracy}%` : "-"}</td><td>{a.result ? `${a.result.correct} / ${a.result.incorrect} / ${a.result.unanswered}` : "-"}</td>
             <td><span className={`pill ${a.mode === "PRACTICE" ? "pill-brand" : ""}`}>{a.mode === "PRACTICE" ? (a.adaptiveQuestionIds ? "Adaptive" : "Practice") : "Exam"}</span></td><td>{a.result ? fmt(a.result.timeTakenSec) : "-"}</td><td>{new Date(a.startedAt).toLocaleDateString()}</td>
-            <td><div className="row" style={{ gap: 6, flexWrap: "nowrap" }}>{a.result ? <Link className="btn btn-sm" to={`/result/${a.id}`}><Eye size={14} />Result</Link> : <Link className="btn btn-sm btn-primary" to={`/exam/${a.test.id}`}>Resume</Link>}<button className="btn btn-sm btn-danger" title="Delete this attempt" aria-label="Delete attempt" onClick={() => setAsk({ title: `Delete attempt #${a.attemptNo} of "${a.test.name}"?`, body: { ids: [a.id] }, label: "Delete attempt" })}><Trash2 size={14} /></button></div></td></tr>)}</tbody></table></div>
+            <td><div className="row" style={{ gap: 6, flexWrap: "nowrap" }}>{a.result || a.resultHidden ? <Link className="btn btn-sm" to={`/result/${a.id}`}><Eye size={14} />Result</Link> : <Link className="btn btn-sm btn-primary" to={`/exam/${a.test.id}`}>Resume</Link>}<button className="btn btn-sm btn-danger" title="Delete this attempt" aria-label="Delete attempt" onClick={() => setAsk({ title: `Delete attempt #${a.attemptNo} of "${a.test.name}"?`, body: { ids: [a.id] }, label: "Delete attempt" })}><Trash2 size={14} /></button></div></td></tr>)}</tbody></table></div>
           : <div className="card empty"><ClipboardList size={34} /><p>{hist.length ? "No attempts match this filter." : "No attempts yet. Start a test above."}</p></div>}
         {hist.length > 0 && <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
           <button className="btn btn-sm btn-danger" onClick={() => setAsk({ title: "Delete ALL practice and adaptive sessions?", body: { mode: "PRACTICE" }, label: "Delete all practice" })}><Trash2 size={14} />Clear all practice</button>

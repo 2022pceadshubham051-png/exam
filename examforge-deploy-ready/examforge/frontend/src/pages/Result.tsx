@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"; import { useParams, Link, useNaviga
 import { Eye, Target, Clock, CircleCheck, CircleX, MinusCircle, TrendingUp, TrendingDown, ArrowRight, Sparkles, LayoutDashboard, Trash2, Compass, Trophy } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { api, fmt } from "../lib/api"; import Shell, { Loading } from "../components/Shell";
-import Mascot from "../components/Mascot"; import { confetti } from "../components/Confetti"; import { stars, sfx } from "../lib/game";
+import Mascot from "../components/Mascot"; import { StarBuddy, TrophyBuddy } from "../components/Buddies"; import { comicBurst } from "../components/Confetti"; import { confetti } from "../components/Confetti"; import { stars, sfx } from "../lib/game";
 
 function CountUp({ to, suffix = "" }: { to: number; suffix?: string }) {
   const [v, setV] = useState(0);
@@ -24,7 +24,7 @@ export default function Result() {
   useEffect(() => { api(`/results/${attemptId}`).then(setD).catch((e) => setErr(e.message)); }, [attemptId]);
   const remove = async () => { setDelBusy(true); setDelErr(""); try { await api(`/attempts/${attemptId}`, "DELETE"); nav("/dashboard", { replace: true }); } catch (e: any) { setDelErr(e.message); setDelBusy(false); } };
   const winPct: number | null = d?.result ? d.result.percentage : null; const winPass = winPct !== null && winPct >= (d?.passingPercent ?? 40);
-  useEffect(() => { if (winPct === null) return; const t = setTimeout(() => { if (winPass) { confetti(winPct >= 85 ? 160 : 90); sfx("win"); } else sfx("pop"); }, 450); return () => clearTimeout(t); }, [winPct, winPass]);
+  useEffect(() => { if (winPct === null) return; const t = setTimeout(() => { if (winPass) { confetti(winPct >= 85 ? 160 : 90); comicBurst("good", winPct >= 85 ? "LEGEND!" : "CLEARED!"); sfx("win"); } else sfx("pop"); }, 450); return () => clearTimeout(t); }, [winPct, winPass]);
   if (err) return <Shell><div className="alert alert-bad">{err}</div></Shell>;
   if (!d) return <Shell><Loading text="Calculating your result" /></Shell>;
   if (d.showResult === false) return <Shell><div className="card card-pad stack" style={{ maxWidth: 620, margin: "12vh auto" }}><h1 style={{ fontSize: "1.5rem", fontWeight: 800 }}>Result is hidden</h1><p className="sub">The administrator has disabled immediate result viewing for this test. Your attempt has still been saved.</p><div><Link className="btn btn-primary" to="/dashboard"><LayoutDashboard size={16} />Back to dashboard</Link></div></div></Shell>;
@@ -41,7 +41,7 @@ export default function Result() {
       <div className="row between"><div><h1 style={{ fontSize: "1.7rem", fontWeight: 800 }}>Your result</h1><p className="sub">Attempt #{d.attemptNo} · <span className={`pill ${d.adaptive ? "pill-ok" : d.mode === "PRACTICE" ? "pill-brand" : ""}`}>{d.adaptive ? "Adaptive practice" : d.mode === "PRACTICE" ? "Practice" : "Exam"}</span></p></div>
         <div className="row"><Link className="btn" to="/dashboard"><LayoutDashboard size={16} />Dashboard</Link><Link className="btn" to={`/exam/${d.testId}`}><ArrowRight size={16} />Retake</Link><Link className="btn btn-primary" to={`/review/${attemptId}`}><Eye size={16} />Review answers</Link><button className="btn btn-danger" onClick={() => setAskDel(true)}><Trash2 size={16} />Delete</button></div></div>
       <section className="card card-pad result-hero">
-        <div className="result-mascot"><Mascot mood={passed ? (r.percentage >= 85 ? "cheer" : "happy") : "sad"} size={118} /><div className="stars">{[0, 1, 2].map((n) => <span key={n} className={n < stars(r.percentage) ? "on" : ""} style={{ "--i": n } as any}>★</span>)}</div>
+        <div className="result-mascot"><div className="result-cast">{passed && <span className="cast-l"><StarBuddy size={64} /></span>}<Mascot mood={passed ? (r.percentage >= 85 ? "cheer" : "happy") : "sad"} size={118} />{r.percentage >= 85 ? <span className="cast-r"><TrophyBuddy size={84} /></span> : passed ? <span className="cast-r"><StarBuddy size={64} /></span> : null}</div><div className="stars">{[0, 1, 2].map((n) => <span key={n} className={n < stars(r.percentage) ? "on" : ""} style={{ "--i": n } as any}>★</span>)}</div>
           <div className="result-say">{r.percentage >= 85 ? "Legendary run!" : passed ? "Level cleared!" : "So close! Try again."}</div></div>
       </section>
       <section className="card card-pad row" style={{ gap: 30 }}>

@@ -99,7 +99,9 @@ tests.get("/:id/adaptive/recommend", async (req: AuthedReq, res) => {
 });
 
 tests.get("/", async (req: AuthedReq, res) => {
-  const { q, exam, page = "1" } = req.query as Record<string, string>;
+  const { q, exam } = req.query as Record<string, string>;
+  const pageNo = Math.max(1, parseInt(String(req.query.page ?? "1"), 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(String(req.query.limit ?? "20"), 10) || 20));
   res.json(
     await prisma.test.findMany({
       where: {
@@ -108,8 +110,8 @@ tests.get("/", async (req: AuthedReq, res) => {
         examName: exam,
       },
       orderBy: { createdAt: "desc" },
-      skip: (+page - 1) * 20,
-      take: 20,
+      skip: (pageNo - 1) * limit,
+      take: limit,
       include: {
         sections: {
           orderBy: { order: "asc" },
@@ -127,10 +129,19 @@ tests.get("/:id/leaderboard", async (req, res) => {
   const rows = await prisma.testResult.findMany({
     where: { attempt: { testId: t.id, mode: "EXAM" } },
     orderBy: [{ score: "desc" }, { timeTakenSec: "asc" }],
-    take: 50,
+    take: 500,
     include: { attempt: { include: { user: { select: { name: true, displayName: true } } } } },
   });
-  res.json(rows.map((r: any, i: number) => ({ rank: i + 1, name: r.attempt.user.displayName ?? r.attempt.user.name, score: r.score, percentage: r.percentage, accuracy: r.accuracy, timeTakenSec: r.timeTakenSec })));
+  // Rows are already best-first, so the first row we see for a student is their best attempt.
+  const seen = new Set<string>();
+  const out: { rank: number; name: string; score: number; percentage: number; accuracy: number; timeTakenSec: number }[] = [];
+  for (const r of rows) {
+    if (seen.has(r.attempt.userId)) continue;
+    seen.add(r.attempt.userId);
+    out.push({ rank: out.length + 1, name: r.attempt.user.displayName ?? r.attempt.user.name, score: r.score, percentage: r.percentage, accuracy: r.accuracy, timeTakenSec: r.timeTakenSec });
+    if (out.length >= 50) break;
+  }
+  res.json(out);
 });
 
 tests.get("/:id", async (req: AuthedReq, res) => {
@@ -196,7 +207,7 @@ tests.delete("/:id", requireAdmin, async (req, res) => {
   try {
     await prisma.$transaction(async (tx) => {
       const t = await tx.test.findUnique({ where: { id: req.params.id }, select: { id: true, sections: { select: { id: true } } } });
-      if (!t) throw new Error("Test not found");
+      if (!t) throw Object.assign(new Error("Test not found"), { notFound: true });
       const sectionIds = t.sections.map((s) => s.id);
       const questions = sectionIds.length
         ? await tx.question.findMany({ where: { sectionId: { in: sectionIds } }, select: { id: true } })
@@ -212,6 +223,7 @@ tests.delete("/:id", requireAdmin, async (req, res) => {
     }, { timeout: 60_000, maxWait: 15_000 });
     res.json({ ok: true, permanentlyDeleted: true });
   } catch (e: any) {
+    if (e?.notFound) return res.status(404).json({ error: "Test not found" });
     fail(res, e);
   }
 });
@@ -254,7 +266,7 @@ tests.post("/:id/duplicate", requireAdmin, async (req, res) => {
 });
 
 tests.post("/:id/sections/:sid/questions", requireAdmin, async (req, res) => {
-  const ids = z.array(z.string()).parse(req.body.questionIds);
+  const ids = z.array(z.string()).max(500).parse(req.body?.questionIds);
   res.json(await prisma.question.updateMany({ where: { id: { in: ids }, status: { in: ["VERIFIED", "PUBLISHED"] } }, data: { sectionId: req.params.sid } }));
 });
 
@@ -319,6 +331,21 @@ tests.post("/:id/reset-attempts", requireAdmin, async (req, res) => {
     }, { timeout: 60_000, maxWait: 15_000 });
     res.json({ deleted: n.count });
   } catch (e) { fail(res, e); }
+});
+
+// Admin: every official result of one test, used by the "Download results (CSV)" button.
+tests.get("/:id/results", requireAdmin, async (req, res) => {
+  const rows = await prisma.testResult.findMany({
+    where: { attempt: { testId: req.params.id, mode: "EXAM" } },
+    orderBy: [{ score: "desc" }, { timeTakenSec: "asc" }],
+    take: 5000,
+    include: { attempt: { select: { attemptNo: true, endedAt: true, user: { select: { name: true, displayName: true, email: true } } } } },
+  });
+  res.json(rows.map((r) => ({
+    name: r.attempt.user.displayName ?? r.attempt.user.name, email: r.attempt.user.email, attemptNo: r.attempt.attemptNo,
+    score: r.score, totalMarks: r.totalMarks, percentage: r.percentage, accuracy: r.accuracy,
+    correct: r.correct, incorrect: r.incorrect, unanswered: r.unanswered, timeTakenSec: r.timeTakenSec, submittedAt: r.attempt.endedAt,
+  })));
 });
 
 tests.get("/:id/analytics", requireAdmin, async (req, res) => {

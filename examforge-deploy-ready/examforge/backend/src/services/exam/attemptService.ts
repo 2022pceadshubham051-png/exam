@@ -263,6 +263,10 @@ export async function submit(attemptId: string, auto = false) {
 export async function resultWithComparison(attemptId: string, userId: string) {
   const a = await prisma.testAttempt.findFirst({ where: { id: attemptId, userId }, include: { result: true, test: { select: { passingPercent: true, showResult: true, name: true, negativeMarks: true } } } });
   if (!a?.result) return null;
+  // "Show result" off: the server must not hand the numbers over either (hiding them in the UI alone is not enough).
+  if (a.mode === "EXAM" && a.test.showResult === false) {
+    return { attemptNo: a.attemptNo, mode: a.mode, adaptive: false, testId: a.testId, testName: a.test.name, passingPercent: a.test.passingPercent, showResult: false, result: null, rank: null, percentile: null, field: 0, comparison: null };
+  }
   const prev = await prisma.testAttempt.findFirst({ where: { userId, testId: a.testId, mode: "EXAM", attemptNo: { lt: a.attemptNo }, result: { isNot: null } }, orderBy: { attemptNo: "desc" }, include: { result: true } });
   let rank: number | null = null, percentile: number | null = null, field = 0;
   if (a.mode === "EXAM") {

@@ -125,3 +125,31 @@ table.t tbody tr:not(:last-child) td { box-shadow: inset 0 -2px 0 var(--border);
 .page, .page-narrow { padding-bottom: 120px; }
 @media (max-width: 640px) { .sun, .moon { right: 4vw; top: 80px; transform-origin: center; width: 60px; height: 60px; } .walker { display: none; } }
 .nav-link { white-space: nowrap; } .nav-in { gap: 8px; }
+
+/* ---------- logo, splash, mascot polish ---------- */
+.logo-mark { flex: none; filter: drop-shadow(0 6px 10px rgb(63 125 255 / .35)); transition: transform .3s var(--spring); }
+.brand:hover .logo-mark { transform: rotate(-6deg) scale(1.1); }
+.logo-live .lm-spark { transform-origin: 0 0; animation: lmspark 3.2s ease-in-out infinite; }
+.logo-live .lm-anvil { transform-origin: 64px 100px; animation: lmhit 3.2s ease-in-out infinite; }
+.logo-live .lm-dot { animation: twinkle 2.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; } .logo-live .d2 { animation-delay: .7s; } .logo-live .d3 { animation-delay: 1.4s; }
+@keyframes lmspark { 0%, 100% { transform: scale(1) rotate(0); } 12% { transform: scale(1.35) rotate(25deg); } 30% { transform: scale(.9) rotate(0); } }
+@keyframes lmhit { 0%, 8%, 100% { transform: scale(1, 1); } 4% { transform: scale(1.04, .94); } }
+.splash { position: fixed; inset: 0; z-index: 999; display: grid; place-items: center; background: radial-gradient(circle at 50% 40%, #5b7bff, #2b1b8a 70%); transition: opacity .5s, transform .5s; cursor: pointer; }
+.splash.out { opacity: 0; transform: scale(1.08); pointer-events: none; }
+.splash-in { display: grid; place-items: center; gap: 10px; text-align: center; color: #fff; }
+.splash-logo { position: relative; animation: drop .9s cubic-bezier(.3, 1.6, .5, 1) both; filter: drop-shadow(0 18px 24px rgb(0 0 40 / .45)); }
+@keyframes drop { 0% { transform: translateY(-70vh) rotate(-20deg) scale(.6); } 60% { transform: translateY(0) scale(1.18, .82); } 80% { transform: scale(.94, 1.08); } 100% { transform: scale(1); } }
+.splash-logo i { position: absolute; left: 50%; top: 62%; width: 8px; height: 8px; border-radius: 50%; background: #ffd86b; box-shadow: 0 0 10px #ffb62e; opacity: 0; animation: spk .9s .6s ease-out forwards; }
+@keyframes spk { 0% { opacity: 1; transform: rotate(var(--a)) translateX(0); } 100% { opacity: 0; transform: rotate(var(--a)) translateX(var(--d)) scale(.2); } }
+.splash-name { font-family: "Fredoka", "Plus Jakarta Sans", sans-serif; font-size: clamp(2.2rem, 7vw, 3.4rem); font-weight: 700; margin: 12px 0 0; text-shadow: 0 4px 0 rgb(20 10 70 / .5); animation: popin .6s .8s var(--spring) both; }
+.splash-name span { color: #8ff3ff; }
+.splash p { margin: 0; opacity: .85; font-weight: 700; animation: popin .6s 1s var(--spring) both; }
+
+.mascot .m-feet { animation: feet 2.8s ease-in-out infinite; transform-origin: 50px 91px; } @keyframes feet { 50% { transform: scale(1.04, .94); } }
+.mascot .m-tassel { animation: tassel 2.2s ease-in-out infinite; } @keyframes tassel { 0%, 100% { transform: rotate(-9deg); } 50% { transform: rotate(9deg); } }
+.mascot .m-brows { animation: brows 4.5s ease-in-out infinite; transform-origin: 50px 46px; } @keyframes brows { 0%, 40%, 100% { transform: translateY(0); } 46% { transform: translateY(-2.5px); } }
+.mascot .m-sparks { animation: twinkle 1s ease-in-out infinite; transform-origin: 50px 20px; }
+.mascot .m-shadow { transform-origin: 50px 95px; animation: shadowp 2.8s ease-in-out infinite; } @keyframes shadowp { 50% { transform: scaleX(.94); opacity: .8; } }
+.mascot-cheer .m-shadow { animation: shadowj .8s ease-in-out infinite alternate; } @keyframes shadowj { to { transform: scaleX(.7); opacity: .5; } }
+.mascot:hover .m-body { animation: boing .7s var(--spring); } @keyframes boing { 30% { transform: scale(.92, 1.1) translateY(-6px); } 60% { transform: scale(1.06, .92); } }
+.splash-logo, .splash-name, .splash p { will-change: transform, opacity; }

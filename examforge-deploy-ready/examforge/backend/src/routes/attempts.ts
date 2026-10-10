@@ -54,8 +54,10 @@ attempts.get("/results/:id", wrap(async (req, res) => { const r = await svc.resu
 
 attempts.get("/history", wrap(async (req, res) => res.json(await prisma.testAttempt.findMany({
   where: { userId: req.user!.id }, orderBy: { startedAt: "desc" }, take: 300,
-  include: { result: true, test: { select: { id: true, name: true, examName: true, maxAttempts: true } } },
-}))));
+  include: { result: true, test: { select: { id: true, name: true, examName: true, maxAttempts: true, showResult: true } } },
+}).then((rows) => rows.map(({ test: { showResult, ...test }, ...a }) =>
+  // Official attempts of tests with hidden results: keep the row, drop the numbers.
+  a.mode === "EXAM" && !showResult && a.result ? { ...a, test, result: null, resultHidden: true } : { ...a, test, resultHidden: false })))));
 
 // ---- delete attempted exams / practice sessions ----
 attempts.delete("/attempts/:id", wrap(async (req, res) => {
@@ -69,6 +71,7 @@ attempts.get("/attempts/:id/review", wrap(async (req, res) => {
   const a = await prisma.testAttempt.findFirst({ where: { id: req.params.id, userId: req.user!.id }, include: { test: { include: { sections: { orderBy: { order: "asc" }, select: { id: true, name: true } } } }, responses: { orderBy: [{ ord: "asc" }, { updatedAt: "asc" }] } } });
   if (!a) return res.sendStatus(404);
   if (a.status === "IN_PROGRESS") return res.status(403).json({ error: "Review is available after submission" });
+  if (a.mode === "EXAM" && !a.test.showResult) return res.status(403).json({ error: "The administrator has turned off result and answer review for this test." });
   const secName = new Map<string, string>(a.test.sections.map((s: any) => [s.id, s.name] as [string, string]));
   const rows = a.responses.map((r: any) => ({ questionId: r.questionId, section: secName.get(r.sectionId), subject: r.subject, topic: r.topic, difficulty: r.difficulty, text: r.snapshot?.text, options: r.snapshot?.options,
     explanation: a.test.showExplanations ? r.snapshot?.explanation : null, selectedKey: r.selectedKey, correctKey: r.correctKeySnapshot, isCorrect: r.isCorrect, timeSpentSec: Math.round(r.timeSpentMs / 1000) }));
