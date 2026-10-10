@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react"; import { useNavigate } from "react-router-dom";
 import { Timer, BarChart3, ShieldCheck, Eye, EyeOff, Sun, Moon, ArrowRight, Loader, TriangleAlert } from "lucide-react";
-import { api } from "../lib/api"; import { Logo } from "../components/Shell"; import { toggleTheme, isDark, getMe } from "../lib/auth";
+import { api } from "../lib/api"; import { Logo } from "../components/Shell"; import { toggleTheme, isDark, getMe } from "../lib/auth"; import Mascot from "../components/Mascot";
 
 const features = [
   [Timer, "Real exam timers", "Section-wise and question-wise timers, just like the actual paper."],
@@ -26,6 +26,7 @@ export default function Login() {
       <div className="blob" style={{ width: 300, height: 300, background: "#22d3ee", top: -80, right: -60 }} />
       <div className="blob" style={{ width: 260, height: 260, background: "#f472b6", bottom: -60, left: 40, animationDelay: "-4s" }} />
       <div className="brand" style={{ color: "#fff" }}><Logo />ExamForge</div>
+      <div className="login-mascot"><Mascot mood="wave" size={110} /><div className="tu-bubble">Hi! I'm Forgy. Log in and let's level up!</div></div>
       <div className="stack" style={{ gap: 28 }}>
         <div><h1 style={{ fontSize: "clamp(2rem,4vw,3rem)", fontWeight: 800, lineHeight: 1.1 }}>Practice like it is<br />the real exam.</h1>
           <p style={{ opacity: .85, marginTop: 14, maxWidth: 440, lineHeight: 1.6 }}>Full-length mock tests with section timers, instant results and a clear picture of what to improve next.</p></div>

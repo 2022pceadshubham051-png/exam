@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { confetti, floatText } from "../components/Confetti"; import { sfx, addBonusXp } from "../lib/game";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   Cloud, CloudOff, TriangleAlert, Flag, Eraser, ChevronLeft, ChevronRight, Send,
@@ -12,7 +13,7 @@ const legend: [string, string][] = [["ANSWERED", "Answered"], ["ANSWERED_REVIEW"
 type ModeChoice = "EXAM" | "PRACTICE" | "ADAPTIVE";
 
 export default function Exam() {
-  const { testId } = useParams(); const nav = useNavigate(); const [sp] = useSearchParams(); const focusTopic = sp.get("topic"); const lastBump = useRef(0);
+  const { testId } = useParams(); const nav = useNavigate(); const [sp] = useSearchParams(); const focusTopic = sp.get("topic"); const lastBump = useRef(0); const [combo, setCombo] = useState(0);
   const [reveal, setReveal] = useState<Record<string, { correctKey: string; explanation: string | null }>>({}); const [instant, setInstant] = useState(true);
   const [meta, setMeta] = useState<any | null>(null); const [v, setV] = useState<View | null>(null);
   const [idx, setIdx] = useState(0); const [, tick] = useState(0);
@@ -92,7 +93,7 @@ export default function Exam() {
     if (!window.confirm("Discard this unfinished attempt? Its answers will be deleted.")) return;
     try { await api(`/attempts/${id}`, "DELETE"); localStorage.removeItem(qKey); await fetchMeta(); } catch (e: any) { setErr(e.message); }
   };
-  const check = async (qid: string) => { if (!v) return; try { const r = await api(`/attempts/${v.id}/check`, "POST", { questionId: qid }); setReveal((m) => ({ ...m, [qid]: r })); } catch (e: any) { setErr(e.message); } };
+  const check = async (qid: string) => { if (!v) return; try { const r = await api(`/attempts/${v.id}/check`, "POST", { questionId: qid }); setReveal((m) => ({ ...m, [qid]: r })); const mine = (local.current[qid] ?? v.questions.find((x) => x.id === qid))?.selectedKey; if (mine === r.correctKey) { sfx("right"); const c = combo + 1; setCombo(c); floatText(c >= 2 ? `🔥 ${c} combo! +10 XP` : "+10 XP", "good"); addBonusXp(10); confetti(c >= 3 ? 60 : 26, { x: 0.5, y: 0.45 }); } else { sfx("wrong"); setCombo(0); floatText("Oops! Learn from it", "bad"); } } catch (e: any) { setErr(e.message); } };
 
   const timed = v?.mode === "EXAM";
   const qLimit = timed ? q?.timeLimitSec ?? null : null;
@@ -181,8 +182,8 @@ export default function Exam() {
     {v.adaptive && <div className="adaptive-banner"><BrainCircuit size={16} /><span><b>Adaptive focus:</b> {v.adaptiveTopics?.slice(0, 4).join(" · ") || "your weaker areas"}</span><span style={{ marginLeft: "auto" }}>This session is untimed and personalised from your previous exam performance.</span></div>}
     {switches > 0 && timed && <div className="alert alert-warn" style={{ borderRadius: 0 }}><TriangleAlert size={17} />You switched away from the test {switches} time{switches > 1 ? "s" : ""}. The test may auto-submit after the configured limit.</div>}
     <div className="flex flex-1" style={{ maxWidth: 1280, margin: "0 auto", width: "100%" }}><main className="flex-1" style={{ padding: "22px 18px 28px", minWidth: 0 }}>
-      <div className="row between" style={{ marginBottom: 10 }}><span className="pill pill-brand">Question {idx + 1} of {all.length}</span><span className="sub">{answered} answered · {review} marked</span></div><div className="bar" style={{ marginBottom: 18 }}><i style={{ width: `${pct}%` }} /></div>
-      {(() => { const rv = reveal[q.id]; const practice = v.mode === "PRACTICE";
+      <div className="row between" style={{ marginBottom: 10 }}><span className="pill pill-brand">Question {idx + 1} of {all.length}</span>{combo >= 2 && <span key={combo} className="pill pill-warn combo">🔥 {combo} combo</span>}<span className="sub">{answered} answered · {review} marked</span></div><div className="bar" style={{ marginBottom: 18 }}><i style={{ width: `${pct}%` }} /></div>
+      <div key={q.id} className="q-slide">{(() => { const rv = reveal[q.id]; const practice = v.mode === "PRACTICE";
         const pick = (key: string) => { if (rv) return; save({ selectedKey: key, status: q.status.includes("REVIEW") ? "ANSWERED_REVIEW" : "ANSWERED" }); if (practice && instant) setTimeout(() => check(q.id), 350); };
         return <div className="card card-pad fade-in" key={q.id}>
           <div className="row" style={{ gap: 6, marginBottom: 10 }}>{q.section && v.mode === "PRACTICE" && <span className="pill">{q.section}</span>}{q.topic && practice && <span className="pill pill-brand">{q.topic}</span>}</div>
@@ -190,8 +191,8 @@ export default function Exam() {
           <div className="stack" style={{ gap: 10 }}>{q.options.map((o) => <label key={o.key} className={`opt ${q.selectedKey === o.key ? "sel" : ""} ${rv && rv.correctKey === o.key ? "right" : rv && q.selectedKey === o.key ? "wrong" : ""}`}><input className="sr" type="radio" name="opt" checked={q.selectedKey === o.key} disabled={!!rv} onChange={() => pick(o.key)} /><span className="opt-k">{o.key}</span><span style={{ flex: 1 }}>{o.text}</span>{rv && rv.correctKey === o.key && <CircleCheck size={18} color="#16a34a" />}{rv && q.selectedKey === o.key && rv.correctKey !== o.key && <CircleX size={18} color="#dc2626" />}</label>)}</div>
           {practice && <div className="stack" style={{ gap: 10, marginTop: 14 }}>
             {!rv ? <div className="row"><button className="btn btn-sm" disabled={!q.selectedKey} onClick={() => check(q.id)}><Eye size={14} />Check answer</button><label className="sub row" style={{ gap: 6, cursor: "pointer" }}><input type="checkbox" checked={instant} onChange={(e) => setInstant(e.target.checked)} />Check automatically after I pick</label></div>
-              : <div className={`alert ${q.selectedKey === rv.correctKey ? "alert-ok" : "alert-bad"}`} style={{ alignItems: "flex-start" }}>{q.selectedKey === rv.correctKey ? <CircleCheck size={18} /> : <CircleX size={18} />}<div><b>{q.selectedKey === rv.correctKey ? "Correct!" : `Wrong. Correct answer is ${rv.correctKey}.`}</b>{rv.explanation && <div style={{ marginTop: 4, display: "flex", gap: 6 }}><Lightbulb size={16} style={{ flex: "none", marginTop: 2 }} /><span>{rv.explanation}</span></div>}</div></div>}</div>}
-        </div>; })()}
+              : <div className={`alert pop-in ${q.selectedKey === rv.correctKey ? "alert-ok" : "alert-bad"}`} style={{ alignItems: "flex-start" }}>{q.selectedKey === rv.correctKey ? <CircleCheck size={18} /> : <CircleX size={18} />}<div><b>{q.selectedKey === rv.correctKey ? "Correct!" : `Wrong. Correct answer is ${rv.correctKey}.`}</b>{rv.explanation && <div style={{ marginTop: 4, display: "flex", gap: 6 }}><Lightbulb size={16} style={{ flex: "none", marginTop: 2 }} /><span>{rv.explanation}</span></div>}</div></div>}</div>}
+        </div>; })()}</div>
       <div className="action-bar"><button className="btn" onClick={() => save({ status: q.status.includes("REVIEW") ? (q.selectedKey ? "ANSWERED" : "NOT_ANSWERED") : (q.selectedKey ? "ANSWERED_REVIEW" : "REVIEW") })}><Flag size={15} />{q.status.includes("REVIEW") ? "Unmark" : "Mark for review"}</button><button className="btn" onClick={() => save({ selectedKey: null, status: "NOT_ANSWERED" })}><Eraser size={15} />Clear</button><button className="btn md:hidden" onClick={() => setDrawer(true)}><LayoutGrid size={15} />Palette</button><span style={{ flex: 1 }} /><button className="btn" onClick={() => go(idx - 1)} disabled={idx === 0}><ChevronLeft size={16} />Previous</button><button className="btn btn-primary" onClick={() => go(idx + 1)} disabled={idx === all.length - 1}>Save and next<ChevronRight size={16} /></button></div>
     </main>
     <aside className="hidden md:block" style={{ width: 290, flex: "none", padding: "22px 18px 18px 0" }}><div className="card card-pad" style={{ position: "sticky", top: 84 }}><div className="row between" style={{ marginBottom: 14 }}><h3 className="card-title">Question palette</h3><span className="pill">{sessionLabel}</span></div>{Palette}</div><div className="card card-pad" style={{ marginTop: 14 }}><div className="row" style={{ gap: 8 }}><Trophy size={16} /><b>Time management</b></div><p className="sub" style={{ margin: "7px 0 0" }}>{timed ? "Stay conscious of the section clock. Faster is useful only when accuracy remains stable." : "This session is untimed so you can focus on learning and accuracy."}</p></div></aside>

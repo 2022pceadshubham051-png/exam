@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"; import { Link } from "react-router-dom";
 import { Search, Clock, FileText, Layers, Play, Target, Trophy, ClipboardList, ArrowRight, Eye, Sparkles, SlidersHorizontal, Medal, Trash2, Compass, X, TriangleAlert, CircleCheck } from "lucide-react";
 import { api, fmt } from "../lib/api"; import Shell, { Loading } from "../components/Shell";
+import Mascot from "../components/Mascot"; import CountUp, { Wave } from "../components/CountUp"; import { confetti } from "../components/Confetti"; import { levelFromXp, xpFromAttempts, streakDays, saveLevel, savedLevel, saveXp, sfx } from "../lib/game";
 
 const diff: Record<string, string> = { EASY: "pill-ok", MEDIUM: "pill-warn", HARD: "pill-bad" };
 export default function Dashboard() {
@@ -50,21 +51,26 @@ export default function Dashboard() {
     try { const r = await api("/history/delete", "POST", ask.body); setNote({ ok: true, m: `Deleted ${r.deleted} attempt${r.deleted === 1 ? "" : "s"}.${r.skipped ? ` ${r.skipped} official attempt(s) were kept because their test has an attempt limit.` : ""}` }); setSel(new Set()); await loadHist(); }
     catch (e: any) { setNote({ ok: false, m: e.message }); } finally { setBusyDel(false); setAsk(null); }
   };
+  const xp = xpFromAttempts(done), lv = levelFromXp(xp), streak = streakDays(done);
+  useEffect(() => { if (!hist.length) return; const prev = savedLevel(); if (prev && lv.level > prev) { confetti(120); sfx("level"); } saveLevel(lv.level); saveXp(xp); }, [lv.level, hist.length]); // eslint-disable-line
   const best = done.length ? Math.max(...done.map((a) => a.result.percentage)) : null;
   return <Shell>
     <div className="stack" style={{ gap: 26 }}>
       <section className="hero">
         <div className="blob" style={{ width: 220, height: 220, background: "#22d3ee", right: -40, top: -60 }} />
-        <h1>Ready for your next mock test?</h1>
-        <p>Pick a test, focus on the clock and review every answer afterwards. Small steady improvements add up.</p>
+        <span className="spark s1">✦</span><span className="spark s2">★</span><span className="spark s3">✦</span><span className="spark s4">●</span>
+        <div className="hero-mascot"><Mascot mood={streak > 2 ? "cheer" : "wave"} size={132} /></div>
+        <h1><Wave text={done.length ? "Welcome back, player!" : "Ready for your first quest?"} /></h1>
+        <p>Pick a test, beat the clock and collect XP. Every attempt makes you stronger.</p>
+        <div className="xp-card"><div className="row between"><b>Lv {lv.level} · {lv.title}</b><span>{streak > 0 ? `🔥 ${streak}-day streak` : "🔥 Start a streak today"}</span></div><div className="xpbar"><i style={{ width: `${Math.max(4, lv.pct)}%` }} /></div><small>{lv.into} / {lv.need} XP to Level {lv.level + 1}</small></div>
         <div className="row" style={{ marginTop: 18, position: "relative" }}><Link to="/progress" className="btn" style={{ background: "#fff", color: "#3730a3", border: "none" }}>View my progress<ArrowRight size={16} /></Link></div>
       </section>
 
       <section className="grid-stats">
-        <div className="stat"><div className="stat-l"><ClipboardList size={14} />Tests taken</div><div className="stat-v">{done.length}</div></div>
-        <div className="stat"><div className="stat-l"><Target size={14} />Average score</div><div className="stat-v">{avg === null ? "-" : `${avg}%`}</div></div>
-        <div className="stat"><div className="stat-l"><Trophy size={14} />Best score</div><div className="stat-v">{best === null ? "-" : `${best}%`}</div></div>
-        <div className="stat"><div className="stat-l"><FileText size={14} />Available tests</div><div className="stat-v">{tests?.length ?? "-"}</div></div>
+        <div className="stat"><div className="stat-l"><ClipboardList size={14} />Tests taken</div><div className="stat-v"><CountUp to={done.length} /></div></div>
+        <div className="stat"><div className="stat-l"><Target size={14} />Average score</div><div className="stat-v">{avg === null ? "-" : <CountUp to={avg} suffix="%" />}</div></div>
+        <div className="stat"><div className="stat-l"><Trophy size={14} />Best score</div><div className="stat-v">{best === null ? "-" : <CountUp to={best} suffix="%" />}</div></div>
+        <div className="stat"><div className="stat-l"><FileText size={14} />Available tests</div><div className="stat-v">{tests ? <CountUp to={tests.length} /> : "-"}</div></div>
       </section>
 
       <section className="stack" style={{ gap: 14 }}>

@@ -1,6 +1,6 @@
 import React, { Component, type ReactElement, type ErrorInfo } from "react";
 import { createRoot } from "react-dom/client"; import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
-import "./index.css"; import Login from "./pages/Login"; import Exam from "./pages/Exam"; import Result from "./pages/Result"; import Dashboard from "./pages/Dashboard"; import Review from "./pages/Review"; import Admin from "./pages/Admin"; import Progress from "./pages/Progress"; import Leaderboard from "./pages/Leaderboard"; import Coach from "./pages/Coach";
+import "./index.css"; import "./game.css"; import "./cartoon.css"; import Login from "./pages/Login"; import Exam from "./pages/Exam"; import Result from "./pages/Result"; import Dashboard from "./pages/Dashboard"; import Review from "./pages/Review"; import Admin from "./pages/Admin"; import Progress from "./pages/Progress"; import Leaderboard from "./pages/Leaderboard"; import Coach from "./pages/Coach";
 import { getMe } from "./lib/auth";
 
 class AppErrorBoundary extends Component<{children: ReactElement},{error: Error|null}> {
