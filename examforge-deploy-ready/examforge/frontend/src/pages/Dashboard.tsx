@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"; import { Link } from "react-router-dom";
 import { Search, Clock, FileText, Layers, Play, Target, Trophy, ClipboardList, ArrowRight, Eye, Sparkles, SlidersHorizontal, Medal, Trash2, Compass, X, TriangleAlert, CircleCheck } from "lucide-react";
-import { api, fmt } from "../lib/api"; import Shell, { Loading } from "../components/Shell";
+import { api, fmt } from "../lib/api"; import Shell, { Loading } from "../components/Shell"; import AdSlot from "../components/AdSlot";
 import Mascot from "../components/Mascot"; import { showLevelUp } from "../components/LevelUp"; import CountUp, { Wave } from "../components/CountUp"; import { confetti } from "../components/Confetti"; import { levelFromXp, xpFromAttempts, streakDays, saveLevel, savedLevel, saveXp, sfx } from "../lib/game";
 
 const diff: Record<string, string> = { EASY: "pill-ok", MEDIUM: "pill-warn", HARD: "pill-bad" };
@@ -88,6 +88,8 @@ export default function Dashboard() {
           </article>; })}</div>
           : <div className="card empty"><SlidersHorizontal size={34} /><p>{q || mode !== "all" || diffFilter !== "ALL" ? "No tests match these filters." : "No tests are published yet. Check back soon."}</p></div>}
       </section>
+
+      <AdSlot />
 
       <section className="dashboard-split">
         <div className="card card-pad stack"><div className="row between"><div><h2 className="card-title row" style={{ gap: 8 }}><Trophy size={18} />Global leaderboard</h2><p className="sub">Top official exam performers. Practice sessions are excluded.</p></div><Link className="btn btn-sm" to="/progress">My performance<ArrowRight size={14} /></Link></div>

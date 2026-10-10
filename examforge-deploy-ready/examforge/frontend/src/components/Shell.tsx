@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react"; import { Link, NavLink } from "react-router-dom";
 import { Sun, Moon, LogOut, LayoutDashboard, TrendingUp, ShieldCheck, Trophy, Compass, Volume2, VolumeX, CircleHelp, Palette } from "lucide-react";
-import { getMe, logout, toggleTheme, isDark, cycleStyle, nextStyle, STYLE_NAMES } from "../lib/auth"; import { soundOn, toggleSound, savedLevel, savedXp, sfx } from "../lib/game"; import Tutorial, { openTutorial } from "./Tutorial"; import FX from "./FX"; import LevelUp from "./LevelUp"; import LogoMark from "./LogoMark"; import Mascot from "./Mascot";
+import { getMe, logout, toggleTheme, isDark, cycleStyle, nextStyle, STYLE_NAMES } from "../lib/auth"; import { soundOn, toggleSound, savedLevel, savedXp, sfx } from "../lib/game"; import Tutorial, { openTutorial } from "./Tutorial"; import FX from "./FX"; import LevelUp from "./LevelUp"; import LogoMark from "./LogoMark"; import { SiteFooter } from "./PublicShell"; import Mascot from "./Mascot";
 
 export const Logo = ({ size = 34 }: { size?: number }) => <LogoMark size={size < 30 ? 34 : size} />;
 
@@ -27,6 +27,7 @@ export default function Shell({ children, narrow }: { children: ReactNode; narro
     </div></header>
     <Tutorial /><FX /><LevelUp />
     <main className={narrow ? "page-narrow fade-in" : "page fade-in"}>{children}</main>
+    <SiteFooter />
   </>;
 }
 

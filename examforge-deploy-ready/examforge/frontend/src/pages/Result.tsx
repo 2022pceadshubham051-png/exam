@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"; import { useParams, Link, useNavigate } from "react-router-dom";
 import { Eye, Target, Clock, CircleCheck, CircleX, MinusCircle, TrendingUp, TrendingDown, ArrowRight, Sparkles, LayoutDashboard, Trash2, Compass, Trophy } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { api, fmt } from "../lib/api"; import Shell, { Loading } from "../components/Shell";
+import { api, fmt } from "../lib/api"; import Shell, { Loading } from "../components/Shell"; import AdSlot from "../components/AdSlot";
 import Mascot from "../components/Mascot"; import { StarBuddy, TrophyBuddy } from "../components/Buddies"; import { comicBurst } from "../components/Confetti"; import { confetti } from "../components/Confetti"; import { stars, sfx } from "../lib/game";
 
 function CountUp({ to, suffix = "" }: { to: number; suffix?: string }) {
@@ -61,6 +61,7 @@ export default function Result() {
         <div className="stack" style={{ gap: 12 }}>{subj.map((x: any) => <div key={x.name}><div className="row between"><b>{x.name}</b><span><b style={{ color: col(x.rating) }}>{x.rating}</b><span className="muted">/100</span> <span className="sub">· {x.correct}✓ {x.incorrect}✗ {x.unanswered}− · {x.total} Q</span></span></div><div className="bar" style={{ marginTop: 5 }}><i style={{ width: `${Math.max(2, x.rating)}%`, background: col(x.rating) }} /></div></div>)}</div></section>}
       {topics.length > 0 && <section className="card card-pad stack"><div><h2 className="card-title">Topic-wise accuracy</h2><p className="sub">Weakest topics first.</p></div>
         <div className="card table-wrap" style={{ boxShadow: "none" }}><table className="t"><thead><tr><th>Topic</th><th>Questions</th><th>Correct</th><th>Wrong</th><th>Accuracy</th><th>Avg time</th></tr></thead><tbody>{topics.map((t: any) => <tr key={t.name}><td><b>{t.name}</b></td><td>{t.total}</td><td>{t.correct}</td><td>{t.incorrect}</td><td><span className={`pill ${t.accuracy >= 70 ? "pill-ok" : t.accuracy >= 40 ? "pill-warn" : "pill-bad"}`}>{t.accuracy}%</span></td><td>{t.avgTimeSec}s</td></tr>)}</tbody></table></div></section>}
+      <AdSlot />
       <div className="row"><Link className="btn" to="/progress">See overall progress<ArrowRight size={16} /></Link><Link className="btn btn-primary" to="/coach"><Compass size={16} />What should I improve next?</Link></div>
       {askDel && <div className="modal-bg" onClick={() => !delBusy && setAskDel(false)}><div className="card modal stack" style={{ gap: 12 }} onClick={(e) => e.stopPropagation()}><h3 className="card-title">Delete this attempt?</h3><p className="sub">The attempt, answers and result are removed from your history, progress and Smart Coach. This cannot be undone.</p>{delErr && <div className="alert alert-bad">{delErr}</div>}<div className="row" style={{ justifyContent: "flex-end" }}><button className="btn" disabled={delBusy} onClick={() => setAskDel(false)}>Cancel</button><button className="btn btn-danger" disabled={delBusy} onClick={remove}><Trash2 size={15} />{delBusy ? "Deleting..." : "Delete"}</button></div></div></div>}
     </div></Shell>;

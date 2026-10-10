@@ -1,0 +1,13 @@
+.pub-hero { text-align: center; padding: 56px 12px 8px; }
+.pub-hero h1 { font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 800; line-height: 1.1; letter-spacing: -.03em; }
+.pub-hero p { color: var(--muted); max-width: 560px; margin: 16px auto 24px; line-height: 1.6; font-size: 1.05rem; }
+.pub-ico { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; background: var(--surface-2); color: var(--text); }
+.pub-link { color: var(--text); transition: transform .15s; } .pub-link:hover { text-decoration: none; transform: translateY(-2px); }
+.prose h1 { font-size: 1.7rem; font-weight: 800; margin-bottom: 12px; }
+.prose h2 { font-size: 1.1rem; font-weight: 800; margin: 22px 0 6px; }
+.prose p, .prose li { line-height: 1.75; margin: 0 0 12px; }
+.prose ul { padding-left: 20px; margin: 0 0 12px; }
+.site-foot { border-top: 1px solid var(--border); padding: 20px 18px; color: var(--muted); font-size: .88rem; }
+.site-foot-in { max-width: 1120px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 10px 24px; justify-content: space-between; }
+.site-foot nav { display: flex; flex-wrap: wrap; gap: 6px 18px; } .site-foot a { color: var(--muted); font-weight: 600; }
+.ad-wrap { margin: 8px 0; text-align: center; min-height: 20px; } .ad-wrap small { display: block; color: var(--muted); font-size: .68rem; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 4px; }

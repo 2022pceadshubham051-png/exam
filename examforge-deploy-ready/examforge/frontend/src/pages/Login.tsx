@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react"; import { useNavigate } from "react-router-dom";
+import { useState, type FormEvent } from "react"; import { useNavigate, Link } from "react-router-dom";
 import { Timer, BarChart3, ShieldCheck, Eye, EyeOff, Sun, Moon, ArrowRight, Loader, TriangleAlert } from "lucide-react";
 import { api } from "../lib/api"; import { Logo } from "../components/Shell"; import { toggleTheme, isDark, getMe } from "../lib/auth"; import Mascot from "../components/Mascot";
 
@@ -59,6 +59,7 @@ export default function Login() {
         {err && <div className="alert alert-bad"><TriangleAlert size={17} />{err}</div>}
         <button className="btn btn-primary btn-lg btn-block" disabled={busy}>{busy ? <Loader size={18} className="animate-spin" /> : <>{reg ? "Create account" : "Login"}<ArrowRight size={18} /></>}</button>
       </form>
+      <div className="row" style={{ justifyContent: "center", gap: 16, marginTop: 14, fontSize: ".85rem" }}><Link to="/">Home</Link><Link to="/privacy">Privacy policy</Link><Link to="/about">About</Link><Link to="/contact">Contact</Link></div>
     </section>
   </div>;
 }
