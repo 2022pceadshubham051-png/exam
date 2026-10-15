@@ -19,7 +19,13 @@ export default function Coach() {
   useEffect(() => {
     Promise.all([api("/coach/exams"), api("/coach/prefs")]).then(([c, p]) => {
       setCatalog(c); if (p.targetScore) setTarget(p.targetScore);
-      const te: string | null = p.targetExam; if (te) { setExam(te.startsWith("custom") ? "custom" : te); setGroup(te.startsWith("custom") ? "Custom" : c.exams.find((e: any) => e.id === te)?.group ?? "SSC"); }
+      const te: string | null = p.targetExam;
+      if (te) { setExam(te.startsWith("custom") ? "custom" : te); setGroup(te.startsWith("custom") ? "Custom" : c.exams.find((e: any) => e.id === te)?.group ?? "SSC"); }
+      else if (p.profileTargetExam) {
+        const t = String(p.profileTargetExam).toLowerCase();
+        const mapped = t.includes("ntpc") ? "rrb-ntpc-cbt1" : t.includes("group d") ? "rrb-group-d" : t.includes("chsl") ? "ssc-chsl-t1" : t.includes("mts") ? "ssc-mts" : t.includes("gd") ? "ssc-gd" : t.includes("programmer") || t.includes("computer instructor") || t.includes("computer science") ? "imd-sa-cs" : t.includes("cgl") ? "ssc-cgl-t1" : "custom";
+        setExam(mapped); setGroup(mapped === "custom" ? "Custom" : c.exams.find((e: any) => e.id === mapped)?.group ?? "SSC");
+      }
       ready.current = true; setBusy(true);
     }).catch((e) => setErr(e.message));
   }, []);

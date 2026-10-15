@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react"; import { Link } from "react-router-dom";
-import { Search, Clock, FileText, Layers, Play, Target, Trophy, ClipboardList, ArrowRight, Eye, Sparkles, SlidersHorizontal, Medal, Trash2, Compass, X, TriangleAlert, CircleCheck } from "lucide-react";
+import { Search, Clock, FileText, Layers, Play, Target, Trophy, ClipboardList, ArrowRight, Eye, Sparkles, SlidersHorizontal, Medal, Trash2, Compass, X, TriangleAlert, CircleCheck, BookOpen, Coins } from "lucide-react";
 import { api, fmt } from "../lib/api"; import Shell, { Loading } from "../components/Shell"; import AdSlot from "../components/AdSlot";
 import Mascot from "../components/Mascot"; import { showLevelUp } from "../components/LevelUp"; import CountUp, { Wave } from "../components/CountUp"; import { confetti } from "../components/Confetti"; import { levelFromXp, xpFromAttempts, streakDays, saveLevel, savedLevel, saveXp, sfx } from "../lib/game";
 
 const diff: Record<string, string> = { EASY: "pill-ok", MEDIUM: "pill-warn", HARD: "pill-bad" };
 export default function Dashboard() {
-  const [tests, setTests] = useState<any[] | null>(null); const [hist, setHist] = useState<any[]>([]); const [leaderboard, setLeaderboard] = useState<any[]>([]); const [q, setQ] = useState(""); const [mode, setMode] = useState<"all" | "practice" | "timed">("all"); const [diffFilter, setDiffFilter] = useState("ALL"); const [err, setErr] = useState("");
+  const [tests, setTests] = useState<any[] | null>(null); const [profile, setProfile] = useState<any>(null); const [hist, setHist] = useState<any[]>([]); const [leaderboard, setLeaderboard] = useState<any[]>([]); const [q, setQ] = useState(""); const [mode, setMode] = useState<"all" | "practice" | "timed">("all"); const [diffFilter, setDiffFilter] = useState("ALL"); const [err, setErr] = useState("");
   const [sel, setSel] = useState<Set<string>>(new Set()); const [histMode, setHistMode] = useState<"all" | "EXAM" | "PRACTICE">("all"); const [histTest, setHistTest] = useState("ALL"); const [ask, setAsk] = useState<null | { title: string; body: any; label: string }>(null); const [note, setNote] = useState<null | { ok: boolean; m: string }>(null); const [busyDel, setBusyDel] = useState(false);
   const loadHist = () => api("/history").then((data) => setHist(Array.isArray(data) ? data : [])).catch(() => setHist([]));
+  useEffect(() => { api("/profile").then(setProfile).catch(() => setProfile(null)); }, []);
   useEffect(() => {
     let cancelled = false;
     const timer = setTimeout(() => {
@@ -44,7 +45,22 @@ export default function Dashboard() {
     return () => { cancelled = true; };
   }, []);
   const done = hist.filter((a) => a.result); const avg = done.length ? Math.round(done.reduce((s, a) => s + a.result.percentage, 0) / done.length) : null;
-  const shownTests = (tests ?? []).filter((t) => (diffFilter === "ALL" || t.difficulty === diffFilter) && (mode === "all" || (mode === "practice" ? t.allowPracticeMode !== false : true)));
+  const targetExam = String(profile?.targetExam || "");
+  const examKey = targetExam.toLowerCase();
+  const aliases = examKey.includes("computer instructor") ? ["computer instructor", "computer science", "programmer"] :
+    examKey.includes("programmer") ? ["programmer", "computer science"] :
+    examKey.includes("cet") ? ["cet", "rajasthan"] :
+    examKey.includes("patwari") ? ["patwari"] : examKey.includes("vdo") ? ["vdo", "gram vikas"] :
+    examKey.includes("ntpc") ? ["ntpc", "railway"] : examKey.includes("group d") ? ["group d", "railway"] :
+    examKey.includes("cgl") ? ["ssc cgl"] : examKey.includes("chsl") ? ["ssc chsl"] :
+    examKey.includes("mts") ? ["ssc mts"] : examKey.includes("ssc gd") ? ["ssc gd"] :
+    examKey.includes("ssc je") ? ["ssc je", "computer science"] :
+    (examKey.includes("ibps") || examKey.includes("bank")) ? ["ibps", "banking", "bank"] : [];
+  const effectiveAliases = examKey.includes("scientific assistant") ? ["scientific assistant", "computer science"] : aliases;
+  const targetMatchedTests = (tests ?? []).filter((t) => effectiveAliases.length ? effectiveAliases.some((alias) => `${t.examName || ""} ${t.name || ""}`.toLowerCase().includes(alias)) : true);
+  const hasTargetMatches = !effectiveAliases.length || targetMatchedTests.length > 0;
+  const testPool = hasTargetMatches ? targetMatchedTests : (tests ?? []);
+  const shownTests = testPool.filter((t) => (diffFilter === "ALL" || t.difficulty === diffFilter) && (mode === "all" || (mode === "practice" ? t.allowPracticeMode !== false : true)));
   const shownHist = hist.filter((a) => (histMode === "all" || a.mode === histMode) && (histTest === "ALL" || a.test.id === histTest));
   const doDelete = async () => {
     if (!ask) return; setBusyDel(true);
@@ -60,23 +76,24 @@ export default function Dashboard() {
         <div className="blob" style={{ width: 220, height: 220, background: "#22d3ee", right: -40, top: -60 }} />
         <span className="spark s1">✦</span><span className="spark s2">★</span><span className="spark s3">✦</span><span className="spark s4">●</span>
         <div className="hero-mascot"><Mascot mood={streak > 2 ? "cheer" : "wave"} size={132} /></div>
-        <h1><Wave text={done.length ? "Welcome back, player!" : "Ready for your first quest?"} /></h1>
-        <p>Pick a test, beat the clock and collect XP. Every attempt makes you stronger.</p>
+        <h1><Wave text={done.length ? `Welcome back, ${(profile?.displayName || profile?.name || "player").split(" ")[0]}!` : "Ready for your first quest?"} /></h1>
+        <p>Pick a test for {targetExam && !targetExam.toLowerCase().includes("explore all") ? targetExam : "your preparation"}, beat the clock and collect XP. Every attempt makes you stronger.</p>
         <div className="xp-card"><div className="row between"><b>Lv {lv.level} · {lv.title}</b><span>{streak > 0 ? `🔥 ${streak}-day streak` : "🔥 Start a streak today"}</span></div><div className="xpbar"><i style={{ width: `${Math.max(4, lv.pct)}%` }} /></div><small>{lv.into} / {lv.need} XP to Level {lv.level + 1}</small></div>
-        <div className="row" style={{ marginTop: 18, position: "relative" }}><Link to="/progress" className="btn" style={{ background: "#fff", color: "#3730a3", border: "none" }}>View my progress<ArrowRight size={16} /></Link></div>
+        <div className="row" style={{ marginTop: 18, position: "relative" }}><Link to="/progress" className="btn" style={{ background: "#fff", color: "#3730a3", border: "none" }}>View my progress<ArrowRight size={16} /></Link><Link to="/lecture-pace" className="btn" style={{ background: "rgba(255,255,255,.15)", color: "#fff", borderColor: "rgba(255,255,255,.25)" }}><BookOpen size={16}/>Lecture Pace</Link><Link to="/coins" className="btn" style={{ background: "rgba(255,255,255,.15)", color: "#fff", borderColor: "rgba(255,255,255,.25)" }}><Coins size={16}/>Coin shop</Link></div>
       </section>
 
       <section className="grid-stats">
         <div className="stat"><div className="stat-l"><ClipboardList size={14} />Tests taken</div><div className="stat-v"><CountUp to={done.length} /></div></div>
         <div className="stat"><div className="stat-l"><Target size={14} />Average score</div><div className="stat-v">{avg === null ? "-" : <CountUp to={avg} suffix="%" />}</div></div>
         <div className="stat"><div className="stat-l"><Trophy size={14} />Best score</div><div className="stat-v">{best === null ? "-" : <CountUp to={best} suffix="%" />}</div></div>
-        <div className="stat"><div className="stat-l"><FileText size={14} />Available tests</div><div className="stat-v">{tests ? <CountUp to={tests.length} /> : "-"}</div></div>
+        <div className="stat"><div className="stat-l"><FileText size={14} />Available tests</div><div className="stat-v">{tests ? <CountUp to={testPool.length} /> : "-"}</div></div>
       </section>
 
       <section className="stack" style={{ gap: 14 }}>
-        <div className="row between" style={{ alignItems: "flex-end" }}><div><h2 className="card-title" style={{ fontSize: "1.25rem" }}>Available tests</h2><p className="sub">Choose a timed mock or use untimed practice where available.</p></div>
+        <div className="row between" style={{ alignItems: "flex-end" }}><div><h2 className="card-title" style={{ fontSize: "1.25rem" }}>{aliases.length && hasTargetMatches ? `${targetExam} tests` : "Available tests"}</h2><p className="sub">{aliases.length && hasTargetMatches ? "Prioritizing published mock tests that match your target exam." : "Choose a timed mock or use untimed practice where available."}</p></div>
           <div className="row" style={{ gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}><div className="seg"><button className={mode === "all" ? "on" : ""} onClick={() => setMode("all")}>All</button><button className={mode === "timed" ? "on" : ""} onClick={() => setMode("timed")}>Timed</button><button className={mode === "practice" ? "on" : ""} onClick={() => setMode("practice")}><Sparkles size={14} />Practice</button></div><select className="input" style={{ width: 150 }} value={diffFilter} onChange={(e) => setDiffFilter(e.target.value)} aria-label="Filter by difficulty"><option value="ALL">All levels</option><option value="EASY">Easy</option><option value="MEDIUM">Medium</option><option value="HARD">Hard</option></select><div style={{ position: "relative", minWidth: 220 }}><Search size={16} style={{ position: "absolute", left: 13, top: 13, color: "var(--muted)" }} /><input className="input" style={{ paddingLeft: 38 }} placeholder="Search tests" value={q} onChange={(e) => setQ(e.target.value)} /></div></div></div>
         {err && <div className="alert alert-bad">{err}</div>}
+        {!hasTargetMatches && targetExam && <div className="alert alert-info"><Target size={16}/><span>No mock tests specifically tagged for <b>{targetExam}</b> have been published yet, so all available tests are shown until a matching set is added.</span></div>}
         {!tests ? <Loading /> : shownTests.length ? <div className="grid-auto">{shownTests.map((t) => {
           const qs = t.sections.reduce((a: number, s: any) => a + s._count.questions, 0);
           return <article key={t.id} className="card tcard">

@@ -40,11 +40,17 @@ model User {
   passwordHash String
   name String
   displayName String?
+  age Int?
   role Role @default(USER)
   targetExam String?
+  coachExam String?
   targetScore Int?
+  coins Int @default(100)
+  inventory Json @default("{}")
   createdAt DateTime @default(now())
   attempts TestAttempt[]
+  lecturePaceState LecturePaceState?
+  coinTransactions CoinTransaction[]
 }
 
 model Test {
@@ -208,4 +214,26 @@ model AIQuestionGeneration {
   prompt Json
   rawOutput String
   createdAt DateTime @default(now())
+}
+
+
+model LecturePaceState {
+  userId String @id
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  state Json
+  updatedAt DateTime @updatedAt
+}
+
+model CoinTransaction {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount Int
+  type String
+  reason String
+  referenceId String?
+  balance Int
+  createdAt DateTime @default(now())
+  @@unique([userId, referenceId])
+  @@index([userId, createdAt])
 }

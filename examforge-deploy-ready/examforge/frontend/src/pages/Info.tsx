@@ -24,7 +24,7 @@ export const Privacy = () => <Doc title="Privacy policy">
   <p className="muted">Last updated: {new Date().toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric" })}</p>
   <p>This policy explains what information {SITE} collects, how it is used, and the choices you have. By using the site you agree to this policy.</p>
   <h2>Information we collect</h2>
-  <ul><li><b>Account details:</b> your name, email address and a securely hashed password when you register.</li><li><b>Test activity:</b> the tests you attempt, your answers, scores, time taken and results, so that we can show your history, progress and the leaderboard.</li><li><b>Technical data:</b> basic information such as browser type and IP address that servers receive with every request, used for security and abuse prevention.</li></ul>
+  <ul><li><b>Account details:</b> your name, email address, age and target exam, plus a securely hashed password when you register.</li><li><b>Study activity:</b> Lecture Pace courses, completion dates, notes, focus sessions and coin transactions, so your planner can sync across devices, rewards can be calculated, and study-progress rankings can be shown.</li><li><b>Test activity:</b> the tests you attempt, your answers, scores, time taken and results, so that we can show your history, progress and the leaderboard.</li><li><b>Technical data:</b> basic information such as browser type and IP address that servers receive with every request, used for security and abuse prevention.</li></ul>
   <h2>How we use it</h2>
   <p>We use your information to run the service: to log you in, score your tests, show your analysis, rank the leaderboard, and keep the platform secure. We do not sell your personal information.</p>
   <h2>Cookies and local storage</h2>
@@ -33,7 +33,7 @@ export const Privacy = () => <Doc title="Privacy policy">
   <p>We may show ads served by Google AdSense and other third-party advertising partners. These partners use cookies or similar technologies to show ads based on your previous visits to this and other websites. Google's use of advertising cookies enables it and its partners to serve ads based on your visit to this site and other sites on the internet.</p>
   <p>You can opt out of personalised advertising at <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer">Google Ads Settings</a>. For more about how Google uses data from sites that use its services, see <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener noreferrer">policies.google.com/technologies/partner-sites</a>. Ads are never shown inside the exam screen.</p>
   <h2>Leaderboard</h2>
-  <p>If a test has a leaderboard, your display name and official exam scores can be visible to other students.</p>
+  <p>Your display name and official exam scores can be visible on the exam leaderboard. If you use the study leaderboard, your display name and aggregate lecture progress, focus time and study-day totals can also be visible to other students.</p>
   <h2>Data retention and your choices</h2>
   <p>You can delete your attempts from the dashboard at any time. To ask for your account and data to be removed, contact us using the details below.</p>
   <h2>Children</h2>
