@@ -653,20 +653,68 @@ body { color:var(--fg); background-image:radial-gradient(900px 500px at 8% -10%,
 
   /* ---------- storage ---------- */
   function save() { state.updatedAt = Date.now(); state.touched = true; try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} schedulePush(); }
+  function isISODate(value) {
+    if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    try { var d = parse(value); return !isNaN(d.getTime()) && iso(d) === value; } catch (e) { return false; }
+  }
+  function cleanDate(value, fallback) {
+    if (isISODate(value)) return value;
+    if (typeof value === 'string' && value.length >= 10 && isISODate(value.slice(0, 10))) return value.slice(0, 10);
+    return fallback || '';
+  }
+  function record(value) { return value && typeof value === 'object' && !Array.isArray(value) ? value : {}; }
+  function finite(value, fallback, min, max) {
+    var n = Number(value); if (!isFinite(n)) n = fallback;
+    if (min !== undefined) n = Math.max(min, n); if (max !== undefined) n = Math.min(max, n); return n;
+  }
   function normalize() {
-    state.settings = Object.assign({}, DEF, state.settings || {});
+    state = state && typeof state === 'object' && !Array.isArray(state) ? state : {};
+    state.settings = Object.assign({}, DEF, record(state.settings));
     if (['plan', 'planner', 'calendar', 'focus', 'revise', 'insights'].indexOf(state.settings.tab) < 0) state.settings.tab = 'plan';
-    state.frozen = state.frozen || {}; state.purchasedFreezes = Math.max(0, Number(state.purchasedFreezes) || 0); state.purchasedFocusExtensions = Math.max(0, Number(state.purchasedFocusExtensions) || 0);
-    state.courses = state.courses.filter(function (c) { return c && typeof c === 'object'; }).slice(0, 100);
+    state.settings.focusLen = [15, 25, 45, 50].indexOf(Number(state.settings.focusLen)) >= 0 ? Number(state.settings.focusLen) : DEF.focusLen;
+    state.settings.breakLen = [5, 10, 15].indexOf(Number(state.settings.breakLen)) >= 0 ? Number(state.settings.breakLen) : DEF.breakLen;
+    state.settings.budget = Math.round(finite(state.settings.budget, DEF.budget, 15, 1000));
+    state.settings.tapMode = state.settings.tapMode === 'open' ? 'open' : 'done';
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(String(state.settings.studyStart || ''))) state.settings.studyStart = '17:00';
+    state.frozen = record(state.frozen);
+    var frozen = {}; Object.keys(state.frozen).forEach(function (d) { if (isISODate(d) && state.frozen[d]) frozen[d] = true; }); state.frozen = frozen;
+    state.purchasedFreezes = Math.max(0, Math.floor(finite(state.purchasedFreezes, 0, 0, 9999)));
+    state.purchasedFocusExtensions = Math.max(0, Math.floor(finite(state.purchasedFocusExtensions, 0, 0, 9999)));
+    state.courses = (Array.isArray(state.courses) ? state.courses : []).filter(function (c) { return c && typeof c === 'object' && !Array.isArray(c); }).slice(0, 100);
     state.courses.forEach(function (c) {
-      c.id = c.id || uid(); c.name = String(c.name || 'Untitled course').slice(0, 120);
-      c.total = Math.min(1000, Math.max(1, Math.floor(Number(c.total) || 1)));
-      c.start = /^\d{4}-\d{2}-\d{2}$/.test(String(c.start || '')) ? c.start : today();
-      c.days = Math.min(730, Math.max(1, Math.floor(Number(c.days) || 30)));
-      c.mins = Math.min(600, Math.max(0, Number(c.mins) || 0));
-      c.done = c.done && typeof c.done === 'object' && !Array.isArray(c.done) ? c.done : {}; c.notes = c.notes && typeof c.notes === 'object' ? c.notes : {}; c.flags = c.flags && typeof c.flags === 'object' ? c.flags : {}; c.rev = c.rev && typeof c.rev === 'object' ? c.rev : {};
-      c.sessions = Array.isArray(c.sessions) ? c.sessions : []; c.speed = Math.max(0.25, Number(c.speed) || 1); c.buffer = Math.max(0, Number(c.buffer) || 0); c.titles = Array.isArray(c.titles) ? c.titles : [];
-      c.durs = Array.isArray(c.durs) ? c.durs : []; c.links = Array.isArray(c.links) ? c.links : []; c.off = Array.isArray(c.off) ? c.off : (c.skipSun ? [0] : []); c.breakFrom = c.breakFrom || ''; c.breakTo = c.breakTo || ''; c.offDates = Array.isArray(c.offDates) ? c.offDates : []; c.onDates = Array.isArray(c.onDates) ? c.onDates : []; c.chapters = Array.isArray(c.chapters) ? c.chapters : []; c.mocks = Array.isArray(c.mocks) ? c.mocks : []; c.exam = c.exam || ''; c.revWeeks = Math.max(0, Number(c.revWeeks) || 0);
+      c.id = String(c.id || uid()); c.name = String(c.name || 'Untitled course').slice(0, 120);
+      c.total = Math.min(1000, Math.max(1, Math.floor(finite(c.total, 1, 1, 1000))));
+      c.start = cleanDate(c.start, today()) || today();
+      c.days = Math.min(730, Math.max(1, Math.floor(finite(c.days, 30, 1, 730))));
+      c.mins = finite(c.mins, 0, 0, 600);
+      c.speed = finite(c.speed, 1, 0.25, 10);
+      c.buffer = Math.min(c.days - 1, Math.max(0, Math.floor(finite(c.buffer, 0, 0, 90))));
+
+      var oldDone = record(c.done), done = {};
+      Object.keys(oldDone).forEach(function (key) {
+        if (!/^\d{1,4}$/.test(key)) return;
+        var n = Number(key), value = oldDone[key]; if (n < 1 || n > c.total || !value) return;
+        done[n] = cleanDate(value, today()) || today();
+      }); c.done = done;
+
+      function cleanMap(value, convert) { var src = record(value), out = {}; Object.keys(src).forEach(function (key) { if (!/^\d{1,4}$/.test(key)) return; var n = Number(key); if (n < 1 || n > c.total) return; out[n] = convert(src[key]); }); return out; }
+      c.notes = cleanMap(c.notes, function (v) { return typeof v === 'string' ? v : String(v == null ? '' : v); });
+      c.flags = cleanMap(c.flags, function (v) { return !!v; });
+      c.rev = cleanMap(c.rev, function (v) { var r = record(v); var step = typeof v === 'number' ? v : r.s; return { s: Math.floor(finite(step, 0, 0, INT.length)), d: cleanDate(r.d, '') || null }; });
+
+      c.titles = (Array.isArray(c.titles) ? c.titles : []).slice(0, c.total).map(function (v) { return String(v == null ? '' : v).slice(0, 300); });
+      c.durs = (Array.isArray(c.durs) ? c.durs : []).slice(0, c.total).map(function (v) { return finite(v, 0, 0, 600); });
+      c.links = (Array.isArray(c.links) ? c.links : []).slice(0, c.total).map(function (v) { return String(v == null ? '' : v).slice(0, 2000); });
+      c.off = (Array.isArray(c.off) ? c.off : (c.skipSun ? [0] : [])).map(Number).filter(function (v) { return Number.isInteger(v) && v >= 0 && v <= 6; }).filter(function (v, i, a) { return a.indexOf(v) === i; });
+      c.skipSun = c.off.indexOf(0) >= 0;
+      c.breakFrom = cleanDate(c.breakFrom, '') || ''; c.breakTo = cleanDate(c.breakTo, '') || '';
+      c.offDates = (Array.isArray(c.offDates) ? c.offDates : []).map(function (d) { return cleanDate(d, ''); }).filter(function (d, i, a) { return !!d && a.indexOf(d) === i; });
+      c.onDates = (Array.isArray(c.onDates) ? c.onDates : []).map(function (d) { return cleanDate(d, ''); }).filter(function (d, i, a) { return !!d && a.indexOf(d) === i; });
+      c.chapters = (Array.isArray(c.chapters) ? c.chapters : []).filter(function (ch) { return ch && typeof ch === 'object' && !Array.isArray(ch); }).map(function (ch) { return { name: String(ch.name || 'Chapter').slice(0, 120), start: Math.floor(finite(ch.start, 1, 1, c.total)) }; }).sort(function (a, b) { return a.start - b.start; }).filter(function (ch, i, a) { return i === 0 || a[i - 1].start !== ch.start; });
+      c.sessions = (Array.isArray(c.sessions) ? c.sessions : []).filter(function (v) { return v && typeof v === 'object' && !Array.isArray(v); }).slice(0, 5000).map(function (v) { return { d: cleanDate(v.d, today()) || today(), m: finite(v.m, 0, 0, 1440), n: finite(v.n, 0, 0, 1000), x: finite(v.x, 0, 0, 1000), h: Math.floor(finite(v.h, 12, 0, 23)) }; });
+      c.mocks = (Array.isArray(c.mocks) ? c.mocks : []).filter(function (v) { return v && typeof v === 'object' && !Array.isArray(v); }).slice(0, 1000).map(function (v) { return { d: cleanDate(v.d, today()) || today(), name: String(v.name || 'Test').slice(0, 120), score: finite(v.score, 0, 0, 100000), max: finite(v.max, 1, 1, 100000) }; });
+      c.exam = cleanDate(c.exam, '') || '';
+      c.revWeeks = Math.floor(finite(c.revWeeks, 0, 0, 12));
     });
     if (!state.courses.some(function (c) { return c.id === state.activeId; })) state.activeId = state.courses[0] ? state.courses[0].id : null;
     if (!focus.running) { focus.total = state.settings.focusLen * 60; focus.remaining = focus.total; }
@@ -682,7 +730,7 @@ body { color:var(--fg); background-image:radial-gradient(900px 500px at 8% -10%,
       if (raw) {
         var s = JSON.parse(raw);
         if (s && Array.isArray(s.courses)) {
-          if (s.courses.length && s.courses.every(function (c) { return !!c.sample; })) {
+          if (s.courses.length && s.courses.every(function (c) { return !!(c && c.sample); })) {
             state = { courses: [], activeId: null, settings: s.settings || {}, frozen: {}, purchasedFreezes: 0, purchasedFocusExtensions: 0 };
             normalize(); try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} return;
           }
@@ -1401,12 +1449,30 @@ body { color:var(--fg); background-image:radial-gradient(900px 500px at 8% -10%,
     var tab = state.settings.tab, t = today();
     if (tab === 'planner') {
       try { el.innerHTML = tabsHtml(c, t) + plannerTab(); }
-      catch (err) { console.error('Lecture Pace planner render failed', err); state.settings.tab = 'plan'; el.innerHTML = tabsHtml(c, t) + '<section class="panel"><h2>Planner recovered</h2><p class="note">We repaired an older saved planner setting. Your courses are still available; choose the Planner tab again to retry.</p></section>'; }
+      catch (err) {
+        console.error('Lecture Pace planner render failed; falling back to the safe Plan view', err);
+        // Persist the fallback so a broken Planner tab cannot reopen the same recovery screen forever.
+        state.settings = record(state.settings); state.settings.tab = 'plan'; normalize(); save();
+        el.innerHTML = tabsHtml(c, t) + planTab(c, calc(c));
+        toast('Planner view reset. Your saved courses and progress are preserved.');
+      }
       return;
     }
     var k, timed;
     try { k = calc(c); timed = hasTime(c); }
-    catch (err) { console.error('Lecture Pace course render failed', err); el.innerHTML = '<section class="panel"><h2>Course data needs a refresh</h2><p class="note">This course contained incomplete saved settings. Your saved course is preserved. Open Edit goal and save it to rebuild the plan.</p><button class="btn" type="button" data-act="edit">Repair course settings</button></section>'; return; }
+    catch (err) {
+      console.error('Lecture Pace course render failed; sanitizing saved course data', err);
+      try {
+        // Rebuild only known planner fields and retry once; don't delete a course or its progress.
+        state.settings = record(state.settings); state.settings.tab = 'plan'; normalize();
+        c = active(); if (!c) { renderMain(); return; }
+        k = calc(c); timed = hasTime(c); tab = state.settings.tab;
+        save(); toast('Saved course settings repaired. Your progress is preserved.');
+      } catch (repairErr) {
+        console.error('Lecture Pace course repair failed', repairErr);
+        el.innerHTML = '<section class="panel"><h2>Course needs a manual refresh</h2><p class="note">Your course and saved progress are preserved. We could not safely rebuild this schedule automatically. Open Edit goal to review the course settings; do not reset progress.</p><button class="btn" type="button" data-act="edit">Review course settings</button></section>'; return;
+      }
+    }
     var pct = Math.round(k.done / c.total * 100), circ = 2 * Math.PI * 52;
     var eyebrow;
     if (!k.started) eyebrow = 'Starts ' + fmtLong(c.start);
@@ -1442,12 +1508,25 @@ body { color:var(--fg); background-image:radial-gradient(900px 500px at 8% -10%,
   }
   function render() {
     var ae = document.activeElement, fid = ae && ae.id && /^(t|g)-/.test(ae.id) ? ae.id : null;
-    renderTop(); renderSide();
-    try { renderMain(); } catch (err) { console.error('Lecture Pace render failed', err); var main = $('#main'); if (main) main.innerHTML = '<section class="panel"><h2>Lecture Pace recovered from a saved-data issue</h2><p class="note">Your saved courses have not been deleted. Try opening Edit goal and saving the course settings. If the problem continues, reload this page.</p><button class="btn" type="button" data-act="edit">Repair course settings</button></section>'; }
+    try { renderTop(); renderSide(); renderMain(); }
+    catch (err) {
+      console.error('Lecture Pace render failed; attempting safe repair', err);
+      try {
+        // Older planner builds could save malformed nested rows. Normalize and retry in the safest tab.
+        state.settings = record(state.settings); state.settings.tab = 'plan'; normalize();
+        state.touched = true; state.updatedAt = Date.now();
+        try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+        renderTop(); renderSide(); renderMain(); schedulePush();
+        toast('We repaired a saved planner setting. Your courses are still here.');
+      } catch (repairErr) {
+        console.error('Lecture Pace safe repair failed', repairErr);
+        var main = $('#main');
+        if (main) main.innerHTML = '<section class="panel"><h2>Course data needs a quick repair</h2><p class="note">Your saved courses have been preserved. The planner could not render one of the saved settings, so it has switched to the safest view. Use Edit goal to rebuild the schedule, or reload this page after saving.</p><button class="btn" type="button" data-act="edit">Repair course settings</button></section>';
+      }
+    }
     renderZen(); updUndo(); setSync(syncCtl.st);
     if (fid) { var f = document.getElementById(fid); if (f) f.focus({ preventScroll: true }); }
   }
-
   /* ---------- lecture modal ---------- */
   function renderModal() {
     var c = active(), n = modalN, sh = $('#lecSheet');
@@ -1599,9 +1678,12 @@ body { color:var(--fg); background-image:radial-gradient(900px 500px at 8% -10%,
       if (++frame < 110) requestAnimationFrame(tick); else ctx.clearRect(0, 0, cv.width, cv.height);
     })();
   }
+  function globalSoundEnabled() {
+    try { return localStorage.getItem('ef_sound') !== 'off'; } catch (e) { return true; }
+  }
   function beep() {
     try {
-      if (!audioCtx) return;
+      if (!globalSoundEnabled() || !audioCtx) return;
       [660, 880].forEach(function (f, i) {
         var o = audioCtx.createOscillator(), g = audioCtx.createGain(), t0 = audioCtx.currentTime + i * 0.22;
         o.frequency.value = f; o.type = 'sine'; g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.25, t0 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.4);
@@ -1661,11 +1743,18 @@ body { color:var(--fg); background-image:radial-gradient(900px 500px at 8% -10%,
     try {
       var p = typeof json === 'string' ? JSON.parse(json) : json;
       if (!p || !Array.isArray(p.courses)) return;
+      // Ignore transient flags while comparing so only real data repairs trigger a cloud write.
+      p.touched = false;
+      var before = JSON.stringify(p);
       state = p; state.touched = false; normalize();
+      var repaired = JSON.stringify(state) !== before;
+      if (repaired) { state.touched = true; state.updatedAt = Date.now(); }
       try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
       syncCtl.offer = false; syncCtl.hold = false; syncCtl.remote = null;
-      setSync('ok'); render(); if (modalN) renderModal();
-    } catch (e) {}
+      setSync(repaired ? 'syncing' : 'ok');
+      if (repaired) schedulePush();
+      render(); if (modalN) renderModal();
+    } catch (e) { console.error('Lecture Pace remote data could not be normalized', e); }
   }
   function useInventoryItem(itemId, done) {
     efRequest('/coins/use', 'POST', { itemId: itemId }).then(function (r) {
@@ -1693,7 +1782,7 @@ body { color:var(--fg); background-image:radial-gradient(900px 500px at 8% -10%,
       if (remote.state && Array.isArray(remote.state.courses)) {
         if (locallyEditedDuringLoad || localIsNewer) { state.touched = true; pushNow(); }
         else applyRemote(remote.state);
-      } else if (state.courses.length && !state.courses.every(function (c) { return !!c.sample; })) { state.touched = true; pushNow(); }
+      } else if (state.courses.length && !state.courses.every(function (c) { return !!(c && c.sample); })) { state.touched = true; pushNow(); }
       else setSync('ok');
       applyInventory(remote.inventory);
       updateCoinBalance(remote.coins);
@@ -1706,7 +1795,12 @@ body { color:var(--fg); background-image:radial-gradient(900px 500px at 8% -10%,
     load(); render(); setInterval(tick, 250); initSync();
   }
   window.addEventListener('message', function (event) {
-    if (event.origin !== window.location.origin || !event.data || event.data.type !== 'EXAMFORGE_BOOTSTRAP') return;
+    if (event.origin !== window.location.origin || !event.data) return;
+    if (event.data.type === 'EXAMFORGE_SOUND_CHANGED') {
+      if (!globalSoundEnabled()) { noiseStop(); noise.mode = 'off'; render(); }
+      return;
+    }
+    if (event.data.type !== 'EXAMFORGE_BOOTSTRAP') return;
     efApiBase = String(event.data.apiBase || '').replace(/\/$/, '');
     efProfile = event.data.profile || null;
     var style = event.data.style || 'toon';
@@ -1811,7 +1905,7 @@ body { color:var(--fg); background-image:radial-gradient(900px 500px at 8% -10%,
   /* zen + sound */
   function noiseStop() { try { if (noise.src) { noise.src.stop(); noise.src.disconnect(); } } catch (e) {} noise.src = null; }
   function noiseStart(mode) {
-    noiseStop(); noise.mode = mode; if (mode === 'off') return;
+    noiseStop(); noise.mode = mode; if (mode === 'off' || !globalSoundEnabled()) { noise.mode = 'off'; return; }
     try {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === 'suspended') audioCtx.resume();

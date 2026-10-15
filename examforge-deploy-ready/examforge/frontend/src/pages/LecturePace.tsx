@@ -22,11 +22,16 @@ export default function LecturePace() {
       bootstrap();
     };
     const onThemeChange = () => bootstrap();
+    const onSoundChange = () => {
+      frame.current?.contentWindow?.postMessage({ type: "EXAMFORGE_SOUND_CHANGED" }, window.location.origin);
+    };
     window.addEventListener("message", onMessage);
     window.addEventListener("examforge:theme", onThemeChange);
+    window.addEventListener("examforge:sound", onSoundChange);
     return () => {
       window.removeEventListener("message", onMessage);
       window.removeEventListener("examforge:theme", onThemeChange);
+      window.removeEventListener("examforge:sound", onSoundChange);
     };
   }, [profile]);
   return <Shell><div className="stack" style={{ gap: 24 }}>

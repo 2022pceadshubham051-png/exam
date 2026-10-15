@@ -14,6 +14,7 @@ const wrap = (fn: (req: AuthedReq, res: any) => Promise<any>) => (req: AuthedReq
 
 const profileShape = z.object({
   name: z.string().trim().min(1).max(80).optional(),
+  email: z.string().trim().toLowerCase().email().max(254).optional(),
   age: z.number().int().min(13).max(100).optional(),
   targetExam: z.string().trim().min(1).max(120).optional(),
   targetScore: z.number().int().min(30).max(100).optional(),
@@ -36,11 +37,16 @@ study.get("/profile", wrap(async (req, res) => {
 study.put("/profile", wrap(async (req, res) => {
   const b = profileShape.parse(req.body);
   const data: any = {};
+  if (b.email !== undefined) {
+    const existing = await prisma.user.findUnique({ where: { email: b.email }, select: { id: true } });
+    if (existing && existing.id !== req.user!.id) return res.status(409).json({ error: "That email address is already in use." });
+    data.email = b.email;
+  }
   if (b.name !== undefined) { data.name = b.name; data.displayName = b.name; }
   if (b.age !== undefined) data.age = b.age;
   if (b.targetExam !== undefined) data.targetExam = b.targetExam;
   if (b.targetScore !== undefined) data.targetScore = b.targetScore;
-  const u = await prisma.user.update({ where: { id: req.user!.id }, data, select: { id: true, name: true, displayName: true, age: true, targetExam: true, targetScore: true, role: true, coins: true, inventory: true } });
+  const u = await prisma.user.update({ where: { id: req.user!.id }, data, select: { id: true, email: true, name: true, displayName: true, age: true, targetExam: true, targetScore: true, role: true, coins: true, inventory: true } });
   res.json({ ...u, profileComplete: Boolean((u.displayName || u.name)?.trim() && u.age && u.targetExam) });
 }));
 
