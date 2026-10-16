@@ -8,9 +8,9 @@ export function getMe(): Me {
   } catch { return null; }
 }
 export const logout = () => { localStorage.removeItem("token"); location.href = "/login"; };
-export type Style = "aura" | "astra";
+export type Style = "aura" | "astra" | "toon";
 export const STYLES: Style[] = ["aura", "astra"];
-export const STYLE_NAMES: Record<Style, string> = { aura: "Aura (clean)", astra: "Astra (dark space)" };
+export const STYLE_NAMES: Record<Style, string> = { aura: "Aura (clean)", astra: "Astra (dark space)", toon: "Toon (playful)" };
 export function getStyle(): Style { const c = document.documentElement.classList; return c.contains("astra") ? "astra" : "aura"; }
 export const isAstra = () => getStyle() === "astra";
 export function setStyle(s: Style) {
