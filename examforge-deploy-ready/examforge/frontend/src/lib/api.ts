@@ -13,7 +13,11 @@ export async function api<T = any>(path: string, method = "GET", body?: unknown)
     });
     const j = await r.json().catch(() => ({}));
     if (r.status === 401 && !location.pathname.startsWith("/login") && !path.startsWith("/auth")) { localStorage.removeItem("token"); location.href = "/login"; }
-    if (!r.ok) throw Object.assign(new Error(j.error ?? r.statusText ?? `Request failed (${r.status})`), { status: r.status });
+    if (!r.ok) {
+      // /me and /shop were added in v18. A plain "Not found" on them means the deployed backend is older than this frontend.
+      const stale = r.status === 404 && j.error === "Not found" && /^\/(me|shop|coins|lecture-pace)(\/|$)/.test(path);
+      throw Object.assign(new Error(stale ? "Your backend is out of date (missing the Profile/Shop/Lecture Pace API). Redeploy the backend from this version, then refresh." : j.error ?? r.statusText ?? `Request failed (${r.status})`), { status: r.status, stale });
+    }
     return j;
   } catch (e: any) {
     if (e?.name === "AbortError") throw new Error("The API request timed out. Check your backend deployment and VITE_API_URL.");

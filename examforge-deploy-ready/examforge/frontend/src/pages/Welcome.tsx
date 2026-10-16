@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowRight, Loader, TriangleAlert, GraduationCap, Save } from "lucide-react";
-import { api } from "../lib/api"; import { Logo } from "../components/Shell";
+import { TeacherScene } from "../components/Scenes"; import { api } from "../lib/api"; import { Logo } from "../components/Shell";
 import { loadProfile, setProfile, refreshCoins, type Profile } from "../lib/profile"; import { confetti } from "../components/Confetti"; import { sfx } from "../lib/game";
 
 export const COMMON = ["SSC CGL", "SSC CHSL", "UPSC CSE", "IBPS PO", "SBI PO", "RRB NTPC", "JEE Main", "NEET UG", "CAT", "GATE", "CUET", "CTET"];
@@ -55,6 +55,7 @@ export default function Welcome() {
       <div className="blob" style={{ width: 260, height: 260, background: "#f472b6", bottom: -60, left: 40, animationDelay: "-4s" }} />
       <div className="brand" style={{ color: "#fff" }}><Logo />ExamForge</div>
       
+      <TeacherScene className="sc-round" />
       <div><h1 style={{ fontSize: "clamp(2rem,4vw,3rem)", fontWeight: 800, lineHeight: 1.1 }}>Just 2 quick questions.</h1>
         <p style={{ opacity: .85, marginTop: 14, maxWidth: 440, lineHeight: 1.6 }}>We use your answers to show the right tests first.</p></div>
       <div style={{ opacity: .6, fontSize: ".78rem" }}>ExamForge Mock Test Platform</div>

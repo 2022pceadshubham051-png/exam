@@ -1,14 +1,14 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
-import Mascot, { type Mood } from "./Mascot"; import { sfx } from "../lib/game"; import { confetti } from "./Confetti";
+import { TeacherAvatar } from "./Scenes"; import { sfx } from "../lib/game"; import { confetti } from "./Confetti";
 
 export const openTutorial = () => window.dispatchEvent(new Event("ef:tutorial"));
 const KEY = "ef_tutorial_done";
 
-type Step = { mood: Mood; title: string; say: string; scene: ReactNode };
+type Step = { mood: string; title: string; say: string; scene: ReactNode };
 const palette = ["ans", "ans", "skip", "rev", "ans", "cur", "", "", "ans", "rev"];
 const STEPS: Step[] = [
-  { mood: "wave", title: "Hi, I'm Forgy!", say: "Welcome to ExamForge! I'll show you how this game works in 6 quick steps. Ready, player one?",
+  { mood: "wave", title: "Hello, I'm your teacher!", say: "Welcome to ExamForge! I'll show you how it works in 6 quick steps. Ready?",
     scene: <div className="tu-scene tu-hello"><span style={{ "--i": 0 } as any}>📚</span><span style={{ "--i": 1 } as any}>⏱️</span><span style={{ "--i": 2 } as any}>🏆</span><span style={{ "--i": 3 } as any}>⭐</span></div> },
   { mood: "happy", title: "1. Pick a quest", say: "Every mock test is a quest. Check the difficulty badge, the timer and the number of questions, then hit Start.",
     scene: <div className="tu-scene"><div className="tu-card"><span className="pill pill-brand">SSC CGL</span><b>Mock Test 1</b><div className="tu-meta">⏱ 60 min · 📝 100 Qs</div><div className="tu-btn">Start ▶</div></div></div> },
@@ -44,7 +44,7 @@ export default function Tutorial() {
   return <div className="modal-bg tu-bg" onClick={() => close(false)}>
     <div className="card tu" role="dialog" aria-label="ExamForge tutorial" onClick={(e) => e.stopPropagation()}>
       <button className="btn icon-btn tu-x" aria-label="Close tutorial" onClick={() => close(false)}><X size={16} /></button>
-      <div className="tu-top"><Mascot key={i} mood={s.mood} size={104} /><div className="tu-bubble" key={`b${i}`}><b>{s.title}</b><p>{s.say}</p></div></div>
+      <div className="tu-top"><TeacherAvatar key={i} size={86} cheer={i === STEPS.length - 1 || i === 4} /><div className="tu-bubble" key={`b${i}`}><b>{s.title}</b><p>{s.say}</p></div></div>
       <div key={`s${i}`} className="tu-stage">{s.scene}</div>
       <div className="tu-dots">{STEPS.map((_, n) => <button key={n} aria-label={`Step ${n + 1}`} className={n === i ? "on" : n < i ? "done" : ""} onClick={() => { setI(n); sfx("pop"); }} />)}</div>
       <div className="row between"><button className="btn btn-sm" onClick={() => close(false)}>Skip</button>

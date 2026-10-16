@@ -133,3 +133,10 @@ img, svg, video { max-width: 100%; }
 @media (max-width: 720px) {
   .landing-start { position: sticky; bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 20; width: 100%; box-shadow: 0 10px 30px rgb(0 0 0 / .25); }
 }
+
+/* old "LV n" ribbon on test cards: decorative game badge, removed */
+.tcard::before, .tcard::after { display: none !important; }
+.dash-top { align-items: center; }
+.dash-scene { width: min(220px, 30vw); }
+.auth-hero .sc-round { margin-top: 16px; }
+@media (max-width: 720px) { .nav-links:not(.app-nav) { display: none; } }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import LogoMark from "../components/LogoMark"; import { confetti, floatText, comicBurst } from "../components/Confetti"; import ExamBuddy, { buddySay } from "../components/Buddy"; import { sfx, addBonusXp } from "../lib/game";
+import LogoMark from "../components/LogoMark"; import { confetti, floatText, comicBurst } from "../components/Confetti"; import { buddySay } from "../components/Buddy"; import { LibraryScene } from "../components/Scenes"; import { sfx, addBonusXp } from "../lib/game";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   Cloud, CloudOff, TriangleAlert, Flag, Eraser, ChevronLeft, ChevronRight, Send,
@@ -159,7 +159,7 @@ export default function Exam() {
             <span className="pill pill-brand">{meta.examName}</span><h1>{meta.name}</h1>
             <p>{meta.description || "A focused mock test built for deliberate practice and measurable improvement."}</p>
             <div className="meta"><span><Clock3 size={15} />{fmt(meta.durationSec)}</span><span>{qs} questions</span><span>{meta.sections.length} section{meta.sections.length > 1 ? "s" : ""}</span><span className={`pill ${meta.difficulty === "HARD" ? "pill-bad" : meta.difficulty === "EASY" ? "pill-ok" : "pill-warn"}`}>{meta.difficulty.toLowerCase()}</span></div>
-            {focusTopic && <div className="alert alert-info" style={{ marginTop: 12 }}><BrainCircuit size={16} /><span>Focused practice on <b>{focusTopic}</b>. Questions on this topic are picked first, hardest-weakness first.</span></div>}<div className="landing-mode-explainer"><div className="row"><Zap size={16} /><b>{modeChoice === "ADAPTIVE" ? "Adaptive session" : modeChoice === "PRACTICE" ? "Practice session" : "Exam session"}</b></div><p>{modeDescription}</p></div>
+            {focusTopic && <div className="alert alert-info" style={{ marginTop: 12 }}><BrainCircuit size={16} /><span>Focused practice on <b>{focusTopic}</b>. Questions on this topic are picked first, hardest-weakness first.</span></div>}<div className="sc-hide-mobile" style={{ marginTop: 16, maxWidth: 420 }}><LibraryScene className="sc-round" /></div><div className="landing-mode-explainer"><div className="row"><Zap size={16} /><b>{modeChoice === "ADAPTIVE" ? "Adaptive session" : modeChoice === "PRACTICE" ? "Practice session" : "Exam session"}</b></div><p>{modeDescription}</p></div>
           </div>
           <div className="landing-side">
             {(activeExam || activePractice || activeAdaptive) && <div className="resume-stack">

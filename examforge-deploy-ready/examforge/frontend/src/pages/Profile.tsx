@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { Save, Loader, TriangleAlert, GraduationCap, Volume2, VolumeX, Sun, Moon, CircleHelp, LogOut, Store, Flame, Trophy, Coins, KeyRound, ClipboardList } from "lucide-react";
-import Shell, { Loading } from "../components/Shell"; import Mascot from "../components/Mascot"; import NameTag from "../components/NameTag"; import { openTutorial } from "../components/Tutorial";
+import Shell, { Loading } from "../components/Shell"; import { TeacherScene } from "../components/Scenes"; import NameTag from "../components/NameTag"; import { openTutorial } from "../components/Tutorial";
 import { api } from "../lib/api"; import { getMe, logout, STYLES, STYLE_NAMES, getStyle, setStyle, isDark, isAstra } from "../lib/auth";
 import { levelFromXp, xpFromAttempts, streakDays, saveLevel, saveXp, soundOn, toggleSound, sfx } from "../lib/game";
 import { loadProfile, setProfile, setCoins, firstName, type Profile } from "../lib/profile"; import { COMMON } from "./Welcome";
@@ -72,7 +72,7 @@ export default function ProfilePage() {
   return <Shell><div className="stack" style={{ gap: 22 }}>
     <section className="hero">
       <div className="blob" style={{ width: 220, height: 220, background: "#22d3ee", right: -40, top: -60 }} />
-      <div className="hero-mascot"><Mascot mood={streak > 2 ? "cheer" : "wave"} size={124} /></div>
+      <div className="hero-mascot"><TeacherScene className="sc-round" /></div>
       <h1>{p.name || "My profile"}</h1>
       <p>{p.email}{p.targetExam ? ` · Preparing for ${p.targetExam}` : ""}</p>
       <div className="xp-card"><div className="row between"><b>Lv {lv.level} · {lv.title}</b><span>{streak > 0 ? `🔥 ${streak}-day streak` : "🔥 Start a streak today"}</span></div><div className="xpbar"><i style={{ width: `${Math.max(4, lv.pct)}%` }} /></div><small>{lv.into} / {lv.need} XP to Level {lv.level + 1}</small></div>

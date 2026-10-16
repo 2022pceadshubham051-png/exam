@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"; import { useNavigate } from "react-router-dom";
-import { TrophyBuddy } from "../components/Buddies";
+import { TrainScene } from "../components/Scenes";
 import { Trophy, Medal, Target, Timer, TrendingUp } from "lucide-react";
 import Shell, { Loading } from "../components/Shell";
 import { api, fmt } from "../lib/api"; import NameTag from "../components/NameTag"; import AdSlot from "../components/AdSlot";
@@ -14,7 +14,7 @@ export default function Leaderboard() {
   useEffect(() => { api("/tests/leaderboard?limit=25").then(setRows).catch((e) => setErr(e.message)); }, []);
   return <Shell><div className="stack" style={{gap:22}}>
     <BoardTabs active="exam" />
-    <section className="hero leaderboard-hero"><div className="blob" style={{width:210,height:210,background:"#f59e0b",right:-40,top:-60}}/><div className="hero-mascot"><TrophyBuddy size={128}/></div><span className="pill pill-brand"><Trophy size={14}/>Official ranking</span><h1>Leaderboard</h1><p>Rankings are calculated from completed Exam mode attempts. Untimed Practice and Adaptive Practice never affect these standings.</p></section>
+    <section className="hero leaderboard-hero"><div className="blob" style={{width:210,height:210,background:"#f59e0b",right:-40,top:-60}}/><div className="hero-mascot"><TrainScene className="sc-round" /></div><span className="pill pill-brand"><Trophy size={14}/>Official ranking</span><h1>Leaderboard</h1><p>Rankings are calculated from completed Exam mode attempts. Untimed Practice and Adaptive Practice never affect these standings.</p></section>
     {err && <div className="alert alert-bad">{err}</div>}
     {!rows ? <Loading text="Loading leaderboard"/> : rows.length ? <>
       <section className="leader-podium">

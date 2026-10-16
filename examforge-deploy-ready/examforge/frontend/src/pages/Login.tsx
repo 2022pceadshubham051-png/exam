@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react"; import { useNavigate, Link } from "react-router-dom";
 import { Timer, BarChart3, ShieldCheck, Eye, EyeOff, Sun, Moon, ArrowRight, Loader, TriangleAlert } from "lucide-react";
-import { api } from "../lib/api"; import { loadProfile } from "../lib/profile"; import { Logo } from "../components/Shell"; import { toggleTheme, isDark, getMe } from "../lib/auth";
+import { TeacherScene } from "../components/Scenes"; import { api } from "../lib/api"; import { loadProfile } from "../lib/profile"; import { Logo } from "../components/Shell"; import { toggleTheme, isDark, getMe } from "../lib/auth";
 
 const features = [
   [Timer, "Real exam feel", "Timed tests just like the actual paper."],
@@ -28,6 +28,7 @@ export default function Login() {
       <div className="blob" style={{ width: 260, height: 260, background: "#f472b6", bottom: -60, left: 40, animationDelay: "-4s" }} />
       <div className="brand" style={{ color: "#fff" }}><Logo />ExamForge</div>
       <div className="stack" style={{ gap: 22 }}>
+        <TeacherScene className="sc-round" />
         <div><h1 style={{ fontSize: "clamp(2rem,4vw,2.8rem)", fontWeight: 800, lineHeight: 1.1 }}>Practice like it is<br />the real exam.</h1>
           <p style={{ opacity: .85, marginTop: 14, maxWidth: 440, lineHeight: 1.6 }}>Free mock tests with instant results and clear tips on what to improve.</p></div>
         <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 14 }}>{features.map(([I, t, d]) => <li key={t} className="row" style={{ flexWrap: "nowrap", alignItems: "flex-start" }}>

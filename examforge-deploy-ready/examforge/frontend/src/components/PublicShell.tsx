@@ -1,10 +1,10 @@
 import type { ReactNode } from "react"; import { Link } from "react-router-dom";
-import LogoMark from "./LogoMark"; import { getMe } from "../lib/auth"; import { SITE } from "../lib/content";
+import LogoMark from "./LogoMark"; import { TrainStrip } from "./Scenes"; import { getMe } from "../lib/auth"; import { SITE } from "../lib/content";
 
-export const SiteFooter = () => <footer className="site-foot"><div className="site-foot-in">
+export const SiteFooter = () => <><TrainStrip /><footer className="site-foot"><div className="site-foot-in">
   <span>© {new Date().getFullYear()} {SITE}</span>
   <nav aria-label="Footer"><Link to="/about">About</Link><Link to="/tips">Exam tips</Link><Link to="/privacy">Privacy policy</Link><Link to="/contact">Contact</Link></nav>
-</div></footer>;
+</div></footer></>;
 
 export default function PublicShell({ children, narrow }: { children: ReactNode; narrow?: boolean }) {
   const me = getMe();

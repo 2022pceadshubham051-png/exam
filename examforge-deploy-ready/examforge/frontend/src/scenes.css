@@ -1,0 +1,82 @@
+/* Animated scenes: classroom, library, railway. See components/Scenes.tsx */
+.sc { display: block; width: 100%; height: auto; overflow: hidden; }
+.sc-round { border-radius: 18px; box-shadow: 0 10px 30px rgb(15 23 42 / .14); border: 1px solid rgb(0 0 0 / .06); }
+.sc-avatar { width: auto; overflow: visible; }
+.sc * { transform-box: view-box; }
+
+/* teacher */
+.sc-point-arm { transform-origin: 46px 38px; animation: sc-point 3.2s ease-in-out infinite; }
+@keyframes sc-point { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(7deg); } }
+.sc-cheer-arm { transform-origin: 46px 38px; animation: sc-wave 1.1s ease-in-out infinite; }
+@keyframes sc-wave { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(10deg); } }
+.sc-star { transform-box: fill-box; transform-origin: center; animation: sc-twirl 2.4s linear infinite; }
+@keyframes sc-twirl { 0% { transform: rotate(0) scale(1); } 50% { transform: rotate(180deg) scale(1.2); } 100% { transform: rotate(360deg) scale(1); } }
+.sc-teacher { animation: sc-breathe 3s ease-in-out infinite; transform-origin: 30px 150px; }
+@keyframes sc-breathe { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.012); } }
+.sc-blink { transform-box: fill-box; transform-origin: center; animation: sc-blink 4.5s infinite; }
+@keyframes sc-blink { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(.1); } }
+.sc-tick { animation: sc-spin 12s linear infinite; transform-box: view-box; transform-origin: 0 0; }
+@keyframes sc-spin { to { transform: rotate(360deg); } }
+.sc-chalk { fill: none; stroke: #f4f1e8; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 220; stroke-dashoffset: 220; animation: sc-draw 7s ease-in-out infinite; }
+.sc-chalk.c2 { animation-delay: .8s; } .sc-chalk.c3 { animation-delay: 1.6s; } .sc-chalk.c4 { animation-delay: 2.6s; }
+@keyframes sc-draw { 0% { stroke-dashoffset: 220; } 25%, 85% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 220; } }
+.sc-student { animation: sc-bob 2s ease-in-out infinite; }
+@keyframes sc-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+.sc-hand { transform-box: fill-box; transform-origin: 50% 100%; animation: sc-raise 6s ease-in-out infinite; }
+@keyframes sc-raise { 0%, 45% { opacity: 0; transform: translateY(16px); } 55%, 80% { opacity: 1; transform: translateY(0) rotate(-6deg); } 90%, 100% { opacity: 0; transform: translateY(16px); } }
+
+/* library */
+.sc-float { animation: sc-floaty 4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.sc-float.f2 { animation-delay: -1.6s; animation-duration: 5s; }
+@keyframes sc-floaty { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-7px) rotate(4deg); } }
+.sc-glow { animation: sc-glow 3s ease-in-out infinite; }
+@keyframes sc-glow { 0%, 100% { opacity: .22; } 50% { opacity: .45; } }
+.sc-reader { transform-box: fill-box; transform-origin: 50% 100%; animation: sc-nod 5s ease-in-out infinite; }
+@keyframes sc-nod { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(2deg); } }
+.sc-page { transform-origin: 184px 144px; animation: sc-flip 4.5s ease-in-out infinite; }
+@keyframes sc-flip { 0%, 50% { transform: scaleX(1); } 70%, 99% { transform: scaleX(-1); } 100% { transform: scaleX(1); } }
+.sc-dust { animation: sc-dust 7s linear infinite; opacity: 0; }
+.sc-dust.d1 { animation-delay: -1.5s; } .sc-dust.d2 { animation-delay: -3s; } .sc-dust.d3 { animation-delay: -4.5s; } .sc-dust.d4 { animation-delay: -6s; }
+@keyframes sc-dust { 0% { opacity: 0; transform: translate(0, 0); } 20%, 70% { opacity: .9; } 100% { opacity: 0; transform: translate(14px, -120px); } }
+
+/* railway */
+.sc-scroll.slow { animation: sc-scroll320 22s linear infinite; }
+.sc-scroll.mid { animation: sc-scroll320 8s linear infinite; }
+.sc-scroll.pole { animation: sc-scroll80 1.2s linear infinite; }
+.sc-scroll.sleepers { animation: sc-scroll22 .33s linear infinite; }
+@keyframes sc-scroll320 { to { transform: translateX(-320px); } }
+@keyframes sc-scroll80 { to { transform: translateX(-80px); } }
+@keyframes sc-scroll22 { to { transform: translateX(-22px); } }
+.sc-wheel { animation: sc-spin .55s linear infinite; }
+.sc-trainbody { animation: sc-rumble .35s ease-in-out infinite alternate; }
+@keyframes sc-rumble { from { transform: translateY(0); } to { transform: translateY(-.9px); } }
+.sc-smoke { animation: sc-smoke 2.6s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+.sc-smoke.s1 { animation-delay: .87s; } .sc-smoke.s2 { animation-delay: 1.74s; }
+@keyframes sc-smoke { 0% { opacity: .85; transform: translate(0, 0) scale(.5); } 100% { opacity: 0; transform: translate(-46px, -34px) scale(2.2); } }
+.sc-lamp { animation: sc-glow 1.2s ease-in-out infinite; }
+.sc-cloud { animation: sc-drift 18s ease-in-out infinite alternate; }
+.sc-cloud.cl2 { animation-duration: 24s; animation-direction: alternate-reverse; }
+@keyframes sc-drift { from { transform: translateX(-12px); } to { transform: translateX(34px); } }
+
+/* footer train strip: shown on every page */
+.train-strip { position: relative; height: 46px; overflow: hidden; margin-top: 24px; pointer-events: none; }
+.train-run { position: absolute; bottom: 4px; left: 0; animation: sc-cross 24s linear infinite; }
+.train-rail { position: absolute; left: 0; right: 0; bottom: 2px; height: 3px; background: repeating-linear-gradient(90deg, var(--muted) 0 10px, transparent 10px 16px); opacity: .45; border-top: 1px solid var(--muted); }
+@keyframes sc-cross { from { transform: translateX(-210px); } to { transform: translateX(100vw); } }
+
+/* where scenes live */
+.dash-scene { width: min(260px, 34vw); flex: none; }
+.hero .hero-mascot { width: 230px; bottom: 12px; right: 18px; animation: none; }
+.hero .hero-mascot .sc { box-shadow: 0 8px 24px rgb(0 0 0 / .25); }
+.scene-band { display: grid; grid-template-columns: 1.1fr .9fr; gap: 22px; align-items: center; }
+.scene-band h2 { font-size: 1.5rem; font-weight: 800; }
+.result-scene { display: grid; place-items: center; }
+.tu-top .sc-avatar { flex: none; }
+.lu-card .sc-avatar { margin: 0 auto; }
+.load-train { width: min(260px, 70vw); margin: 0 auto; }
+@media (max-width: 720px) {
+  .dash-scene, .hero .hero-mascot, .sc-hide-mobile { display: none; }
+  .scene-band { grid-template-columns: 1fr; }
+  .train-strip { margin-bottom: 70px; }
+}
+@media (prefers-reduced-motion: reduce) { .sc *, .train-run { animation: none !important; } .sc-chalk { stroke-dashoffset: 0; } }

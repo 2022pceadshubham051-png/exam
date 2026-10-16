@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Gift, Check, Sparkles, Lock } from "lucide-react";
-import Shell, { Loading } from "../components/Shell"; import Mascot from "../components/Mascot"; import { api } from "../lib/api"; import { setCoins } from "../lib/profile";
+import Shell, { Loading } from "../components/Shell"; import { LibraryScene } from "../components/Scenes"; import { api } from "../lib/api"; import { setCoins } from "../lib/profile";
 import { confetti } from "../components/Confetti"; import { sfx } from "../lib/game";
 
 type Item = { id: string; kind: "title" | "frame" | "lifeline"; name: string; emoji: string; price: number; desc: string };
@@ -36,7 +36,7 @@ export default function Shop() {
   return <Shell><div className="stack" style={{ gap: 24 }}>
     <section className="hero">
       <div className="blob" style={{ width: 220, height: 220, background: "#f59e0b", right: -40, top: -60 }} />
-      <div className="hero-mascot"><Mascot mood="cheer" size={130} /></div>
+      <div className="hero-mascot"><LibraryScene className="sc-round" /></div>
       <span className="pill pill-brand"><Sparkles size={14} />Coin shop</span>
       <h1>Spend your coins</h1>
       <p>Coins come from tests, practice and Lecture Pace. Buy lifelines for Practice mode, or titles and name styles that show on the leaderboards.</p>

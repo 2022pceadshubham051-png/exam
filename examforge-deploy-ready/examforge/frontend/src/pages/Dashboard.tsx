@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"; import { Link } from "react-router-dom";
 import { Search, Clock, FileText, Play, Target, Trophy, ClipboardList, ArrowRight, Eye, SlidersHorizontal, Trash2, Compass, X, TriangleAlert, CircleCheck } from "lucide-react";
-import { api, fmt } from "../lib/api"; import Shell, { Loading } from "../components/Shell"; import AdSlot from "../components/AdSlot"; import { loadProfile, matchesExam, firstName, type Profile } from "../lib/profile";
+import { api, fmt } from "../lib/api"; import Shell, { Loading } from "../components/Shell"; import AdSlot from "../components/AdSlot"; import { LibraryScene } from "../components/Scenes"; import { loadProfile, matchesExam, firstName, type Profile } from "../lib/profile";
 import { showLevelUp } from "../components/LevelUp"; import { levelFromXp, xpFromAttempts, streakDays, saveLevel, savedLevel, saveXp } from "../lib/game";
 
 const diff: Record<string, string> = { EASY: "pill-ok", MEDIUM: "pill-warn", HARD: "pill-bad" };
@@ -62,6 +62,7 @@ export default function Dashboard() {
           <h1>{done.length ? `Welcome back${fn ? `, ${fn}` : ""}` : `Hi${fn ? `, ${fn}` : ""} 👋`}</h1>
           <p className="sub">{target ? `Preparing for ${target}${prof?.targetScore ? ` · goal ${prof.targetScore}%` : ""}` : "Pick a test below and start practising."}</p>
         </div>
+        <div className="dash-scene"><LibraryScene className="sc-round" /></div>
         <div className="dash-chips"><span className="pill pill-brand">Lv {lv.level}</span>{streak > 0 && <span className="pill pill-warn">🔥 {streak}-day streak</span>}</div>
       </section>
 

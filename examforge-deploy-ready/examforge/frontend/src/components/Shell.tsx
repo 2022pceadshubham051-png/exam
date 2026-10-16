@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react"; import { Link, NavLink, useNavigate } from "react-router-dom";
 import { LayoutDashboard, TrendingUp, ShieldCheck, Trophy, Compass } from "lucide-react";
-import { getMe } from "../lib/auth"; import { savedLevel } from "../lib/game"; import Tutorial from "./Tutorial"; import LevelUp from "./LevelUp"; import LogoMark from "./LogoMark"; import { SiteFooter } from "./PublicShell"; import Mascot from "./Mascot"; import UserMenu from "./UserMenu";
+import { getMe } from "../lib/auth"; import { savedLevel } from "../lib/game"; import Tutorial from "./Tutorial"; import LevelUp from "./LevelUp"; import LogoMark from "./LogoMark"; import { SiteFooter } from "./PublicShell"; import { BookLoader } from "./StudyFx"; import UserMenu from "./UserMenu";
 import { loadProfile, refreshCoins, cachedCoins, cachedProfile } from "../lib/profile";
 
 export const Logo = ({ size = 34 }: { size?: number }) => <LogoMark size={size < 30 ? 34 : size} />;
@@ -35,4 +35,4 @@ export default function Shell({ children, narrow }: { children: ReactNode; narro
   </>;
 }
 
-export const Loading = ({ text = "Loading" }: { text?: string }) => <div className="grid min-h-[50vh] place-items-center"><div className="text-center"><div className="load-run"><Mascot mood="think" size={90} /></div><div className="load-dots"><i /><i /><i /></div><p className="sub mt-3">{text}</p></div></div>;
+export const Loading = ({ text = "Loading" }: { text?: string }) => <div className="grid min-h-[50vh] place-items-center"><div className="text-center"><BookLoader /><div className="load-dots"><i /><i /><i /></div><p className="sub mt-3">{text}</p></div></div>;

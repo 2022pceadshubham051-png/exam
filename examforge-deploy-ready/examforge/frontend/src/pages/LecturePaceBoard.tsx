@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { TrophyBuddy } from "../components/Buddies";
+import { TrainScene } from "../components/Scenes";
 import { Trophy, Medal, Flame, BookOpen, Timer, Zap } from "lucide-react";
 import Shell, { Loading } from "../components/Shell";
 import { api } from "../lib/api"; import AdSlot from "../components/AdSlot";
@@ -14,7 +14,7 @@ export default function LecturePaceBoard() {
   const rows = data?.rows ?? [], me = data?.me;
   return <Shell><div className="stack" style={{ gap: 22 }}>
     <BoardTabs active="pace" />
-    <section className="hero leaderboard-hero"><div className="blob" style={{ width: 210, height: 210, background: "#f59e0b", right: -40, top: -60 }} /><div className="hero-mascot"><TrophyBuddy size={128} /></div><span className="pill pill-brand"><Zap size={14} />Study ranking</span><h1>Lecture Pace Leaderboard</h1><p>Ranked by XP: 10 per lecture finished, 5 per revision, 1 per focus minute. Demo courses do not count.</p></section>
+    <section className="hero leaderboard-hero"><div className="blob" style={{ width: 210, height: 210, background: "#f59e0b", right: -40, top: -60 }} /><div className="hero-mascot"><TrainScene className="sc-round" /></div><span className="pill pill-brand"><Zap size={14} />Study ranking</span><h1>Lecture Pace Leaderboard</h1><p>Ranked by XP: 10 per lecture finished, 5 per revision, 1 per focus minute. Demo courses do not count.</p></section>
     {err && <div className="alert alert-bad">{err}</div>}
     {me && <div className="card card-pad row" style={{ justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}><div><span className="sub">Your rank</span><div className="stat-v">#{me.rank}</div></div><div><span className="sub">Level</span><div className="stat-v">{me.level}</div></div><div><span className="sub">XP</span><div className="stat-v">{me.xp}</div></div><div><span className="sub">Streak</span><div className="stat-v">{me.streak}d</div></div><Link to="/lecture-pace" className="btn btn-primary">Open planner</Link></div>}
     {!data && !err ? <Loading text="Loading leaderboard" /> : rows.length ? <>
