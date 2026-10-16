@@ -1,0 +1,44 @@
+/* Shop, onboarding chips and leaderboard cosmetics. Everything uses theme variables, so Aura, Cartoon and Astra all restyle it. */
+a.coin-chip { text-decoration: none; cursor: pointer; }
+.chip-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip-pick { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font-weight: 700; font-size: .86rem; cursor: pointer; transition: transform .12s, background .12s, box-shadow .12s; }
+.chip-pick:hover { transform: translateY(-1px); }
+.chip-pick.on { background: var(--brand); color: var(--brand-ink, #fff); border-color: transparent; box-shadow: var(--shadow-1, none); }
+.toon .chip-pick, :root:not(.aura):not(.astra) .chip-pick { border-width: 2.5px; border-color: var(--ink, var(--border)); }
+.astra .chip-pick { background: rgb(70 54 170 / .5); border: 1.5px solid rgb(160 140 255 / .55); color: #fff; }
+.astra .chip-pick.on { background: linear-gradient(135deg, #8b7bff, #4de2ff); color: #05010f; }
+.shop-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+.shop-item { display: flex; flex-direction: column; gap: 12px; }
+.shop-item.equipped { outline: 3px solid var(--brand); outline-offset: -3px; }
+.shop-emoji { font-size: 2.1rem; line-height: 1; }
+.earn-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.earn-list li { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.nm { font-weight: 800; }
+.nm-title { margin-left: 8px; padding: 2px 9px; border-radius: 999px; font-size: .7rem; font-weight: 800; background: var(--brand-soft); color: var(--brand); white-space: nowrap; }
+.nm-gold, .nm-fire, .nm-rainbow { -webkit-background-clip: text; background-clip: text; color: transparent; }
+.nm-gold { background-image: linear-gradient(90deg, #b8860b, #ffd700, #b8860b); }
+.nm-fire { background-image: linear-gradient(90deg, #f97316, #ef4444, #fbbf24); }
+.nm-neon { color: #22d3ee; text-shadow: 0 0 9px rgb(34 211 238 / .8); }
+.nm-rainbow { background-image: linear-gradient(90deg, #ef4444, #f59e0b, #22c55e, #06b6d4, #8b5cf6, #ec4899, #ef4444); background-size: 200% auto; animation: nmflow 4s linear infinite; }
+@keyframes nmflow { to { background-position: 200% center; } }
+.opt-hidden { opacity: .22; pointer-events: none; text-decoration: line-through; filter: grayscale(1); }
+
+/* Account menu (replaces the row of icon buttons in the navbar) */
+a.lvl-chip { text-decoration: none; }
+.user-menu { position: relative; margin-left: 2px; }
+.avatar-btn { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; border: none; cursor: pointer; font-weight: 800; font-size: 1rem; color: var(--brand-ink, #fff); background: linear-gradient(135deg, var(--brand), var(--brand-2, var(--brand))); box-shadow: var(--shadow-1, none); transition: transform .12s; }
+.avatar-btn:hover { transform: scale(1.06); }
+:root:not(.aura):not(.astra) .avatar-btn { border: 3px solid var(--ink, #2b1b55); color: #fff; }
+.menu-pop { position: absolute; right: 0; top: calc(100% + 10px); min-width: 220px; padding: 8px; z-index: 80; background: var(--surface); border: 1px solid var(--border); border-radius: 18px; box-shadow: var(--shadow); display: grid; gap: 2px; animation: popin .16s ease-out both; }
+:root:not(.aura):not(.astra) .menu-pop { border: 3px solid var(--ink, #2b1b55); }
+.astra .menu-pop { background: #130b4a; border: 1.5px solid rgb(150 130 255 / .5); }
+.menu-head { padding: 8px 12px 10px; display: grid; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+.menu-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; border: 0; border-radius: 12px; background: transparent; color: var(--text); font: inherit; font-weight: 700; font-size: .9rem; text-align: left; cursor: pointer; text-decoration: none; }
+.menu-item:hover { background: var(--surface-2); }
+.menu-item.danger { color: var(--bad, #dc2626); }
+
+/* Profile page */
+.profile-cols { display: grid; gap: 18px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 800px) { .profile-cols { grid-template-columns: 1fr; } }
+.set-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.set-row + .set-row { padding-top: 12px; border-top: 1px solid var(--border); }

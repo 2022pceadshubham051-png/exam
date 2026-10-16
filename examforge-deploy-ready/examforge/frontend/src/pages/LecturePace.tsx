@@ -1,44 +1,77 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { BookOpen, Trophy, Coins, Target, ArrowRight } from "lucide-react";
-import Shell, { Loading } from "../components/Shell";
+import { Trophy } from "lucide-react";
+import Shell from "../components/Shell";
 import { api } from "../lib/api";
-import { toggleTheme } from "../lib/auth";
+import { getStyle, isDark } from "../lib/auth";
 
-type Profile = { name: string; displayName?: string | null; age?: number | null; targetExam?: string | null; coins?: number; inventory?: Record<string, number> };
-export default function LecturePace() {
-  const [profile, setProfile] = useState<Profile | null>(null); const [error, setError] = useState(""); const frame = useRef<HTMLIFrameElement>(null);
-  useEffect(() => { api<Profile>("/profile").then(setProfile).catch((e: any) => setError(e.message || "Could not load your study profile.")); }, []);
-  const bootstrap = () => {
-    if (!profile || !frame.current?.contentWindow) return;
-    frame.current.contentWindow.postMessage({ type: "EXAMFORGE_BOOTSTRAP", apiBase: (import.meta.env.VITE_API_URL || "").replace(/\/$/, ""), profile, style: localStorage.getItem("ef_style") || "toon", theme: localStorage.getItem("theme") || (document.documentElement.classList.contains("dark") ? "dark" : "light") }, window.location.origin);
+// Lecture Pace planner. The tool itself is a standalone page (/lecture-pace.html) shown in an iframe.
+// This page (1) saves/loads its data through the ExamForge backend and (2) pushes the current ExamForge theme into it.
+const css = (cs: CSSStyleDeclaration, n: string, fb = "") => cs.getPropertyValue(n).trim() || fb;
+
+function themeCss() {
+  const root = document.documentElement, cs = getComputedStyle(root), style = getStyle();
+  const head = document.querySelector("h1, h2, .brand") as HTMLElement | null;
+  const body = getComputedStyle(document.body).fontFamily, display = head ? getComputedStyle(head).fontFamily : body;
+  const dark = isDark();
+  const v: Record<string, string> = {
+    "--bg": css(cs, "--bg"), "--surface": css(cs, "--surface"), "--surface-2": css(cs, "--surface-2"),
+    "--fg": css(cs, "--text"), "--muted": css(cs, "--muted"),
+    "--line": style === "toon" ? css(cs, "--border") : `color-mix(in srgb, ${css(cs, "--text")} 14%, transparent)`,
+    "--accent": css(cs, "--brand"), "--accent-ink": css(cs, "--brand-ink", dark ? "#0b1020" : "#ffffff"),
+    "--good": css(cs, "--ok", "#16a34a"), "--warn": css(cs, "--bad", "#dc2626"),
+    "--scrim": dark ? "rgba(3,6,20,.66)" : "rgba(20,30,60,.38)",
+    "--f-body": body, "--f-display": display,
+    "--ef-shadow": css(cs, "--shadow", "none"), "--ef-shadow-1": css(cs, "--shadow-1", "none"),
+    "--ef-r": style === "toon" ? "24px" : "22px", "--ef-ink": css(cs, "--ink", "#2b1b55"),
   };
-  useEffect(() => { if (profile) bootstrap(); }, [profile]);
+  return `:root:root:root{${Object.entries(v).map(([k, x]) => `${k}:${x}`).join(";")};color-scheme:${dark ? "dark" : "light"}}`;
+}
+
+export default function LecturePace() {
+  const ref = useRef<HTMLIFrameElement>(null);
+
+  const applyTheme = () => {
+    try {
+      const doc = ref.current?.contentDocument; if (!doc) return;
+      let el = doc.getElementById("ef-theme"); if (!el) { el = doc.createElement("style"); el.id = "ef-theme"; doc.head.appendChild(el); }
+      el.textContent = themeCss();
+      doc.documentElement.setAttribute("data-efstyle", getStyle());
+    } catch { /* ignore */ }
+  };
+
   useEffect(() => {
-    const onMessage = (event: MessageEvent) => {
-      if (event.origin !== window.location.origin || event.data?.type !== "EXAMFORGE_TOGGLE_THEME") return;
-      toggleTheme();
-      window.dispatchEvent(new Event("examforge:theme"));
-      bootstrap();
+    const obs = new MutationObserver(applyTheme);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    const onMsg = async (e: MessageEvent) => {
+      const win = ref.current?.contentWindow, d = e.data;
+      if (!win || e.source !== win || e.origin !== location.origin || d?.lp !== "req") return;
+      const reply = (data?: unknown, error?: string) => win.postMessage({ lp: "res", id: d.id, data, error }, location.origin);
+      try {
+        if (d.op === "pull") reply(await api("/lecture-pace"));
+        else if (d.op === "push") reply(await api("/lecture-pace", "PUT", { json: d.payload?.json, updatedAt: d.payload?.updatedAt }));
+        else reply(undefined, "Unknown request");
+      } catch (err: any) { reply(undefined, err?.message ?? "Request failed"); }
     };
-    const onThemeChange = () => bootstrap();
-    const onSoundChange = () => {
-      frame.current?.contentWindow?.postMessage({ type: "EXAMFORGE_SOUND_CHANGED" }, window.location.origin);
-    };
-    window.addEventListener("message", onMessage);
-    window.addEventListener("examforge:theme", onThemeChange);
-    window.addEventListener("examforge:sound", onSoundChange);
-    return () => {
-      window.removeEventListener("message", onMessage);
-      window.removeEventListener("examforge:theme", onThemeChange);
-      window.removeEventListener("examforge:sound", onSoundChange);
-    };
-  }, [profile]);
-  return <Shell><div className="stack" style={{ gap: 24 }}>
-    <section className="hero lp-hero"><div className="blob" style={{ width: 240, height: 240, background: "#f0abfc", right: -40, top: -80 }}/><div className="row between" style={{ position: "relative", alignItems: "flex-start" }}><div><span className="pill" style={{ color: "white", borderColor: "rgba(255,255,255,.3)", background: "rgba(255,255,255,.12)" }}><BookOpen size={14}/> ExamForge learning planner</span><h1 style={{ marginTop: 12 }}>Lecture Pace</h1><p>Turn long playlists into a realistic daily plan. Track lectures, revise at the right time, focus with a timer and see your consistency improve.</p><div className="row" style={{ marginTop: 16 }}><span className="lp-chip"><Target size={15}/>{profile?.targetExam || "Your target exam"}</span><Link to="/leaderboard?tab=study" className="btn" style={{ background: "white", color: "#4338ca", borderColor: "transparent" }}><Trophy size={16}/>Study leaderboard</Link><Link to="/coins" className="btn" style={{ background: "rgba(255,255,255,.15)", color: "white", borderColor: "rgba(255,255,255,.25)" }}><Coins size={16}/>Coin shop</Link></div></div></div></section>
-    {error && <div className="alert alert-bad">{error}</div>}
-    <div className="row between"><div><h2 className="card-title" style={{ fontSize: "1.3rem" }}>Your study workspace</h2><p className="sub">Build your lecture plan, track progress, and revise from one place.</p></div><span className="pill pill-ok">Account sync</span></div>
-    <section className="lp-frame-wrap"><div className="lp-frame-head"><div><b>Lecture Pace planner</b><span>Plan · Calendar · Focus · Revise · Insights</span></div></div><iframe ref={frame} onLoad={bootstrap} className="lp-frame" src="/lecture-pace.html" title="Lecture Pace study planner" loading="eager"/></section>
-    <div className="row" style={{ justifyContent: "flex-end" }}><Link to="/dashboard" className="btn">Back to mock tests <ArrowRight size={16}/></Link></div>
-  </div></Shell>;
+    window.addEventListener("message", onMsg);
+    return () => { obs.disconnect(); window.removeEventListener("message", onMsg); };
+  }, []);
+
+  return (
+    <Shell>
+      <div className="stack" style={{ gap: 16 }}>
+        <div className="row" style={{ justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+          <div><h1 style={{ margin: 0 }}>Lecture Pace</h1><p className="sub" style={{ margin: "4px 0 0" }}>Plan your course, track lectures, focus and revision. Your progress is saved to your account.</p></div>
+          <Link to="/lecture-pace/leaderboard" className="btn"><Trophy size={16} />Leaderboard</Link>
+        </div>
+        <iframe
+          ref={ref}
+          src="/lecture-pace.html?embed=1"
+          title="Lecture Pace"
+          onLoad={applyTheme}
+          style={{ width: "100%", height: "calc(100vh - 230px)", minHeight: 640, border: 0, background: "transparent", display: "block" }}
+        />
+      </div>
+    </Shell>
+  );
 }

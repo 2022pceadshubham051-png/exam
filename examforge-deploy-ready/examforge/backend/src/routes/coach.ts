@@ -13,20 +13,19 @@ const wrap = (fn: (req: AuthedReq, res: any) => Promise<any>) => (req: AuthedReq
 coach.get("/coach/exams", (_req, res) => res.json({ exams: BLUEPRINTS.map(withWeights), subjects: Object.entries(SUBJECT_NAMES).map(([key, name]) => ({ key, name })) }));
 
 coach.get("/coach/prefs", wrap(async (req, res) => {
-  const u = await prisma.user.findUnique({ where: { id: req.user!.id }, select: { targetExam: true, coachExam: true, targetScore: true, name: true } });
-  res.json({ targetExam: u?.coachExam ?? (u?.targetExam && blueprintById(u.targetExam) ? u.targetExam : null), profileTargetExam: u?.targetExam ?? null, targetScore: u?.targetScore ?? 80, name: u?.name });
+  const u = await prisma.user.findUnique({ where: { id: req.user!.id }, select: { targetExam: true, targetScore: true, name: true } });
+  res.json({ targetExam: u?.targetExam ?? null, targetScore: u?.targetScore ?? 80, name: u?.name });
 }));
 coach.put("/coach/prefs", wrap(async (req, res) => {
   const b = z.object({ targetExam: z.string().max(400).nullable().optional(), targetScore: z.number().int().min(30).max(100).optional() }).parse(req.body);
-  await prisma.user.update({ where: { id: req.user!.id }, data: { coachExam: b.targetExam ?? undefined, targetScore: b.targetScore ?? undefined } });
+  await prisma.user.update({ where: { id: req.user!.id }, data: { targetExam: b.targetExam ?? undefined, targetScore: b.targetScore ?? undefined } });
   res.json({ ok: true });
 }));
 
 /** exam = blueprint id, or "custom" with ?weights=reasoning:30,quant:30 */
 coach.get("/coach", wrap(async (req, res) => {
-  const u = await prisma.user.findUnique({ where: { id: req.user!.id }, select: { targetExam: true, coachExam: true, targetScore: true } });
-  const legacyBlueprint = u?.targetExam && blueprintById(u.targetExam) ? u.targetExam : null;
-  const examId = String(req.query.exam ?? u?.coachExam ?? legacyBlueprint ?? "ssc-cgl-t1");
+  const u = await prisma.user.findUnique({ where: { id: req.user!.id }, select: { targetExam: true, targetScore: true } });
+  const examId = String(req.query.exam ?? u?.targetExam ?? "ssc-cgl-t1");
   const bp = examId.startsWith("custom") ? customBlueprint(String(req.query.weights ?? examId.split("|")[1] ?? "")) : blueprintById(examId);
   if (!bp) return res.status(400).json({ error: "Unknown exam" });
   const scope = ["exam", "practice", "all"].includes(String(req.query.scope)) ? String(req.query.scope) : "all";

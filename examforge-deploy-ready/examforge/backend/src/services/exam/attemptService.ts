@@ -226,6 +226,15 @@ export async function checkAnswer(attemptId: string, questionId: string) {
   return { correctKey: p.correctKey, explanation: hit.q.explanation ?? null, isCorrect: r?.selectedKey ? r.selectedKey === p.correctKey : null };
 }
 
+/** Practice mode only: the option keys that are NOT correct (used by the 50-50 lifeline). */
+export async function wrongKeys(attemptId: string, questionId: string) {
+  const a = await load(attemptId); if (!a || a.status !== "IN_PROGRESS") throw new Error("Attempt closed");
+  if (a.mode !== "PRACTICE") throw new Error("Lifelines only work in Practice mode");
+  const hit = activeQuestions(a).find((x) => x.q.id === questionId); if (!hit) throw new Error("Question not in this session");
+  const p = present(hit.q, a.test.shuffleOptions, a.shuffleSeed);
+  return { wrong: p.options.map((o: any) => o.key).filter((k: string) => k !== p.correctKey) as string[] };
+}
+
 async function chunked<T>(items: T[], size: number, fn: (x: T) => Promise<unknown>) { for (let i = 0; i < items.length; i += size) await Promise.all(items.slice(i, i + size).map(fn)); }
 
 export async function submit(attemptId: string, auto = false) {

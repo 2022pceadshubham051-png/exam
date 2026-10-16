@@ -1,7 +1,7 @@
 import React, { Component, type ReactElement, type ErrorInfo } from "react";
 import { createRoot } from "react-dom/client"; import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
-import "./index.css"; import "./game.css"; import "./cartoon.css"; import "./aura.css"; import "./astra.css"; import "./public.css"; import Login from "./pages/Login"; import Exam from "./pages/Exam"; import Result from "./pages/Result"; import Dashboard from "./pages/Dashboard"; import Review from "./pages/Review"; import Admin from "./pages/Admin"; import Progress from "./pages/Progress"; import Leaderboard from "./pages/Leaderboard"; import Coach from "./pages/Coach"; import Landing from "./pages/Landing"; import { About, Contact, Privacy, TipsList, TipPage } from "./pages/Info";
-import { getMe } from "./lib/auth"; import Splash from "./components/Splash"; import ProfileGate from "./components/ProfileGate"; import LecturePace from "./pages/LecturePace"; import Coins from "./pages/Coins"; import ProfileSettings from "./pages/ProfileSettings";
+import "./index.css"; import "./game.css"; import "./cartoon.css"; import "./aura.css"; import "./astra.css"; import "./public.css"; import Login from "./pages/Login"; import Exam from "./pages/Exam"; import Result from "./pages/Result"; import Dashboard from "./pages/Dashboard"; import Review from "./pages/Review"; import Admin from "./pages/Admin"; import Progress from "./pages/Progress"; import Leaderboard from "./pages/Leaderboard"; import Coach from "./pages/Coach"; import Landing from "./pages/Landing"; import LecturePace from "./pages/LecturePace"; import LecturePaceBoard from "./pages/LecturePaceBoard"; import Welcome from "./pages/Welcome"; import ProfilePage from "./pages/Profile"; import Shop from "./pages/Shop"; import "./shop.css"; import "./simple.css"; import { About, Contact, Privacy, TipsList, TipPage } from "./pages/Info";
+import { getMe } from "./lib/auth"; import Splash from "./components/Splash";
 
 class AppErrorBoundary extends Component<{children: ReactElement},{error: Error|null}> {
   state={error:null as Error|null};
@@ -17,7 +17,7 @@ function Guard({ children, admin }: { children: ReactElement; admin?: boolean })
   const me = getMe(); const { testId } = useParams();
   if (!me) return <Navigate to={testId ? `/login?test=${testId}` : "/login"} replace />;
   if (admin && me.role !== "ADMIN") return <Navigate to="/dashboard" replace />;
-  return admin ? children : <ProfileGate>{children}</ProfileGate>;
+  return children;
 }
 const Home = () => { const me = getMe(); return <Navigate to={me ? (me.role === "ADMIN" ? "/admin" : "/dashboard") : "/login"} replace />; };
 
@@ -29,10 +29,12 @@ createRoot(document.getElementById("root")!).render(<React.StrictMode><AppErrorB
   <Route path="/dashboard" element={<Guard><Dashboard /></Guard>} />
   <Route path="/progress" element={<Guard><Progress /></Guard>} />
   <Route path="/coach" element={<Guard><Coach /></Guard>} />
-  <Route path="/leaderboard" element={<Guard><Leaderboard /></Guard>} />
   <Route path="/lecture-pace" element={<Guard><LecturePace /></Guard>} />
-  <Route path="/coins" element={<Guard><Coins /></Guard>} />
-  <Route path="/profile" element={<Guard><ProfileSettings /></Guard>} />
+  <Route path="/lecture-pace/leaderboard" element={<Guard><LecturePaceBoard /></Guard>} />
+  <Route path="/welcome" element={<Guard><Welcome /></Guard>} />
+  <Route path="/profile" element={<Guard><ProfilePage /></Guard>} />
+  <Route path="/shop" element={<Guard><Shop /></Guard>} />
+  <Route path="/leaderboard" element={<Guard><Leaderboard /></Guard>} />
   <Route path="/exam/:testId" element={<Guard><Exam /></Guard>} />
   <Route path="/result/:attemptId" element={<Guard><Result /></Guard>} />
   <Route path="/review/:attemptId" element={<Guard><Review /></Guard>} />

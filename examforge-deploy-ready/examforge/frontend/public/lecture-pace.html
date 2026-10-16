@@ -1,32 +1,10 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}
-/* ExamForge visual system: indigo/violet brand, rounded clay surfaces, matching typography. */
-:root, :root[data-theme="light"] {
-  --bg:#f4f6fb; --surface:#ffffff; --surface-2:#f1f4fa; --line:#e3e8f2; --fg:#0f172a; --muted:#64748b;
-  --accent:#6d28d9; --accent-ink:#ffffff; --good:#15803d; --warn:#dc2626; --scrim:rgba(15,23,42,.48);
-  --f-display:"Plus Jakarta Sans", "DM Sans", system-ui, sans-serif; --f-body:"Plus Jakarta Sans", "DM Sans", system-ui, sans-serif;
-  color-scheme:light;
-}
-:root[data-theme="dark"] {
-  --bg:#090d1c; --surface:#111933; --surface-2:#18214a; --line:#243060; --fg:#e8ebf8; --muted:#97a1c4;
-  --accent:#a78bfa; --accent-ink:#0b1020; --good:#4ade80; --warn:#f87171; --scrim:rgba(2,6,23,.7);
-  --f-display:"Plus Jakarta Sans", "DM Sans", system-ui, sans-serif; --f-body:"Plus Jakarta Sans", "DM Sans", system-ui, sans-serif;
-  color-scheme:dark;
-}
-:root[data-style="aura"] { --accent:#0891b2; --accent-ink:#ffffff; }
-:root[data-style="astra"] { --accent:#38bdf8; --accent-ink:#071426; }
-:root[data-style="toon"] { --accent:#7c3aed; --accent-ink:#ffffff; }
-body { background-image:radial-gradient(800px 420px at 9% -10%,rgba(99,102,241,.11),transparent 62%),radial-gradient(700px 450px at 100% 0%,rgba(168,85,247,.09),transparent 60%); }
-.panel,.strip,.sheet,.course,.lec,.rv,.ms,.badge,.noteitem,.cd,.chip,.bulk,.big-note { border-radius:14px; }
-.wallet-chip { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); padding:7px 11px; border-radius:999px; color:var(--muted); font-family:var(--f-mono); font-size:12px; white-space:nowrap; }
-.wallet-chip b { color:var(--accent); font-weight:700; }
-@media(max-width:520px) { .wallet-chip { padding:6px 9px; } }
-
-</style></head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Lecture Pace</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+<script>if(/[?&]embed=1/.test(location.search))document.documentElement.classList.add("embed")</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Nunito:wght@500;600;700;800;900&family=Fredoka:wght@500;600;700&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 <style>
 /* Layout: slim course rail on the left, one working dashboard on the right with five tabs (Plan, Planner, Focus, Revise, Insights). Dark-first, forest-black ground, one amber accent. */
 :root {
@@ -433,35 +411,34 @@ input[type="range"] { accent-color: var(--accent); width: 110px; }
 
 @media (prefers-reduced-motion: reduce) { .ring .p { transition: none; } }
 
-/* Final ExamForge tokens: intentionally last so the original standalone palette cannot override them. */
-:root, :root[data-theme="light"] {
-  --bg:#f4f6fb; --surface:#ffffff; --surface-2:#f1f4fa; --line:#e3e8f2; --fg:#0f172a; --muted:#64748b;
-  --accent:#4f46e5; --accent-ink:#ffffff; --good:#15803d; --warn:#b45309; --scrim:rgba(15,23,42,.48);
-  --f-display:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --f-body:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
-  color-scheme:light;
-}
-:root[data-theme="dark"] {
-  --bg:#090d1c; --surface:#111933; --surface-2:#18214a; --line:#243060; --fg:#e8ebf8; --muted:#97a1c4;
-  --accent:#818cf8; --accent-ink:#0b1020; --good:#4ade80; --warn:#fbbf24; --scrim:rgba(2,6,23,.7);
-  --f-display:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --f-body:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
-  color-scheme:dark;
-}
-:root[data-style="aura"] { --accent:#0891b2; --accent-ink:#ffffff; }
-:root[data-style="astra"] { --accent:#38bdf8; --accent-ink:#071426; }
-:root[data-style="toon"] { --accent:#7c3aed; --accent-ink:#ffffff; }
-body { color:var(--fg); background-image:radial-gradient(900px 500px at 8% -10%,rgb(99 102 241 / .12),transparent 60%),radial-gradient(800px 480px at 100% 0%,rgb(168 85 247 / .10),transparent 55%); }
+/* ---- Embedded inside ExamForge: the parent injects its theme variables; these rules make the surfaces match ---- */
+html.embed body { background: transparent; padding-top: 0; padding-left: 0; padding-right: 0; padding-bottom: 24px; }
+html.embed .top .brand, html.embed #themeBtn { display: none; }
+html.embed .top { justify-content: flex-end; }
+html.embed .panel, html.embed .strip, html.embed .sheet, html.embed .empty { border: 1px solid var(--line); border-radius: var(--ef-r, 22px); box-shadow: var(--ef-shadow, none); }
+html.embed .course.on { border-radius: 16px; box-shadow: var(--ef-shadow-1, none); }
+html.embed .lec, html.embed .ms, html.embed .rv, html.embed .noteitem, html.embed .mockrow, html.embed .badge, html.embed .fcard, html.embed .tlr, html.embed .big-note, html.embed .banner { border-radius: 16px; }
+html.embed .btn, html.embed .ghost, html.embed select, html.embed .field input, html.embed .field textarea { border-radius: 14px; }
+html.embed .btn { font-weight: 800; box-shadow: var(--ef-shadow-1, none); }
+html.embed .btn.line { box-shadow: none; }
+html.embed h1, html.embed h2, html.embed h3, html.embed .brand, html.embed .btn { font-family: var(--f-display); }
+html.embed[data-efstyle="toon"] .panel, html.embed[data-efstyle="toon"] .strip, html.embed[data-efstyle="toon"] .sheet, html.embed[data-efstyle="toon"] .empty { border: 3px solid var(--ef-ink); }
+html.embed[data-efstyle="toon"] .btn { border: 3px solid var(--ef-ink); }
+html.embed[data-efstyle="astra"] .panel, html.embed[data-efstyle="astra"] .strip, html.embed[data-efstyle="astra"] .sheet, html.embed[data-efstyle="astra"] .empty { border: 1.5px solid rgb(150 130 255 / .45); backdrop-filter: blur(10px); }
+html.embed .overlay { background: var(--scrim); }
 </style>
 
 <div class="app">
   <header class="top">
     <div class="brand">
       <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><rect x="3" y="18" width="6" height="9" rx="2" fill="var(--line)"/><rect x="12" y="11" width="6" height="16" rx="2" fill="var(--muted)"/><rect x="21" y="3" width="6" height="24" rx="2" fill="var(--accent)"/></svg>
-      Lecture Pace <span id="examLabel" class="tag" style="margin-left:2px">EXAMFORGE</span>
+      Lecture Pace
     </div>
     <div class="topr">
-      <span class="syncst" id="syncSt" aria-live="polite"></span><span class="wallet-chip" title="Your saved ExamForge coin balance">◈ <b id="coinBalance">—</b></span><a class="ghost" href="/coins" target="_top" rel="noopener">Coin shop ↗</a>
+      <span class="syncst" id="syncSt" aria-live="polite"></span>
       <div class="lvl" id="lvl"></div>
       <button class="ghost" id="undoBtn" type="button" data-act="undo" disabled>Undo</button>
+      <button class="ghost" id="themeBtn" type="button">Switch theme</button>
     </div>
   </header>
   <div class="layout">
@@ -531,7 +508,7 @@ body { color:var(--fg); background-image:radial-gradient(900px 500px at 8% -10%,
 
 <script>
 (function () {
-  var KEY = 'examforge.lecturepace.v1';
+  var KEY = 'lecturepace.v1';
   var INT = [1, 3, 7, 21];
   var DEF = { tab: 'plan', tapMode: 'done', focusLen: 25, breakLen: 5, budget: 180 };
   var state = { courses: [], activeId: null, settings: {}, frozen: {} };
@@ -653,68 +630,13 @@ body { color:var(--fg); background-image:radial-gradient(900px 500px at 8% -10%,
 
   /* ---------- storage ---------- */
   function save() { state.updatedAt = Date.now(); state.touched = true; try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} schedulePush(); }
-  function isISODate(value) {
-    if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-    try { var d = parse(value); return !isNaN(d.getTime()) && iso(d) === value; } catch (e) { return false; }
-  }
-  function cleanDate(value, fallback) {
-    if (isISODate(value)) return value;
-    if (typeof value === 'string' && value.length >= 10 && isISODate(value.slice(0, 10))) return value.slice(0, 10);
-    return fallback || '';
-  }
-  function record(value) { return value && typeof value === 'object' && !Array.isArray(value) ? value : {}; }
-  function finite(value, fallback, min, max) {
-    var n = Number(value); if (!isFinite(n)) n = fallback;
-    if (min !== undefined) n = Math.max(min, n); if (max !== undefined) n = Math.min(max, n); return n;
-  }
   function normalize() {
-    state = state && typeof state === 'object' && !Array.isArray(state) ? state : {};
-    state.settings = Object.assign({}, DEF, record(state.settings));
-    if (['plan', 'planner', 'calendar', 'focus', 'revise', 'insights'].indexOf(state.settings.tab) < 0) state.settings.tab = 'plan';
-    state.settings.focusLen = [15, 25, 45, 50].indexOf(Number(state.settings.focusLen)) >= 0 ? Number(state.settings.focusLen) : DEF.focusLen;
-    state.settings.breakLen = [5, 10, 15].indexOf(Number(state.settings.breakLen)) >= 0 ? Number(state.settings.breakLen) : DEF.breakLen;
-    state.settings.budget = Math.round(finite(state.settings.budget, DEF.budget, 15, 1000));
-    state.settings.tapMode = state.settings.tapMode === 'open' ? 'open' : 'done';
-    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(String(state.settings.studyStart || ''))) state.settings.studyStart = '17:00';
-    state.frozen = record(state.frozen);
-    var frozen = {}; Object.keys(state.frozen).forEach(function (d) { if (isISODate(d) && state.frozen[d]) frozen[d] = true; }); state.frozen = frozen;
-    state.purchasedFreezes = Math.max(0, Math.floor(finite(state.purchasedFreezes, 0, 0, 9999)));
-    state.purchasedFocusExtensions = Math.max(0, Math.floor(finite(state.purchasedFocusExtensions, 0, 0, 9999)));
-    state.courses = (Array.isArray(state.courses) ? state.courses : []).filter(function (c) { return c && typeof c === 'object' && !Array.isArray(c); }).slice(0, 100);
+    state.settings = Object.assign({}, DEF, state.settings || {});
+    state.frozen = state.frozen || {};
     state.courses.forEach(function (c) {
-      c.id = String(c.id || uid()); c.name = String(c.name || 'Untitled course').slice(0, 120);
-      c.total = Math.min(1000, Math.max(1, Math.floor(finite(c.total, 1, 1, 1000))));
-      c.start = cleanDate(c.start, today()) || today();
-      c.days = Math.min(730, Math.max(1, Math.floor(finite(c.days, 30, 1, 730))));
-      c.mins = finite(c.mins, 0, 0, 600);
-      c.speed = finite(c.speed, 1, 0.25, 10);
-      c.buffer = Math.min(c.days - 1, Math.max(0, Math.floor(finite(c.buffer, 0, 0, 90))));
-
-      var oldDone = record(c.done), done = {};
-      Object.keys(oldDone).forEach(function (key) {
-        if (!/^\d{1,4}$/.test(key)) return;
-        var n = Number(key), value = oldDone[key]; if (n < 1 || n > c.total || !value) return;
-        done[n] = cleanDate(value, today()) || today();
-      }); c.done = done;
-
-      function cleanMap(value, convert) { var src = record(value), out = {}; Object.keys(src).forEach(function (key) { if (!/^\d{1,4}$/.test(key)) return; var n = Number(key); if (n < 1 || n > c.total) return; out[n] = convert(src[key]); }); return out; }
-      c.notes = cleanMap(c.notes, function (v) { return typeof v === 'string' ? v : String(v == null ? '' : v); });
-      c.flags = cleanMap(c.flags, function (v) { return !!v; });
-      c.rev = cleanMap(c.rev, function (v) { var r = record(v); var step = typeof v === 'number' ? v : r.s; return { s: Math.floor(finite(step, 0, 0, INT.length)), d: cleanDate(r.d, '') || null }; });
-
-      c.titles = (Array.isArray(c.titles) ? c.titles : []).slice(0, c.total).map(function (v) { return String(v == null ? '' : v).slice(0, 300); });
-      c.durs = (Array.isArray(c.durs) ? c.durs : []).slice(0, c.total).map(function (v) { return finite(v, 0, 0, 600); });
-      c.links = (Array.isArray(c.links) ? c.links : []).slice(0, c.total).map(function (v) { return String(v == null ? '' : v).slice(0, 2000); });
-      c.off = (Array.isArray(c.off) ? c.off : (c.skipSun ? [0] : [])).map(Number).filter(function (v) { return Number.isInteger(v) && v >= 0 && v <= 6; }).filter(function (v, i, a) { return a.indexOf(v) === i; });
-      c.skipSun = c.off.indexOf(0) >= 0;
-      c.breakFrom = cleanDate(c.breakFrom, '') || ''; c.breakTo = cleanDate(c.breakTo, '') || '';
-      c.offDates = (Array.isArray(c.offDates) ? c.offDates : []).map(function (d) { return cleanDate(d, ''); }).filter(function (d, i, a) { return !!d && a.indexOf(d) === i; });
-      c.onDates = (Array.isArray(c.onDates) ? c.onDates : []).map(function (d) { return cleanDate(d, ''); }).filter(function (d, i, a) { return !!d && a.indexOf(d) === i; });
-      c.chapters = (Array.isArray(c.chapters) ? c.chapters : []).filter(function (ch) { return ch && typeof ch === 'object' && !Array.isArray(ch); }).map(function (ch) { return { name: String(ch.name || 'Chapter').slice(0, 120), start: Math.floor(finite(ch.start, 1, 1, c.total)) }; }).sort(function (a, b) { return a.start - b.start; }).filter(function (ch, i, a) { return i === 0 || a[i - 1].start !== ch.start; });
-      c.sessions = (Array.isArray(c.sessions) ? c.sessions : []).filter(function (v) { return v && typeof v === 'object' && !Array.isArray(v); }).slice(0, 5000).map(function (v) { return { d: cleanDate(v.d, today()) || today(), m: finite(v.m, 0, 0, 1440), n: finite(v.n, 0, 0, 1000), x: finite(v.x, 0, 0, 1000), h: Math.floor(finite(v.h, 12, 0, 23)) }; });
-      c.mocks = (Array.isArray(c.mocks) ? c.mocks : []).filter(function (v) { return v && typeof v === 'object' && !Array.isArray(v); }).slice(0, 1000).map(function (v) { return { d: cleanDate(v.d, today()) || today(), name: String(v.name || 'Test').slice(0, 120), score: finite(v.score, 0, 0, 100000), max: finite(v.max, 1, 1, 100000) }; });
-      c.exam = cleanDate(c.exam, '') || '';
-      c.revWeeks = Math.floor(finite(c.revWeeks, 0, 0, 12));
+      c.done = c.done || {}; c.notes = c.notes || {}; c.flags = c.flags || {}; c.rev = c.rev || {};
+      c.sessions = c.sessions || []; c.speed = c.speed || 1; c.buffer = c.buffer || 0; c.titles = c.titles || [];
+      c.durs = c.durs || []; c.links = c.links || []; c.off = c.off || (c.skipSun ? [0] : []); c.breakFrom = c.breakFrom || ''; c.breakTo = c.breakTo || ''; c.offDates = c.offDates || []; c.onDates = c.onDates || []; c.chapters = c.chapters || []; c.mocks = c.mocks || []; c.exam = c.exam || ''; c.revWeeks = c.revWeeks || 0;
     });
     if (!state.courses.some(function (c) { return c.id === state.activeId; })) state.activeId = state.courses[0] ? state.courses[0].id : null;
     if (!focus.running) { focus.total = state.settings.focusLen * 60; focus.remaining = focus.total; }
@@ -722,23 +644,13 @@ body { color:var(--fg); background-image:radial-gradient(900px 500px at 8% -10%,
   function load() {
     try {
       var raw = localStorage.getItem(KEY);
-      // Keep progress from the original standalone Lecture Pace build when upgrading in-place.
-      if (!raw) {
-        raw = localStorage.getItem('lecturepace.v1');
-        if (raw) { try { localStorage.setItem(KEY, raw); } catch (e) {} }
-      }
       if (raw) {
         var s = JSON.parse(raw);
-        if (s && Array.isArray(s.courses)) {
-          if (s.courses.length && s.courses.every(function (c) { return !!(c && c.sample); })) {
-            state = { courses: [], activeId: null, settings: s.settings || {}, frozen: {}, purchasedFreezes: 0, purchasedFocusExtensions: 0 };
-            normalize(); try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} return;
-          }
-          state = s; state.touched = true; normalize(); return;
-        }
+        if (s && Array.isArray(s.courses)) { state = s; state.touched = true; normalize(); return; }
       }
     } catch (e) {}
-    state = { courses: [], activeId: null, settings: {}, frozen: {}, purchasedFreezes: 0, purchasedFocusExtensions: 0 };
+    var sc = sample();
+    state = { courses: [sc], activeId: sc.id, settings: {}, frozen: {} };
     normalize();
   }
   function sample() {
@@ -875,11 +787,10 @@ body { color:var(--fg); background-image:radial-gradient(900px 500px at 8% -10%,
     arr.forEach(function (d) { run = (prev && bridged(prev, d)) ? run + 1 : 1; if (run > best) best = run; prev = d; });
     return best;
   }
-  function earnedFreezeAvail() {
+  function freezeAvail() {
     var act = keys(allDateCounts()).length, earned = 1 + Math.floor(act / 7);
     return Math.max(0, Math.min(3, earned - keys(state.frozen).length));
   }
-  function freezeAvail() { return earnedFreezeAvail() + Math.max(0, Number(state.purchasedFreezes) || 0); }
   function freezeOffer(t) {
     var m = allDateCounts(), y = iso(addDays(parse(t), -1)), yy = iso(addDays(parse(t), -2));
     if (m[y] || state.frozen[y]) return null;
@@ -1279,7 +1190,6 @@ body { color:var(--fg); background-image:radial-gradient(900px 500px at 8% -10%,
       '<div class="c"><span class="tm num" id="tmText">' + mmss(rem) + '</span><span class="note">' + (focus.running ? 'running' : 'paused') + '</span></div></div>' +
       '<div class="actions" style="justify-content:center"><button class="btn" type="button" data-act="ftoggle">' + (focus.running ? 'Pause' : (rem < focus.total ? 'Resume' : 'Start')) + '</button><button class="btn line" type="button" data-act="freset">Reset</button><button class="btn line" type="button" data-act="fskip">' + (isBreak ? 'Skip break' : 'Finish early') + '</button></div>' +
       (isBreak ? '' : '<div class="actions" style="justify-content:center;align-items:center"><button class="btn line" type="button" data-act="fdist">Got distracted (+1)</button><span class="note num">' + focus.dist + ' this session</span></div>') +
-      (!isBreak && state.purchasedFocusExtensions > 0 ? '<div class="actions" style="justify-content:center"><button class="btn line" type="button" data-act="usefocusboost">Use Focus Extension (+15 min) · ' + state.purchasedFocusExtensions + ' owned</button></div>' : '') +
       '<div class="actions" style="justify-content:center"><button class="btn line" type="button" data-act="zen">Zen mode</button></div>' + soundHtml() + '<div class="setrow"><span class="label">Focus</span>' + segHtml('flen', [[15, '15'], [25, '25'], [45, '45'], [50, '50']], state.settings.focusLen, focus.running) + '<span class="label">Break</span>' + segHtml('blen', [[5, '5'], [10, '10'], [15, '15']], state.settings.breakLen, focus.running) + '</div>' +
       '<div class="field" style="width:100%;max-width:360px"><label for="fSel">Studying</label><select id="fSel">' + opts + '</select></div></div>' +
       '<div class="panel"><div class="ph"><h2>Study time</h2><span class="m">minutes of focus</span></div>' +
@@ -1447,32 +1357,8 @@ body { color:var(--fg); background-image:radial-gradient(900px 500px at 8% -10%,
       return;
     }
     var tab = state.settings.tab, t = today();
-    if (tab === 'planner') {
-      try { el.innerHTML = tabsHtml(c, t) + plannerTab(); }
-      catch (err) {
-        console.error('Lecture Pace planner render failed; falling back to the safe Plan view', err);
-        // Persist the fallback so a broken Planner tab cannot reopen the same recovery screen forever.
-        state.settings = record(state.settings); state.settings.tab = 'plan'; normalize(); save();
-        el.innerHTML = tabsHtml(c, t) + planTab(c, calc(c));
-        toast('Planner view reset. Your saved courses and progress are preserved.');
-      }
-      return;
-    }
-    var k, timed;
-    try { k = calc(c); timed = hasTime(c); }
-    catch (err) {
-      console.error('Lecture Pace course render failed; sanitizing saved course data', err);
-      try {
-        // Rebuild only known planner fields and retry once; don't delete a course or its progress.
-        state.settings = record(state.settings); state.settings.tab = 'plan'; normalize();
-        c = active(); if (!c) { renderMain(); return; }
-        k = calc(c); timed = hasTime(c); tab = state.settings.tab;
-        save(); toast('Saved course settings repaired. Your progress is preserved.');
-      } catch (repairErr) {
-        console.error('Lecture Pace course repair failed', repairErr);
-        el.innerHTML = '<section class="panel"><h2>Course needs a manual refresh</h2><p class="note">Your course and saved progress are preserved. We could not safely rebuild this schedule automatically. Open Edit goal to review the course settings; do not reset progress.</p><button class="btn" type="button" data-act="edit">Review course settings</button></section>'; return;
-      }
-    }
+    if (tab === 'planner') { el.innerHTML = tabsHtml(c, t) + plannerTab(); return; }
+    var k = calc(c), timed = hasTime(c);
     var pct = Math.round(k.done / c.total * 100), circ = 2 * Math.PI * 52;
     var eyebrow;
     if (!k.started) eyebrow = 'Starts ' + fmtLong(c.start);
@@ -1508,25 +1394,10 @@ body { color:var(--fg); background-image:radial-gradient(900px 500px at 8% -10%,
   }
   function render() {
     var ae = document.activeElement, fid = ae && ae.id && /^(t|g)-/.test(ae.id) ? ae.id : null;
-    try { renderTop(); renderSide(); renderMain(); }
-    catch (err) {
-      console.error('Lecture Pace render failed; attempting safe repair', err);
-      try {
-        // Older planner builds could save malformed nested rows. Normalize and retry in the safest tab.
-        state.settings = record(state.settings); state.settings.tab = 'plan'; normalize();
-        state.touched = true; state.updatedAt = Date.now();
-        try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
-        renderTop(); renderSide(); renderMain(); schedulePush();
-        toast('We repaired a saved planner setting. Your courses are still here.');
-      } catch (repairErr) {
-        console.error('Lecture Pace safe repair failed', repairErr);
-        var main = $('#main');
-        if (main) main.innerHTML = '<section class="panel"><h2>Course data needs a quick repair</h2><p class="note">Your saved courses have been preserved. The planner could not render one of the saved settings, so it has switched to the safest view. Use Edit goal to rebuild the schedule, or reload this page after saving.</p><button class="btn" type="button" data-act="edit">Repair course settings</button></section>';
-      }
-    }
-    renderZen(); updUndo(); setSync(syncCtl.st);
+    renderTop(); renderSide(); renderMain(); renderZen(); updUndo(); setSync(syncCtl.st);
     if (fid) { var f = document.getElementById(fid); if (f) f.focus({ preventScroll: true }); }
   }
+
   /* ---------- lecture modal ---------- */
   function renderModal() {
     var c = active(), n = modalN, sh = $('#lecSheet');
@@ -1678,12 +1549,9 @@ body { color:var(--fg); background-image:radial-gradient(900px 500px at 8% -10%,
       if (++frame < 110) requestAnimationFrame(tick); else ctx.clearRect(0, 0, cv.width, cv.height);
     })();
   }
-  function globalSoundEnabled() {
-    try { return localStorage.getItem('ef_sound') !== 'off'; } catch (e) { return true; }
-  }
   function beep() {
     try {
-      if (!globalSoundEnabled() || !audioCtx) return;
+      if (!audioCtx) return;
       [660, 880].forEach(function (f, i) {
         var o = audioCtx.createOscillator(), g = audioCtx.createGain(), t0 = audioCtx.currentTime + i * 0.22;
         o.frequency.value = f; o.type = 'sine'; g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.25, t0 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.4);
@@ -1692,38 +1560,15 @@ body { color:var(--fg); background-image:radial-gradient(900px 500px at 8% -10%,
     } catch (e) {}
   }
 
-  /* ---------- ExamForge cloud sync, coin rewards and inventory ---------- */
-  var efApiBase = '';
-  var efProfile = null;
-  var efBooted = false;
-  function efRequest(path, method, body) {
-    var token = '';
-    try { token = localStorage.getItem('token') || ''; } catch (e) {}
-    var opts = { method: method || 'GET', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token } };
-    if (body !== undefined) opts.body = JSON.stringify(body);
-    return fetch(efApiBase + '/api' + path, opts).then(function (r) {
-      return r.json().catch(function () { return {}; }).then(function (j) {
-        if (!r.ok) throw new Error(j.error || 'Cloud sync failed.');
-        return j;
-      });
-    });
-  }
-  function updateCoinBalance(n) {
-    var e = $('#coinBalance'); if (e && Number.isFinite(Number(n))) e.textContent = String(Math.max(0, Number(n)));
-  }
-  function applyInventory(inv) {
-    inv = inv && typeof inv === 'object' ? inv : {};
-    state.purchasedFreezes = Math.max(0, Number(inv.streakFreeze) || 0);
-    state.purchasedFocusExtensions = Math.max(0, Number(inv.focusExtension) || 0);
-  }
+  /* ---------- v5: sync, undo, AI, calendar, timeline, zen ---------- */
   function setSync(s) {
     syncCtl.st = s;
     var e = $('#syncSt');
-    if (e) e.textContent = { local: 'This device only', syncing: 'Syncing…', ok: 'Synced to ExamForge', fail: 'Sync failed', big: 'Too large to sync' }[s] || '';
+    if (e) e.textContent = { local: 'This device only', syncing: 'Syncing…', ok: 'Saved to your account', fail: 'Sync failed', big: 'Too large to sync' }[s] || '';
   }
   function schedulePush() {
     if (!syncCtl.ref || !state.touched || syncCtl.hold) return;
-    setSync('syncing'); clearTimeout(syncCtl.timer); syncCtl.timer = setTimeout(pushNow, 700);
+    setSync('syncing'); clearTimeout(syncCtl.timer); syncCtl.timer = setTimeout(pushNow, 1500);
   }
   function pushNow() {
     if (!syncCtl.ref || syncCtl.hold) return;
@@ -1732,89 +1577,59 @@ body { color:var(--fg); background-image:radial-gradient(900px 500px at 8% -10%,
     if (json.length > 240000) { setSync('big'); return; }
     syncCtl.writing = true;
     var ts = state.updatedAt || Date.now();
-    Promise.resolve(syncCtl.ref.set({ updatedAt: ts, json: json })).then(function (r) {
+    Promise.resolve(syncCtl.ref.set({ updatedAt: ts, json: json })).then(function () {
       syncCtl.writing = false;
-      if (r && r.coins !== undefined) updateCoinBalance(r.coins);
-      if (r && r.rewarded > 0) toast('+' + r.rewarded + ' ExamForge coins earned');
       if (syncCtl.dirty) { syncCtl.dirty = false; schedulePush(); } else setSync('ok');
-    }, function (e) { syncCtl.writing = false; setSync('fail'); if (e && e.message) toast('Cloud sync failed: ' + e.message); });
+    }, function () { syncCtl.writing = false; setSync('fail'); });
   }
   function applyRemote(json) {
     try {
-      var p = typeof json === 'string' ? JSON.parse(json) : json;
+      var p = JSON.parse(json);
       if (!p || !Array.isArray(p.courses)) return;
-      // Ignore transient flags while comparing so only real data repairs trigger a cloud write.
-      p.touched = false;
-      var before = JSON.stringify(p);
-      state = p; state.touched = false; normalize();
-      var repaired = JSON.stringify(state) !== before;
-      if (repaired) { state.touched = true; state.updatedAt = Date.now(); }
+      state = p; state.touched = true; normalize();
       try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
       syncCtl.offer = false; syncCtl.hold = false; syncCtl.remote = null;
-      setSync(repaired ? 'syncing' : 'ok');
-      if (repaired) schedulePush();
-      render(); if (modalN) renderModal();
-    } catch (e) { console.error('Lecture Pace remote data could not be normalized', e); }
+      setSync('ok'); render(); if (modalN) renderModal();
+      toast('Synced from your other device');
+    } catch (e) {}
   }
-  function useInventoryItem(itemId, done) {
-    efRequest('/coins/use', 'POST', { itemId: itemId }).then(function (r) {
-      applyInventory(r.inventory);
-      updateCoinBalance(r.coins);
-      if (typeof done === 'function') done();
-    }).catch(function (e) { toast(e.message || 'Unable to use this item.'); });
+  function onRemote(snap) {
+    var d = snap && snap.exists ? snap.data() : null;
+    if (!d || typeof d.json !== 'string') { if (state.touched) schedulePush(); else setSync('ok'); return; }
+    var ru = Number(d.updatedAt) || 0, lu = state.updatedAt || 0;
+    if (state.touched && ru <= lu) { if (ru < lu) schedulePush(); else setSync('ok'); return; }
+    if (!state.touched || state.courses.every(function (c) { return c.sample; })) { applyRemote(d.json); return; }
+    syncCtl.remote = d; syncCtl.offer = true; syncCtl.hold = true; setSync('ok'); render();
+  }
+  function syncBanner() {
+    if (!syncCtl.offer) return '';
+    return '<div class="banner"><span>Another device has newer progress saved.</span><span class="actions"><button type="button" class="btn sm" data-act="syncload">Load it</button><button type="button" class="btn line sm" data-act="synckeep">Keep this device</button></span></div>';
   }
   function initSync() {
-    var token = '';
-    try { token = localStorage.getItem('token') || ''; } catch (e) {}
-    if (!token) { setSync('local'); return; }
-    syncCtl.ref = { set: function (payload) {
-      var parsed = JSON.parse(payload.json);
-      return efRequest('/lecturepace', 'PUT', { state: parsed });
-    } };
-    syncCtl.hold = true;
-    var localUpdatedAt = Number(state.updatedAt) || 0;
-    var label = $('#examLabel'); if (label && efProfile && efProfile.targetExam) label.textContent = efProfile.targetExam;
-    setSync('syncing');
-    efRequest('/lecturepace', 'GET').then(function (remote) {
-      syncCtl.hold = false;
-      var locallyEditedDuringLoad = (Number(state.updatedAt) || 0) > localUpdatedAt;
-      var localIsNewer = !!(remote.state && state.courses.length && (Number(state.updatedAt) || 0) > (Number(remote.state.updatedAt) || 0));
-      if (remote.state && Array.isArray(remote.state.courses)) {
-        if (locallyEditedDuringLoad || localIsNewer) { state.touched = true; pushNow(); }
-        else applyRemote(remote.state);
-      } else if (state.courses.length && !state.courses.every(function (c) { return !!(c && c.sample); })) { state.touched = true; pushNow(); }
-      else setSync('ok');
-      applyInventory(remote.inventory);
-      updateCoinBalance(remote.coins);
-      if (!remote.state && state.courses.length === 0) state.touched = false;
-      render();
-    }).catch(function () { syncCtl.hold = false; setSync('fail'); });
-  }
-  function startApp() {
-    if (efBooted) return; efBooted = true;
-    load(); render(); setInterval(tick, 250); initSync();
-  }
-  window.addEventListener('message', function (event) {
-    if (event.origin !== window.location.origin || !event.data) return;
-    if (event.data.type === 'EXAMFORGE_SOUND_CHANGED') {
-      if (!globalSoundEnabled()) { noiseStop(); noise.mode = 'off'; render(); }
-      return;
+    if (window.parent === window) return; /* opened on its own: stay on this device only */
+    var seq = 0, wait = {};
+    window.addEventListener('message', function (e) {
+      var d = e.data;
+      if (e.source !== window.parent || !d || d.lp !== 'res' || !wait[d.id]) return;
+      var w = wait[d.id]; delete wait[d.id];
+      if (d.error) w.rej(new Error(d.error)); else w.res(d.data);
+    });
+    function call(op, payload) {
+      return new Promise(function (res, rej) {
+        var id = ++seq; wait[id] = { res: res, rej: rej };
+        window.parent.postMessage({ lp: 'req', id: id, op: op, payload: payload }, location.origin);
+        setTimeout(function () { if (wait[id]) { delete wait[id]; rej(new Error('timeout')); } }, 30000);
+      });
     }
-    if (event.data.type !== 'EXAMFORGE_BOOTSTRAP') return;
-    efApiBase = String(event.data.apiBase || '').replace(/\/$/, '');
-    efProfile = event.data.profile || null;
-    var style = event.data.style || 'toon';
-    var theme = event.data.theme || 'light';
-    if (style === 'astra') theme = 'dark';
-    document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'dark' : 'light');
-    document.documentElement.setAttribute('data-style', style);
-    try { localStorage.setItem('lecturepace.theme', theme === 'dark' ? 'dark' : 'light'); } catch (e) {}
-    if (!efBooted) startApp();
-    else { initSync(); render(); }
-  });
-  // Render locally if the parent profile/API request is slow or unavailable; a later bootstrap upgrades to cloud sync.
-  window.setTimeout(function () { if (!efBooted) { startApp(); setSync('local'); } }, 2500);
-  // Integrated mode starts after the parent has passed its configured API URL and account profile.
+    syncCtl.ref = {
+      set: function (o) { return call('push', o); },
+      onSnapshot: function (ok, bad) {
+        call('pull').then(function (d) { ok({ exists: !!(d && d.exists), data: function () { return d; } }); }, function () { if (bad) bad(); });
+      }
+    };
+    setSync('syncing');
+    syncCtl.ref.onSnapshot(onRemote, function () { setSync('fail'); });
+  }
   function snap() {
     try {
       var s = JSON.stringify(state);
@@ -1905,7 +1720,7 @@ body { color:var(--fg); background-image:radial-gradient(900px 500px at 8% -10%,
   /* zen + sound */
   function noiseStop() { try { if (noise.src) { noise.src.stop(); noise.src.disconnect(); } } catch (e) {} noise.src = null; }
   function noiseStart(mode) {
-    noiseStop(); noise.mode = mode; if (mode === 'off' || !globalSoundEnabled()) { noise.mode = 'off'; return; }
+    noiseStop(); noise.mode = mode; if (mode === 'off') return;
     try {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -2035,7 +1850,7 @@ body { color:var(--fg); background-image:radial-gradient(900px 500px at 8% -10%,
       case 'tapmode': state.settings.tapMode = v; save(); render(); break;
       case 'filter': gridFilter = v; render(); break;
       case 'budget': state.settings.budget = Number(v); save(); render(); break;
-      case 'freeze': if (earnedFreezeAvail() < 1) { if (state.purchasedFreezes < 1) { toast('No streak freezes left. Visit the Coin Shop to buy one.'); break; } useInventoryItem('streak_freeze', function () { state.frozen[v] = true; save(); render(); toast('Purchased streak freeze used. Your streak is safe.'); }); } else { state.frozen[v] = true; save(); render(); toast('Streak freeze used. Your streak is safe.'); } break;
+      case 'freeze': state.frozen[v] = true; save(); render(); toast('Streak freeze used. Your streak is safe.'); break;
       case 'flen': if (!focus.running) { state.settings.focusLen = Number(v); save(); if (focus.mode === 'focus') { focus.total = Number(v) * 60; focus.remaining = focus.total; } render(); } break;
       case 'blen': if (!focus.running) { state.settings.breakLen = Number(v); save(); if (focus.mode === 'break') { focus.total = Number(v) * 60; focus.remaining = focus.total; } render(); } break;
       case 'ftoggle':
@@ -2047,7 +1862,6 @@ body { color:var(--fg); background-image:radial-gradient(900px 500px at 8% -10%,
         render(); break;
       case 'freset': focus.running = false; focus.remaining = focus.total; focus.dist = 0; render(); break;
       case 'fdist': focus.dist++; render(); break;
-      case 'usefocusboost': if (focus.mode !== 'break' && state.purchasedFocusExtensions > 0) useInventoryItem('focus_extension', function () { var remBoost = timerRemaining(); focus.total += 900; focus.remaining = remBoost + 900; if (focus.running) focus.endAt += 900000; save(); render(); toast('Focus session extended by 15 minutes.'); }); else toast('Buy a Focus Extension in the Coin Shop first.'); break;
       case 'fskip':
         if (focus.mode === 'focus') { var el = focus.total - timerRemaining(); if (!focus.cid && c) focus.cid = c.id; if (el >= 60) { logSession(Math.round(el / 60)); toast('Logged ' + Math.round(el / 60) + ' min of focus'); } switchMode('break'); }
         else switchMode('focus');
@@ -2156,9 +1970,19 @@ body { color:var(--fg); background-image:radial-gradient(900px 500px at 8% -10%,
     else if (!$('#lecWrap').hidden) closeLecture();
   });
 
+  $('#themeBtn').addEventListener('click', function () {
+    var root = document.documentElement;
+    var cur = root.getAttribute('data-theme') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    var next = cur === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('lecturepace.theme', next); } catch (e) {}
+  });
+  if (!document.documentElement.classList.contains('embed')) { try { var th = localStorage.getItem('lecturepace.theme'); if (th) document.documentElement.setAttribute('data-theme', th); } catch (e) {} }
 
-  // The integrated ExamForge parent sends a same-origin bootstrap message above.
-
+  load();
+  render();
+  setInterval(tick, 250);
+  initSync();
 })();
 </script>
 

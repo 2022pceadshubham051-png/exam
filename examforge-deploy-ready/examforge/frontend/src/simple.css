@@ -1,0 +1,135 @@
+/* ExamForge "calm & simple" layer. Loaded last: removes decoration, adds clear, readable layout. */
+
+/* --- 1. No visual noise: floating icons, scenery, cursor trails, sparkles --- */
+.scene, .bg-fx, .trail, .clickpop, .blob, .spark, .exam-buddy { display: none !important; }
+.tcard, .tcard:hover { transform: none !important; }
+body { background-image: none; }
+
+/* --- 2. Dashboard --- */
+.dash-top { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.dash-top h1 { font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 800; }
+.dash-top .sub { margin-top: 4px; font-size: .95rem; }
+.dash-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.next-card { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap; padding: 22px 24px; border-radius: 20px; background: var(--brand-soft); border: 1px solid color-mix(in srgb, var(--brand) 30%, var(--border)); }
+.next-card h2 { font-size: 1.3rem; font-weight: 800; margin: 8px 0 4px; }
+.section-h { font-size: 1.25rem; font-weight: 800; }
+.filter-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.filter-bar .search { position: relative; flex: 1 1 240px; }
+.filter-bar .search svg { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+.filter-bar .search .input { padding-left: 38px; width: 100%; }
+.filter-bar select.input { width: auto; min-width: 130px; }
+.tcard-simple { display: flex; flex-direction: column; gap: 12px; padding: 18px; color: var(--text); text-decoration: none !important; transition: border-color .15s, box-shadow .15s; }
+.tcard-simple:hover { border-color: var(--brand); }
+.tcard-simple h3 { font-size: 1.08rem; font-weight: 800; line-height: 1.3; }
+.tcard-go { margin-top: auto; display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: var(--brand); }
+.attempt-list { padding: 4px 18px; }
+.attempt-row { display: flex; align-items: center; gap: 12px; padding: 13px 0; border-bottom: 1px solid var(--border); }
+.attempt-row:last-child { border-bottom: none; }
+.attempt-row .sub { display: block; }
+.ellipsis { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* --- 3. Bigger, easier tap targets --- */
+.btn { min-height: 40px; }
+.btn-lg { min-height: 48px; }
+.input { min-height: 44px; font-size: 1rem; }
+.nav-link { font-size: .95rem; }
+
+/* --- 4. Mobile: bottom tab bar with labels instead of mystery icons --- */
+@media (max-width: 720px) {
+  html .nav { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; transform: none !important; filter: none !important; }
+  .nav-in { padding: 8px 14px; }
+  .grid-stats { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .grid-stats .stat { padding: 12px 10px; } .grid-stats .stat-v { font-size: 1.4rem; } .grid-stats .stat-l { font-size: .66rem; }
+  .nav-links.app-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; margin: 0; padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); gap: 2px; background: var(--surface); border-top: 1px solid var(--border); box-shadow: 0 -6px 20px rgb(0 0 0 / .06); }
+  .nav-links.app-nav .nav-link { flex: 1; flex-direction: column; gap: 3px; padding: 6px 4px; font-size: .7rem; text-align: center; justify-content: center; }
+  .nav-links.app-nav .nav-link span { display: block !important; }
+  .nav-links.app-nav .nav-link.active { background: var(--brand-soft); color: var(--brand); }
+  .page, .page-narrow { padding-bottom: 100px; }
+  .brand { font-size: 1rem; }
+  .next-card { padding: 18px; }
+  .next-card .btn { width: 100%; }
+  .attempt-row { flex-wrap: wrap; }
+}
+
+/* ---------- Palette counts (shared by sheet + sidebar) ---------- */
+.count-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.count-tile { border-radius: 14px; padding: 10px 6px; text-align: center; background: var(--surface-2); border: 1px solid var(--border); }
+.count-tile b { display: block; font-size: 1.35rem; font-weight: 800; line-height: 1.1; }
+.count-tile span { font-size: .72rem; font-weight: 700; color: var(--muted); }
+.count-tile.ok b { color: #16a34a; } .count-tile.mk b { color: #7c3aed; } .count-tile.lf b { color: var(--text); }
+.status-btn { display: none; }
+
+/* ---------- Whole site: phones ---------- */
+body { overflow-x: clip; }
+img, svg, video { max-width: 100%; }
+.grid-auto { grid-template-columns: repeat(auto-fill, minmax(min(290px, 100%), 1fr)); }
+.shop-grid { grid-template-columns: repeat(auto-fill, minmax(min(230px, 100%), 1fr)); }
+.seg { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.seg::-webkit-scrollbar { display: none; }
+.seg button { white-space: nowrap; }
+.nav-links:not(.app-nav) .nav-link span { display: inline !important; }
+
+@media (max-width: 720px) {
+  .page, .page-narrow { padding: 18px 14px 100px; }
+  .card-pad { padding: 16px; }
+  .stack { gap: 14px; }
+  [style*="minmax("] { grid-template-columns: 1fr !important; }
+  .steps[style*="repeat(3"] { grid-template-columns: 1fr !important; }
+  .coin-chip { padding: 6px 10px; }
+  .site-foot { padding-bottom: 90px; }
+  .landing-main { padding: 20px; } .landing-side { padding: 16px; }
+  .landing-main h1 { font-size: 1.8rem; }
+  .pub-hero { padding-top: 28px; }
+  .auth-form { padding: 18px 14px; place-items: start center; }
+  .row.between { gap: 10px; }
+  .filter-bar select.input, .filter-bar .seg { width: 100%; }
+  .filter-bar .seg button { flex: 1; justify-content: center; }
+  table.t th, table.t td { padding: 10px 10px; }
+  .bulk-bar { left: 10px; right: 10px; bottom: 76px; }
+  /* dialogs become bottom sheets */
+  .modal-bg { align-items: end; padding: 0; }
+  .modal { max-width: 100%; border-radius: 22px 22px 0 0; padding: 20px 18px calc(20px + env(safe-area-inset-bottom)); max-height: 90vh; overflow-y: auto; }
+  .sheet { max-height: 80vh; overflow-y: auto; padding-bottom: calc(18px + env(safe-area-inset-bottom)); }
+  .sheet .qb { height: 46px; font-size: .95rem; }
+
+  /* ---------- Exam screen ---------- */
+  .exam-top-inner { padding: 8px 12px; gap: 6px 8px; flex-wrap: wrap; align-items: center; }
+  .exam-title { order: 1; flex: 1; min-width: 0; gap: 8px !important; }
+  .exam-logo { display: none; }
+  .exam-title b { font-size: .95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .exam-title .sub { font-size: .72rem; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 52vw; }
+  .exam-actions { order: 2; gap: 6px !important; flex-wrap: nowrap; }
+  .exam-actions .btn { min-height: 38px; padding: 0 12px; }
+  .sync-pill .txt, .exam-actions .btn-sm:not(.btn-ok) .txt { display: none; }
+  .exam-title { overflow: hidden; }
+  /* all timers on ONE line */
+  .exam-timers { order: 3; width: 100%; flex-wrap: nowrap; justify-content: space-between; gap: 6px !important; }
+  .exam-timers .timer { flex: 1; flex-direction: row; justify-content: center; align-items: baseline; gap: 6px; min-width: 0; padding: 5px 8px; border-radius: 10px; }
+  .exam-timers .timer small { font-size: .62rem; }
+  .exam-timers .timer b { font-size: 1rem; }
+  .exam-timers .pill { margin: 0 auto; }
+  main.flex-1 { padding: 14px 12px 12px !important; }
+  /* big, thumb-friendly options */
+  .opt { padding: 14px; min-height: 58px; gap: 12px; border-radius: 16px; font-size: 1.02rem; line-height: 1.45; }
+  .opt:hover { transform: none; }
+  .opt-k { width: 38px; height: 38px; font-size: 1rem; border-radius: 12px; }
+  .q-slide .card-pad { padding: 16px 14px; }
+  .q-slide p { font-size: 1.05rem !important; }
+  /* bottom action area: status bar + big buttons */
+  .action-bar { position: sticky; bottom: 0; margin: 14px -12px -12px; border-radius: 18px 18px 0 0; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .status-btn { grid-column: 1 / -1; order: -1; display: flex; align-items: center; gap: 14px; width: 100%; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font-weight: 700; font-size: .9rem; cursor: pointer; }
+  .status-btn .ok { color: #16a34a; display: inline-flex; gap: 4px; align-items: center; } .status-btn .mk { color: #7c3aed; display: inline-flex; gap: 4px; align-items: center; }
+  .status-btn .lf { color: var(--muted); }
+  .status-btn .go { margin-left: auto; display: inline-flex; gap: 6px; align-items: center; color: var(--brand); }
+  .action-bar .btn { min-height: 48px; justify-content: center; font-size: .95rem; }
+  .action-bar > span { display: none; }
+  .ab-prev { order: 3; } .ab-next { order: 4; }
+  .ab-mark { order: 1; } .action-bar .btn:not(.ab-mark):not(.ab-prev):not(.ab-next) { order: 2; }
+}
+@media (hover: none) { .opt:hover, .tcard:hover { transform: none; } }
+
+/* exam start page: the chosen mode is already highlighted in the list, so no second explainer */
+.landing-mode-explainer { display: none; }
+@media (max-width: 720px) {
+  .landing-start { position: sticky; bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 20; width: 100%; box-shadow: 0 10px 30px rgb(0 0 0 / .25); }
+}

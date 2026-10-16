@@ -1,6 +1,6 @@
 import "./lib/asyncErrors";
 import express from "express"; import bcrypt from "bcrypt"; import { prisma } from "./lib/db"; import helmet from "helmet"; import cors from "cors"; import rateLimit from "express-rate-limit";
-import { study } from "./routes/study"; import { tests } from "./routes/tests"; import { progress } from "./routes/progress"; import { auth } from "./routes/auth"; import { attempts } from "./routes/attempts"; import { questions } from "./routes/questions"; import { coach } from "./routes/coach";
+import { tests } from "./routes/tests"; import { progress } from "./routes/progress"; import { auth } from "./routes/auth"; import { attempts } from "./routes/attempts"; import { questions } from "./routes/questions"; import { coach } from "./routes/coach"; import { lecturePace } from "./routes/lecturePace"; import { me } from "./routes/me"; import { shop } from "./routes/shop";
 const app = express();
 // Behind Vercel/Render proxies: without this every user shares one rate-limit bucket.
 app.set("trust proxy", 1);
@@ -11,9 +11,11 @@ app.get("/api/health", (_, res) => res.json({ ok: true }));
 let seeded: Promise<void> | null = null;
 app.use((_req, _res, next) => { seeded ??= ensureAdmin(); seeded.then(() => next(), () => next()); });
 app.use("/api/auth", rateLimit({ windowMs: 15 * 60_000, max: 50 }), auth);
-app.use("/api", study);
 app.use("/api/questions", questions);
 app.use("/api/tests", tests);
+app.use("/api/lecture-pace", lecturePace);
+app.use("/api", me);
+app.use("/api", shop);
 app.use("/api", progress);
 app.use("/api", coach);
 app.use("/api", attempts);

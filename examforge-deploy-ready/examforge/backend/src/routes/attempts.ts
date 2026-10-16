@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../lib/db";
 import { requireAuth, type AuthedReq } from "../middleware/auth";
 import * as svc from "../services/exam/attemptService";
+import { award, syncEarnings } from "../services/coins"; import { readInv } from "../services/shopCatalog";
 
 export const attempts = Router();
 attempts.use(requireAuth);
@@ -34,8 +35,29 @@ attempts.post("/attempts/:id/answer", wrap(async (req, res) => {
 // Practice: instant feedback (correct option + explanation)
 attempts.post("/attempts/:id/check", wrap(async (req, res) => {
   if (!(await own(req, req.params.id))) return res.sendStatus(404);
-  res.json(await svc.checkAnswer(req.params.id, String(req.body?.questionId ?? "")));
+  const qid = String(req.body?.questionId ?? ""), r = await svc.checkAnswer(req.params.id, qid);
+  if (r.isCorrect) await award(req.user!.id, 10, "practice-correct", `${req.params.id}:${qid}`); // +10 coins, once per question
+  res.json(r);
 }));
+// Practice: spend one 50-50 lifeline to hide two wrong options. Repeating it on the same question is free.
+attempts.post("/attempts/:id/fifty", wrap(async (req, res) => {
+  if (!(await own(req, req.params.id))) return res.sendStatus(404);
+  const qid = String(req.body?.questionId ?? ""), userId = req.user!.id;
+  const info = await svc.wrongKeys(req.params.id, qid); // practice + in-progress + question in session, else throws
+  const pick = (ks: string[]) => [...ks].sort((a, b) => (hash(req.params.id + qid + a) - hash(req.params.id + qid + b))).slice(0, 2).sort();
+  const used = await prisma.coinTx.findUnique({ where: { userId_reason_ref: { userId, reason: "lifeline", ref: `${req.params.id}:${qid}` } } });
+  if (used) return res.json({ hide: pick(info.wrong), left: readInv((await prisma.user.findUnique({ where: { id: userId }, select: { inventory: true } }))?.inventory).lifelines });
+  const left = await prisma.$transaction(async (tx) => {
+    const u = await tx.user.findUnique({ where: { id: userId }, select: { inventory: true } }), inv = readInv(u?.inventory);
+    if (inv.lifelines < 1) throw new Error("You have no 50-50 lifelines. Buy some in the Shop with your coins.");
+    inv.lifelines -= 1;
+    await tx.coinTx.create({ data: { userId, amount: 0, reason: "lifeline", ref: `${req.params.id}:${qid}` } });
+    await tx.user.update({ where: { id: userId }, data: { inventory: inv as any } });
+    return inv.lifelines;
+  }, { isolationLevel: "Serializable" });
+  res.json({ hide: pick(info.wrong), left });
+}));
+function hash(x: string) { let h = 2166136261; for (let i = 0; i < x.length; i++) { h ^= x.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
 // Exam: finish the current section early and move to the next one
 attempts.post("/attempts/:id/next-section", wrap(async (req, res) => {
   if (!(await own(req, req.params.id))) return res.sendStatus(404);
@@ -52,20 +74,21 @@ attempts.post("/attempts/:id/tab-switch", wrap(async (req, res) => {
 attempts.post("/attempts/:id/submit", wrap(async (req, res) => { if (!(await own(req, req.params.id))) return res.sendStatus(404); await svc.submit(req.params.id); res.json({ ok: true }); }));
 attempts.get("/results/:id", wrap(async (req, res) => { const r = await svc.resultWithComparison(req.params.id, req.user!.id); r ? res.json(r) : res.sendStatus(404); }));
 
-attempts.get("/history", wrap(async (req, res) => res.json(await prisma.testAttempt.findMany({
+attempts.get("/history", wrap(async (req, res) => { await syncEarnings(req.user!.id); res.json(await prisma.testAttempt.findMany({
   where: { userId: req.user!.id }, orderBy: { startedAt: "desc" }, take: 300,
   include: { result: true, test: { select: { id: true, name: true, examName: true, maxAttempts: true, showResult: true } } },
 }).then((rows) => rows.map(({ test: { showResult, ...test }, ...a }) =>
   // Official attempts of tests with hidden results: keep the row, drop the numbers.
-  a.mode === "EXAM" && !showResult && a.result ? { ...a, test, result: null, resultHidden: true } : { ...a, test, resultHidden: false })))));
+  a.mode === "EXAM" && !showResult && a.result ? { ...a, test, result: null, resultHidden: true } : { ...a, test, resultHidden: false }))); }));
 
 // ---- delete attempted exams / practice sessions ----
 attempts.delete("/attempts/:id", wrap(async (req, res) => {
   if (!(await own(req, req.params.id))) return res.sendStatus(404);
+  await syncEarnings(req.user!.id);
   res.json(await svc.deleteAttempts(req.user!.id, { ids: [req.params.id] }));
 }));
 const delBody = z.object({ ids: z.array(z.string()).max(500).optional(), testId: z.string().optional(), mode: z.enum(["EXAM", "PRACTICE"]).optional(), all: z.boolean().optional() });
-attempts.post("/history/delete", wrap(async (req, res) => res.json(await svc.deleteAttempts(req.user!.id, delBody.parse(req.body ?? {})))));
+attempts.post("/history/delete", wrap(async (req, res) => { await syncEarnings(req.user!.id); res.json(await svc.deleteAttempts(req.user!.id, delBody.parse(req.body ?? {}))); }));
 
 attempts.get("/attempts/:id/review", wrap(async (req, res) => {
   const a = await prisma.testAttempt.findFirst({ where: { id: req.params.id, userId: req.user!.id }, include: { test: { include: { sections: { orderBy: { order: "asc" }, select: { id: true, name: true } } } }, responses: { orderBy: [{ ord: "asc" }, { updatedAt: "asc" }] } } });

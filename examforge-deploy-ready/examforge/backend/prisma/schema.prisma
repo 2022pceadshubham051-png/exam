@@ -40,17 +40,16 @@ model User {
   passwordHash String
   name String
   displayName String?
-  age Int?
   role Role @default(USER)
   targetExam String?
-  coachExam String?
   targetScore Int?
-  coins Int @default(100)
-  inventory Json @default("{}")
   createdAt DateTime @default(now())
   attempts TestAttempt[]
-  lecturePaceState LecturePaceState?
-  coinTransactions CoinTransaction[]
+  lecturePace LecturePaceData?
+  age Int?
+  onboarded Boolean @default(false)
+  inventory Json?
+  coinTx CoinTx[]
 }
 
 model Test {
@@ -216,24 +215,31 @@ model AIQuestionGeneration {
   createdAt DateTime @default(now())
 }
 
-
-model LecturePaceState {
+model LecturePaceData {
   userId String @id
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  state Json
+  json String @db.Text
+  clientUpdatedAt Float @default(0)
+  xp Int @default(0)
+  level Int @default(1)
+  lectures Int @default(0)
+  focusMin Int @default(0)
+  reviews Int @default(0)
+  activeDays Int @default(0)
+  streak Int @default(0)
+  bestStreak Int @default(0)
   updatedAt DateTime @updatedAt
+  @@index([xp])
 }
 
-model CoinTransaction {
+model CoinTx {
   id String @id @default(cuid())
   userId String
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   amount Int
-  type String
   reason String
-  referenceId String?
-  balance Int
+  ref String
   createdAt DateTime @default(now())
-  @@unique([userId, referenceId])
-  @@index([userId, createdAt])
+  @@unique([userId, reason, ref])
+  @@index([userId])
 }
