@@ -17,6 +17,7 @@ export default function Shell({ children, narrow }: { children: ReactNode; narro
   const cls = ({ isActive }: { isActive: boolean }) => "nav-link" + (isActive ? " active" : "");
   const admin = me?.role === "ADMIN";
   return <>
+    <a className="skip-link" href="#main-content">Skip to main content</a>
     <header className="nav"><div className="nav-in">
       <Link to="/dashboard" className="brand"><Logo />ExamForge</Link>
       <nav className="nav-links app-nav">
@@ -30,7 +31,7 @@ export default function Shell({ children, narrow }: { children: ReactNode; narro
             <UserMenu name={admin ? "Admin" : pname} admin={admin} />
     </div></header>
     <Tutorial /><LevelUp />
-    <main className={narrow ? "page-narrow fade-in" : "page fade-in"}>{children}</main>
+    <main id="main-content" tabIndex={-1} className={narrow ? "page-narrow fade-in" : "page fade-in"}>{children}</main>
     <SiteFooter />
   </>;
 }

@@ -1,0 +1,249 @@
+/* ExamForge product polish layer — loaded last so shared tokens and component states stay consistent. */
+:root {
+  --ef-radius-sm: 8px;
+  --ef-radius-md: 12px;
+  --ef-radius-lg: 16px;
+  --ef-content-width: 1180px;
+}
+
+/* Premium Academic: violet is the primary action; gold is a restrained accent. */
+.aura {
+  --ink: #27213d;
+  --bg: #f7f6fb;
+  --surface: #ffffff;
+  --surface-2: #f3f1f8;
+  --text: #211d35;
+  --muted: #716b82;
+  --border: #e5e0ef;
+  --brand: #5946a8;
+  --brand-2: #b58a2b;
+  --brand-soft: #f0ecfa;
+  --head: #f5f2fa;
+  --s1: #ffffff;
+  --s2: #ffffff;
+  --s3: #ffffff;
+  --s4: #ffffff;
+  --shadow: 0 1px 2px rgb(33 29 53 / .035), 0 5px 18px rgb(33 29 53 / .045);
+  --shadow-1: 0 1px 2px rgb(33 29 53 / .04), 0 3px 10px rgb(33 29 53 / .04);
+  --clay-out: var(--shadow);
+  --clay-out-sm: var(--shadow-1);
+  --clay-pressed: inset 0 1px 2px rgb(33 29 53 / .08);
+  --ring: 0 0 0 3px rgb(89 70 168 / .2);
+}
+.aura.dark {
+  --bg: #12111a;
+  --surface: #1b1925;
+  --surface-2: #252231;
+  --text: #f0edf7;
+  --muted: #b2abc4;
+  --border: #373244;
+  --brand: #b7a8ff;
+  --brand-2: #e0bd69;
+  --brand-soft: #2b2540;
+  --head: #211e2c;
+  --s1: #1b1925;
+  --s2: #1b1925;
+  --s3: #1b1925;
+  --s4: #1b1925;
+  --shadow: 0 1px 2px rgb(0 0 0 / .16), 0 5px 18px rgb(0 0 0 / .13);
+  --shadow-1: 0 1px 2px rgb(0 0 0 / .15), 0 3px 10px rgb(0 0 0 / .12);
+  --clay-out: var(--shadow);
+  --clay-out-sm: var(--shadow-1);
+  --clay-pressed: inset 0 1px 2px rgb(0 0 0 / .2);
+  --ring: 0 0 0 3px rgb(183 168 255 / .28);
+}
+
+/* Keep the Astra dark-space identity, but reduce neon glare and improve readability. */
+.astra {
+  --surface: #191628;
+  --surface-2: #242036;
+  --text: #f1eefb;
+  --muted: #b4adc9;
+  --border: #3c344f;
+  --brand: #b7a8ff;
+  --brand-soft: #2c2542;
+  --shadow: 0 5px 18px rgb(0 0 0 / .18);
+  --shadow-1: 0 3px 10px rgb(0 0 0 / .16);
+  --ring: 0 0 0 3px rgb(183 168 255 / .3);
+}
+
+body { background-image: none; }
+.fx-backdrop { display: none !important; }
+.aura body, .aura.dark body, .astra body {
+  background: var(--bg) !important;
+  background-attachment: initial !important;
+}
+
+.aura h1, .aura h2, .aura h3,
+.astra h1, .astra h2, .astra h3,
+.astra .brand, .astra .btn, .astra .pill, .astra .stat-v,
+.astra .card-title, .astra .nav-link {
+  font-family: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  letter-spacing: -.02em;
+}
+
+/* Shared surfaces use restrained elevation instead of a different shadow per card. */
+.aura .card, .aura .stat, .aura .mode-card, .aura .step,
+.aura .resume-card, .aura .landing-mode-explainer, .aura .leaderboard-row,
+.aura .qcard, .aura .ans, .aura .action-bar, .aura .bulk-bar, .aura .podium-card,
+.astra .card, .astra .stat, .astra .mode-card, .astra .step,
+.astra .resume-card, .astra .landing-mode-explainer, .astra .leaderboard-row,
+.astra .qcard, .astra .ans, .astra .action-bar, .astra .bulk-bar, .astra .podium-card {
+  border: 1px solid var(--border) !important;
+  border-radius: var(--ef-radius-lg) !important;
+  box-shadow: var(--shadow-1) !important;
+  backdrop-filter: none;
+}
+.aura .stat:nth-child(4n+1), .aura .stat:nth-child(4n+2),
+.aura .stat:nth-child(4n+3), .aura .stat:nth-child(4n+4) {
+  background: var(--surface) !important;
+}
+.aura .stat-v, .astra .stat-v { text-shadow: none !important; color: var(--text); }
+.aura .nav, .aura .exam-top, .astra .nav, .astra .exam-top {
+  border: 1px solid var(--border) !important;
+  border-radius: var(--ef-radius-lg) !important;
+  box-shadow: var(--shadow-1) !important;
+  background: var(--surface) !important;
+  backdrop-filter: none !important;
+}
+.aura .nav-link.active { background: var(--brand-soft); color: var(--brand); }
+.astra .nav-link.active { background: var(--brand-soft); color: var(--brand); border: 1px solid var(--border); box-shadow: none; }
+
+/* Primary actions: solid, confident, and accessible — no perpetual shine sweep. */
+.aura .btn-primary, .aura .btn-primary:hover:not(:disabled) {
+  background: #5946a8 !important;
+  color: #fff !important;
+  border: 1px solid #5946a8 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+.aura.dark .btn-primary, .aura.dark .btn-primary:hover:not(:disabled),
+.astra .btn-primary, .astra .btn-primary:hover:not(:disabled) {
+  background: #6653bd !important;
+  color: #fff !important;
+  border: 1px solid #8574dc !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+.btn-primary::after { display: none !important; animation: none !important; }
+.aura .btn, .astra .btn { border-radius: 10px; transition: background-color .16s, border-color .16s, color .16s; }
+.aura .btn:hover:not(:disabled), .astra .btn:hover:not(:disabled) { transform: none; filter: none; }
+
+/* Banners remain branded, but no longer rely on glow, dots, or candy-like gradients. */
+.aura .hero, .aura .leaderboard-hero, .aura .auth-hero {
+  background: linear-gradient(115deg, #342963, #51418e) !important;
+  border: 1px solid rgb(224 193 111 / .42) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 8px 22px rgb(34 25 68 / .12) !important;
+}
+.aura .hero::before, .aura .auth-hero::before { display: none !important; }
+.aura .hero h1, .aura .leaderboard-hero h1, .aura .auth-hero h1 { text-shadow: none !important; }
+.astra .hero, .astra .leaderboard-hero, .astra .auth-hero {
+  background: linear-gradient(125deg, #211938, #302451) !important;
+  border: 1px solid rgb(224 193 111 / .35) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 8px 24px rgb(0 0 0 / .22) !important;
+}
+.astra .hero h1, .astra .leaderboard-hero h1, .astra .auth-hero h1 { text-shadow: none !important; }
+.aura .landing-main { background: var(--surface) !important; }
+.aura .landing-hero { border: 1px solid var(--border); border-radius: 18px; }
+.aura .mode-card.featured { background: var(--surface); }
+.aura .mode-card:hover, .astra .mode-card:hover { transform: none; }
+
+/* Remove idle decoration and reserve movement for meaningful feedback. */
+.logo-mark { filter: none !important; border-radius: 22%; transition: none !important; }
+.brand:hover .logo-mark { transform: none !important; }
+.logo-live, .brand-banner, .coin, .fx-chips span, .fx-doodle { animation: none !important; }
+.brand-banner { background: #211a3d; box-shadow: none; border: 1px solid rgb(224 193 111 / .24); }
+.coin-chip { border-width: 1px; box-shadow: none; }
+.coin { flex: none; }
+.tcard:hover, .tcard-simple:hover, .fx-tile:hover, .pub-link:hover { transform: none; }
+.aura .input, .aura .select, .aura .textarea, .astra .input, .astra .select, .astra .textarea {
+  border-radius: 10px;
+  box-shadow: none !important;
+}
+.aura .input:focus, .aura .select:focus, .aura .textarea:focus,
+.astra .input:focus, .astra .select:focus, .astra .textarea:focus {
+  border-color: var(--brand) !important;
+  box-shadow: var(--ring) !important;
+}
+
+
+.skip-link {
+  position: fixed;
+  top: -80px;
+  left: 12px;
+  z-index: 2000;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  border: 2px solid var(--brand);
+  box-shadow: var(--shadow);
+  font-weight: 700;
+}
+.skip-link:focus { top: 12px; outline: 2px solid var(--brand); outline-offset: 3px; }
+
+/* Focus visibility and motion preferences apply even when optional theme sheets are active. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+@media (max-width: 720px) {
+  .brand-banner { padding: 10px 14px; margin-bottom: 16px; }
+  .brand-banner img { width: min(420px, 76vw); }
+  .hero, .leaderboard-hero { border-radius: 16px !important; }
+}
+
+/* Astra-specific overrides for rules with more specific neon selectors in astra.css. */
+.astra .stat:nth-child(4n+1), .astra .stat:nth-child(4n+2),
+.astra .stat:nth-child(4n+3), .astra .stat:nth-child(4n+4) {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-1) !important;
+}
+.astra .tcard:hover, .aura .tcard:hover {
+  transform: none !important;
+  border-color: var(--brand) !important;
+  box-shadow: var(--shadow-1) !important;
+}
+.astra .brand { text-shadow: none !important; }
+.astra .coin-chip, .aura .coin-chip {
+  border: 1px solid var(--border) !important;
+  box-shadow: none !important;
+}
+.astra .btn:not(.btn-primary):hover:not(:disabled) {
+  transform: none !important;
+  filter: none !important;
+  background: var(--surface-2);
+  border-color: var(--brand);
+  box-shadow: none !important;
+}
+.astra .btn-primary:hover:not(:disabled), .aura .btn-primary:hover:not(:disabled),
+.aura.dark .btn-primary:hover:not(:disabled) {
+  filter: brightness(1.06) !important;
+  transform: none !important;
+}
+.splash-skip {
+  position: absolute;
+  top: max(14px, env(safe-area-inset-top));
+  right: 16px;
+  padding: 8px 12px;
+  border: 1px solid rgb(255 255 255 / .32);
+  border-radius: 10px;
+  background: rgb(255 255 255 / .1);
+  color: #fff;
+  font: inherit;
+  font-size: .85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.splash-skip:focus-visible { outline-color: #ffe08a; outline-offset: 4px; }

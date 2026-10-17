@@ -49,7 +49,7 @@ export default function ProfilePage() {
   const look = getStyle();
 
   const looks = <div className="card card-pad stack" style={{ gap: 16 }}>
-    <h2 className="card-title">Look &amp; sound</h2>
+    <h2 className="card-title">Look &amp; sound</h2><p className="sub" style={{ margin: "-8px 0 0" }}>Choose a comfortable appearance. Sound and theme preferences are saved on this device.</p>
     <div><label className="label">Visual style</label><div className="chip-wrap">{STYLES.map((s) => <button type="button" key={s} className={`chip-pick ${look === s ? "on" : ""}`} onClick={() => { setStyle(s); sfx("level"); rerender(); }}>{STYLE_NAMES[s]}</button>)}</div></div>
     <div><label className="label">Mode</label><div className="chip-wrap">
       <button type="button" className={`chip-pick ${!isDark() ? "on" : ""}`} onClick={() => { setMode(false); sfx("pop"); rerender(); }}><Sun size={14} style={{ verticalAlign: "-2px" }} /> Light</button>
@@ -88,16 +88,16 @@ export default function ProfilePage() {
     <form className="card card-pad stack" style={{ gap: 16 }} onSubmit={save}>
       <div><h2 className="card-title">Your details</h2><p className="sub">Your dashboard shows {target || "your"} tests first. Change the exam any time.</p></div>
       <div className="profile-cols">
-        <div><label className="label">Name</label><input className="input" required value={name} onChange={(e) => setName(e.target.value)} maxLength={80} autoComplete="name" /></div>
-        <div><label className="label">Age</label><input className="input" required type="number" inputMode="numeric" min={8} max={99} value={age} onChange={(e) => setAge(e.target.value)} /></div>
-        <div><label className="label">Email</label><input className="input" required type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" /></div>
-        <div><label className="label">Target score <small>(optional, %)</small></label><input className="input" type="number" inputMode="numeric" min={1} max={100} value={score} onChange={(e) => setScore(e.target.value)} placeholder="e.g. 85" /></div>
+        <div><label className="label" htmlFor="profile-name">Name</label><input id="profile-name" className="input" required value={name} onChange={(e) => setName(e.target.value)} maxLength={80} autoComplete="name" /></div>
+        <div><label className="label" htmlFor="profile-age">Age</label><input id="profile-age" className="input" required type="number" inputMode="numeric" min={8} max={99} value={age} onChange={(e) => setAge(e.target.value)} /></div>
+        <div><label className="label" htmlFor="profile-email">Email</label><input id="profile-email" className="input" required type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" /></div>
+        <div><label className="label" htmlFor="profile-target-score">Target score <small>(optional, %)</small></label><input id="profile-target-score" className="input" type="number" inputMode="numeric" min={1} max={100} value={score} onChange={(e) => setScore(e.target.value)} placeholder="e.g. 85" /></div>
       </div>
-      {emailChanged && <div className="fade-in"><label className="label"><KeyRound size={14} style={{ verticalAlign: "-2px" }} /> Current password <small>(needed to change your email)</small></label><input className="input" type="password" required value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="current-password" style={{ maxWidth: 320 }} /></div>}
-      <div><label className="label"><GraduationCap size={14} style={{ verticalAlign: "-2px" }} /> Course / target exam</label>
-        <div className="chip-wrap">{exams.map((x) => <button type="button" key={x} className={`chip-pick ${exam === x ? "on" : ""}`} onClick={() => setExam(x)}>{x}</button>)}<button type="button" className={`chip-pick ${exam === "__other" ? "on" : ""}`} onClick={() => setExam("__other")}>Other</button></div>
+      {emailChanged && <div className="fade-in"><label className="label" htmlFor="profile-current-password"><KeyRound size={14} style={{ verticalAlign: "-2px" }} /> Current password <small>(needed to change your email)</small></label><input id="profile-current-password" className="input" type="password" required value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="current-password" style={{ maxWidth: 320 }} /></div>}
+      <div><div className="label"><GraduationCap size={14} style={{ verticalAlign: "-2px" }} /> Course / target exam</div>
+        <div className="chip-wrap" role="group" aria-label="Choose your target exam">{exams.map((x) => <button type="button" key={x} aria-pressed={exam === x} className={`chip-pick ${exam === x ? "on" : ""}`} onClick={() => setExam(x)}>{x}</button>)}<button type="button" aria-pressed={exam === "__other"} className={`chip-pick ${exam === "__other" ? "on" : ""}`} onClick={() => setExam("__other")}>Other</button></div>
         {exam === "__other" && <input className="input" style={{ marginTop: 10, maxWidth: 320 }} value={other} onChange={(e) => setOther(e.target.value)} placeholder="Type your exam name" maxLength={60} />}</div>
-      {err && <div className="alert alert-bad"><TriangleAlert size={17} />{err}</div>}{ok && <div className="alert alert-ok">{ok}</div>}
+      {err && <div className="alert alert-bad" role="alert"><TriangleAlert size={17} />{err}</div>}{ok && <div className="alert alert-ok" role="status" aria-live="polite">{ok}</div>}
       <div><button className="btn btn-primary" disabled={busy}>{busy ? <Loader size={16} className="animate-spin" /> : <><Save size={16} />Save changes</>}</button></div>
     </form>
 

@@ -192,6 +192,7 @@ export default function Exam() {
   const sessionLabel = v.adaptive ? "Adaptive practice" : v.mode === "PRACTICE" ? "Practice" : "Exam";
 
   return <div className="flex min-h-screen flex-col select-none">
+    <a className="skip-link" href="#exam-main">Skip to current question</a>
     <header className="exam-top"><div className="row between exam-top-inner">
       <div className="row exam-title" style={{ gap: 12 }}><span className="exam-logo"><LogoMark size={34} /></span><div><b style={{ display: "block", lineHeight: 1.1 }}>{v.sectionName}</b><span className="sub">{v.test.examName}{v.mode === "EXAM" ? ` · Section ${v.sectionIdx + 1} of ${v.sectionCount}` : ` · ${v.sectionCount} section${v.sectionCount > 1 ? "s" : ""} together`}</span></div></div>
       <div className="row exam-timers" style={{ gap: 8 }}>{timed ? <><div className={`timer ${tCls(testSec)}`}><small>Test</small><b>{fmt(testSec)}</b></div><div className={`timer ${tCls(secSec)}`}><small>Section</small><b>{fmt(secSec)}</b></div>{qSec !== null && <div className={`timer ${tCls(qSec)}`}><small>Qn</small><b>{fmt(qSec)}</b></div>}</> : <span className={`pill ${v.adaptive ? "pill-ok" : "pill-brand"}`}><Sparkles size={13} />{sessionLabel} · no timer</span>}</div>
@@ -200,7 +201,7 @@ export default function Exam() {
     {err && <div className="alert alert-bad" style={{ borderRadius: 0 }}><TriangleAlert size={17} />{err}</div>}
     {v.adaptive && <div className="adaptive-banner"><BrainCircuit size={16} /><span><b>Adaptive focus:</b> {v.adaptiveTopics?.slice(0, 4).join(" · ") || "your weaker areas"}</span></div>}
     {switches > 0 && timed && <div className="alert alert-warn" style={{ borderRadius: 0 }}><TriangleAlert size={17} />You switched away from the test {switches} time{switches > 1 ? "s" : ""}. The test may auto-submit after the configured limit.</div>}
-    <div className="flex flex-1" style={{ maxWidth: 1280, margin: "0 auto", width: "100%" }}><main className="flex-1" style={{ padding: "22px 18px 28px", minWidth: 0 }}>
+    <div className="flex flex-1" style={{ maxWidth: 1280, margin: "0 auto", width: "100%" }}><main id="exam-main" tabIndex={-1} className="flex-1" style={{ padding: "22px 18px 28px", minWidth: 0 }}>
       <div className="row between" style={{ marginBottom: 10 }}><span className="pill pill-brand">Question {idx + 1} of {all.length}</span>{combo >= 2 && <span key={combo} className="pill pill-warn combo">🔥 {combo} combo</span>}<span className="sub">{answered} of {all.length} answered</span></div><div className="bar" style={{ marginBottom: 18 }}><i style={{ width: `${pct}%` }} /></div>
       <div key={q.id} className="q-slide">{(() => { const rv = reveal[q.id]; const practice = v.mode === "PRACTICE";
         const pick = (key: string) => { if (rv) return; save({ selectedKey: key, status: q.status.includes("REVIEW") ? "ANSWERED_REVIEW" : "ANSWERED" }); if (practice && instant) setTimeout(() => check(q.id), 350); };

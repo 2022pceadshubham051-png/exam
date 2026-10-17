@@ -45,8 +45,8 @@ export function useScrollReveal() {
   }, []);
 }
 
-/** Mounted once in main.tsx. */
-export default function StudyFx() { useScrollReveal(); return <StudyBackdrop />; }
+/** Mounted once in main.tsx. Keeps scroll-reveal behavior without mounting decorative icons behind every page. */
+export default function StudyFx() { useScrollReveal(); return null; }
 
 /** Types and deletes a rotating list of exam names. */
 export function Typewriter({ words, className = "" }: { words: string[]; className?: string }) {

@@ -9,13 +9,14 @@ export const SiteFooter = () => <><TrainStrip /><footer className="site-foot"><d
 export default function PublicShell({ children, narrow }: { children: ReactNode; narrow?: boolean }) {
   const me = getMe();
   return <>
+    <a className="skip-link" href="#main-content">Skip to main content</a>
     <header className="nav"><div className="nav-in">
       <Link to="/" className="brand"><LogoMark size={34} />{SITE}</Link>
       <nav className="nav-links"><Link className="nav-link" to="/tips"><span>Exam tips</span></Link><Link className="nav-link" to="/about"><span>About</span></Link></nav>
       <span style={{ flex: 1 }} />
       <Link className="btn btn-primary btn-sm" to={me ? (me.role === "ADMIN" ? "/admin" : "/dashboard") : "/login"}>{me ? "Open dashboard" : "Login / Register"}</Link>
     </div></header>
-    <main className={narrow ? "page-narrow fade-in" : "page fade-in"}>{children}</main>
+    <main id="main-content" tabIndex={-1} className={narrow ? "page-narrow fade-in" : "page fade-in"}>{children}</main>
     <SiteFooter />
   </>;
 }
