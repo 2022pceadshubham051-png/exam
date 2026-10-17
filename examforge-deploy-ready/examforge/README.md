@@ -121,3 +121,10 @@ No database change in this build, so `prisma db push` is not required.
 - Deleting an already deleted exam returns 404 instead of a generic error.
 - Fonts load in one request with `display=swap`; added meta description.
 
+## Ads and public pages (v15)
+
+- Public pages: `/` landing, `/about`, `/contact`, `/privacy`, `/tips` (4 articles). They are what Google reviews for AdSense.
+- Ads appear only on Dashboard, Result, Leaderboard and the landing page. Never in the exam screen.
+- Ads stay off until you set `VITE_ADSENSE_CLIENT` and `VITE_ADSENSE_SLOT` (see `frontend/.env.example`). Also set `VITE_CONTACT_EMAIL`, then redeploy.
+- After approval, put the line AdSense gives you into `frontend/public/ads.txt`.
+

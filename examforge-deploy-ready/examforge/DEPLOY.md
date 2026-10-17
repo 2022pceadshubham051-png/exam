@@ -116,3 +116,18 @@ It must return JSON containing `{"ok":true}`.
 
 After deploying V6 run `npx prisma db push` once (the Vercel build script already does this). New optional columns: `User.targetExam`, `User.targetScore`, `QuestionResponse.subject`, `QuestionResponse.ord`, `TestResult.subjectStats`.
 `CORS_ORIGIN` may now be a comma-separated list of origins.
+
+
+## v18 notes: profile onboarding, coin shop, Lecture Pace sync
+This version adds new tables/columns (User.age, onboarded, inventory, CoinTx, LecturePaceData).
+Run `npx prisma db push` in the backend folder once after deploying. Existing students are asked for
+age and target exam on their next login (name is only asked if the account has none). Coins are kept in a
+server-side ledger (CoinTx), so deleting test history never removes earned coins.
+
+## Fix: "Not found" on Shop / Profile
+The Profile (`/api/me`), Shop (`/api/shop`, `/api/coins`) and Lecture Pace (`/api/lecture-pace`) endpoints are part of the backend. If those pages say
+"Not found" while tests and history still load, the deployed **backend is older than the frontend**.
+1. Redeploy the backend project (Vercel root directory `backend`) from this version.
+2. The build runs `prisma db push`, which adds User.age / onboarded / inventory and the CoinTx table (needs `DIRECT_URL` set).
+   If you deploy somewhere else, run `cd backend && npx prisma db push` once yourself.
+3. Check `https://<backend>/api/me` in the browser: it must answer `{"error":"Unauthorized"}` (not `{"error":"Not found"}`).
