@@ -419,13 +419,35 @@ html.embed .panel, html.embed .strip, html.embed .sheet, html.embed .empty { bor
 html.embed .course.on { border-radius: 16px; box-shadow: var(--ef-shadow-1, none); }
 html.embed .lec, html.embed .ms, html.embed .rv, html.embed .noteitem, html.embed .mockrow, html.embed .badge, html.embed .fcard, html.embed .tlr, html.embed .big-note, html.embed .banner { border-radius: 16px; }
 html.embed .btn, html.embed .ghost, html.embed select, html.embed .field input, html.embed .field textarea { border-radius: 14px; }
-html.embed .btn { font-weight: 800; box-shadow: var(--ef-shadow-1, none); }
+html.embed .btn { font-family: var(--f-body); font-weight: 650; box-shadow: none; border-radius: 12px; }
 html.embed .btn.line { box-shadow: none; }
-html.embed h1, html.embed h2, html.embed h3, html.embed .brand, html.embed .btn { font-family: var(--f-display); }
-html.embed[data-efstyle="toon"] .panel, html.embed[data-efstyle="toon"] .strip, html.embed[data-efstyle="toon"] .sheet, html.embed[data-efstyle="toon"] .empty { border: 3px solid var(--ef-ink); }
-html.embed[data-efstyle="toon"] .btn { border: 3px solid var(--ef-ink); }
-html.embed[data-efstyle="astra"] .panel, html.embed[data-efstyle="astra"] .strip, html.embed[data-efstyle="astra"] .sheet, html.embed[data-efstyle="astra"] .empty { border: 1.5px solid rgb(150 130 255 / .45); backdrop-filter: blur(10px); }
+html.embed h1, html.embed h2, html.embed h3, html.embed .btn { font-family: var(--f-body); }
+/* Keep the embedded planner visually native to ExamForge across every theme. */
+html.embed .panel, html.embed .strip, html.embed .sheet, html.embed .empty {
+  border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--ef-shadow, none); backdrop-filter: none;
+}
+html.embed .course.on { border-color: var(--accent); outline: none; box-shadow: var(--ef-shadow-1, none); }
+html.embed .cd.today { border-width: 1px; }
+html.embed .cd.sel { outline: 2px solid var(--accent); outline-offset: 1px; }
+html.embed .btn:not(.line) { background: var(--accent); color: var(--accent-ink); border: 1px solid var(--accent); }
+html.embed .btn.line, html.embed .ghost { background: var(--surface); color: var(--fg); border: 1px solid var(--line); }
 html.embed .overlay { background: var(--scrim); }
+/* ExamForge integration: remove the standalone two-column workspace and let the planner use the same page flow as the rest of the app. */
+html.embed body { padding-bottom: 8px; }
+html.embed .app { max-width: none; gap: 18px; }
+html.embed .top { min-height: 0; margin-bottom: 0; }
+html.embed .layout { display: flex; flex-direction: column; gap: 18px; }
+html.embed .side { position: static; display: grid; gap: 8px; width: 100%; padding: 0; background: transparent; border: 0; box-shadow: none; }
+html.embed .side-head { padding: 0 2px; }
+html.embed .list { display: flex; flex-wrap: wrap; gap: 8px; overflow: visible; padding: 0; }
+html.embed .course { flex: 1 1 180px; min-width: 0; max-width: 100%; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: transparent; }
+html.embed .course:hover, html.embed .course.on { background: var(--surface); }
+html.embed .course.on { border-color: var(--accent); }
+html.embed main#main { width: 100%; min-width: 0; }
+@media (max-width: 600px) {
+  html.embed .course { flex-basis: 145px; }
+  html.embed .top { gap: 8px; }
+}
 </style>
 
 <div class="app">

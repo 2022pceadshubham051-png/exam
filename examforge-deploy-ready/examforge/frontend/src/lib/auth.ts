@@ -8,19 +8,13 @@ export function getMe(): Me {
   } catch { return null; }
 }
 export const logout = () => { localStorage.removeItem("token"); location.href = "/login"; };
-export type Style = "toon" | "aura" | "astra";
-export const STYLES: Style[] = ["toon", "aura", "astra"];
-export const STYLE_NAMES: Record<Style, string> = { toon: "Toon (playful)", aura: "Aura (clean)", astra: "Astra (dark space)" };
-export function getStyle(): Style {
-  const c = document.documentElement.classList;
-  if (c.contains("astra")) return "astra";
-  if (c.contains("aura")) return "aura";
-  // The original default style is the playful/toon look, represented by no theme class.
-  return "toon";
-}
+export type Style = "aura" | "astra";
+export const STYLES: Style[] = ["aura", "astra"];
+export const STYLE_NAMES: Record<Style, string> = { aura: "Aura (clean)", astra: "Astra (dark space)" };
+export function getStyle(): Style { const c = document.documentElement.classList; return c.contains("astra") ? "astra" : "aura"; }
 export const isAstra = () => getStyle() === "astra";
 export function setStyle(s: Style) {
-  const root = document.documentElement; root.classList.remove("toon", "aura", "astra");
+  const root = document.documentElement; root.classList.remove("aura", "astra");
   root.classList.add(s);
   let pref = ""; try { pref = localStorage.getItem("theme") || ""; localStorage.setItem("ef_style", s); } catch { /* ignore */ }
   if (s === "astra") root.classList.add("dark"); else root.classList.toggle("dark", pref ? pref === "dark" : matchMedia("(prefers-color-scheme: dark)").matches);
