@@ -10,10 +10,10 @@
   /* buttons */
   .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 8px 16px; border-radius: var(--r-md); border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); font: inherit; font-size: var(--fs-sm); font-weight: var(--fw-semibold); line-height: 1.2; cursor: pointer; white-space: nowrap; text-decoration: none; transition: background var(--dur-1), border-color var(--dur-1), color var(--dur-1); }
   .btn:hover:not(:disabled) { background: var(--surface-2); text-decoration: none; }
-  .btn:active:not(:disabled) { background: var(--surface-3); }
+  .btn:active:not(:disabled) { background: var(--surface-3); transform: translateY(1px); }
   .btn:disabled, .btn[aria-disabled="true"] { opacity: .5; cursor: not-allowed; }
   .btn-primary { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
-  .btn-primary:hover:not(:disabled) { background: var(--brand-hover); border-color: var(--brand-hover); }
+  .btn-primary:hover:not(:disabled) { background: var(--brand-hover); border-color: var(--brand-hover); box-shadow: 0 2px 10px color-mix(in srgb, var(--brand) 30%, transparent); }
   .btn-primary:active:not(:disabled) { background: var(--brand-hover); }
   .btn-ok { background: var(--ok); border-color: var(--ok); color: #fff; }
   .dark .btn-ok { color: #0b1d12; }
@@ -83,8 +83,8 @@
 
   /* stats */
   .stat { padding: var(--s-4); border-radius: var(--r-lg); background: var(--surface); border: 1px solid var(--border); }
-  .stat-l { font-size: var(--fs-xs); font-weight: var(--fw-semibold); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: 6px; }
-  .stat-v { margin-top: 4px; font-size: var(--fs-2xl); font-weight: var(--fw-bold); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .stat-l { font-size: var(--fs-sm); font-weight: var(--fw-medium); color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .stat-v { margin-top: 4px; font-family: var(--font-display); font-size: var(--fs-2xl); font-weight: 700; letter-spacing: -.025em; font-variant-numeric: tabular-nums; }
   .stat-d { margin-top: 2px; font-size: var(--fs-xs); color: var(--muted); }
   a.stat { color: inherit; text-decoration: none; }
   a.stat:hover { border-color: var(--border-strong); }
@@ -98,7 +98,7 @@
   /* tables */
   .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   table.t { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
-  table.t th { text-align: left; padding: 10px 14px; font-size: var(--fs-xs); font-weight: var(--fw-semibold); text-transform: uppercase; letter-spacing: .05em; color: var(--muted); background: var(--surface-2); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  table.t th { text-align: left; padding: 10px 14px; font-size: var(--fs-sm); font-weight: var(--fw-semibold); color: var(--muted); background: var(--surface-2); border-bottom: 1px solid var(--border); white-space: nowrap; }
   table.t td { padding: 12px 14px; border-bottom: 1px solid var(--border); white-space: nowrap; vertical-align: middle; }
   table.t tbody tr:last-child td { border-bottom: none; }
   table.t tbody tr:hover { background: var(--surface-2); }
@@ -146,7 +146,7 @@
   /* ring (score dial) */
   .ring-wrap { position: relative; width: 140px; height: 140px; flex: none; }
   .ring-wrap .ring-v { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
-  .ring-v b { font-size: var(--fs-2xl); font-weight: var(--fw-bold); font-variant-numeric: tabular-nums; }
+  .ring-v b { font-family: var(--font-display); font-size: var(--fs-2xl); font-weight: 800; font-variant-numeric: tabular-nums; }
   .ring-v small { color: var(--muted); font-weight: var(--fw-semibold); }
 
   /* steps, form wizard bits used by Admin */
@@ -166,5 +166,5 @@
   .admin-stats { margin-top: -6px; }
   .admin-toolbar { background: var(--surface); }
   .ad-wrap { margin: 8px 0; text-align: center; min-height: 20px; }
-  .ad-wrap small { display: block; color: var(--muted); font-size: .68rem; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 4px; }
+  .ad-wrap small { display: block; color: var(--muted); font-size: .7rem; margin-bottom: 4px; }
 }

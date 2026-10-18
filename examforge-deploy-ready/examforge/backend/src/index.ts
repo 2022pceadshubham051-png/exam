@@ -1,6 +1,6 @@
 import "./lib/asyncErrors";
 import express from "express"; import bcrypt from "bcrypt"; import { prisma } from "./lib/db"; import helmet from "helmet"; import cors from "cors"; import rateLimit from "express-rate-limit";
-import { tests } from "./routes/tests"; import { progress } from "./routes/progress"; import { auth } from "./routes/auth"; import { attempts } from "./routes/attempts"; import { questions } from "./routes/questions"; import { coach } from "./routes/coach"; import { lecturePace } from "./routes/lecturePace"; import { me } from "./routes/me"; import { shop } from "./routes/shop";
+import { tests } from "./routes/tests"; import { progress } from "./routes/progress"; import { auth } from "./routes/auth"; import { attempts } from "./routes/attempts"; import { questions } from "./routes/questions"; import { coach } from "./routes/coach"; import { lecturePace } from "./routes/lecturePace"; import { me } from "./routes/me"; import { shop } from "./routes/shop"; import { rooms } from "./routes/rooms"; import { sync } from "./routes/sync";
 const app = express();
 // Behind Vercel/Render proxies: without this every user shares one rate-limit bucket.
 app.set("trust proxy", 1);
@@ -19,6 +19,8 @@ app.use("/api", shop);
 app.use("/api", progress);
 app.use("/api", coach);
 app.use("/api", attempts);
+app.use("/api", rooms);
+app.use("/api", sync);
 if (!process.env.JWT_SECRET) console.error("JWT_SECRET is not set: login and register will fail until you add it.");
 app.use("/api", (_req, res) => res.status(404).json({ error: "Not found" }));
 // Central error handler: validation problems -> 400, missing rows -> 404, everything else -> a clean 500 (never a hung request).

@@ -31,7 +31,7 @@
   .lp-preview { animation: fade-up .7s var(--ease) 200ms both; }
   .lp-steps > li { position: relative; }
   .lp-steps > li::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--brand); transform-origin: left; transform: scaleX(0); transition: transform .8s var(--ease) calc(var(--i, 0) * 120ms + 150ms); }
-  .js-reveal .lp-steps > li.in::before, .lp-steps > li:not([data-reveal])::before { transform: scaleX(1); }
+  .lp-how.in .lp-steps > li::before { transform: scaleX(1); }
 
   /* micro-interactions */
   .btn { transition: transform var(--dur-1) var(--ease), background var(--dur-1), border-color var(--dur-1), box-shadow var(--dur-1); }
@@ -110,7 +110,7 @@
 
   .rail-scene { position: relative; height: 46px; margin: var(--s-6) 0 0; }
   .rail-scene .rail-train { position: absolute; bottom: 7px; left: calc(100% - 64px); animation: train-run 2.6s var(--ease) both; }
-  .js-reveal [data-reveal]:not(.in) .rail-train { animation: none; left: 0; }
+  .js-reveal [data-reveal]:not(.in) .rail-train, .lp-how:not(.in) .rail-train { animation: none; left: 0; }
 
   .flame { color: var(--gold-text); display: inline-block; transform-origin: 50% 90%; vertical-align: -3px; margin-right: 4px; }
   .rocket { display: block; margin: 0 auto var(--s-2); animation: launch .9s var(--ease) both; } .rocket-flame { transform-origin: 22px 40px; animation: flame .25s ease-in-out infinite; }

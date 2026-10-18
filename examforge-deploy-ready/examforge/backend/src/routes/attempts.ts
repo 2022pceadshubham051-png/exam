@@ -96,7 +96,10 @@ attempts.get("/attempts/:id/review", wrap(async (req, res) => {
   if (a.status === "IN_PROGRESS") return res.status(403).json({ error: "Review is available after submission" });
   if (a.mode === "EXAM" && !a.test.showResult) return res.status(403).json({ error: "The administrator has turned off result and answer review for this test." });
   const secName = new Map<string, string>(a.test.sections.map((s: any) => [s.id, s.name] as [string, string]));
-  const rows = a.responses.map((r: any) => ({ questionId: r.questionId, section: secName.get(r.sectionId), subject: r.subject, topic: r.topic, difficulty: r.difficulty, text: r.snapshot?.text, options: r.snapshot?.options,
+  // Average time other students spent on each question (only shown once at least 3 students have attempted it).
+  const avg = await prisma.questionResponse.groupBy({ by: ["questionId"], where: { questionId: { in: a.responses.map((r: any) => r.questionId) }, timeSpentMs: { gt: 0 } }, _avg: { timeSpentMs: true }, _count: { _all: true } });
+  const avgSec = new Map<string, number>(avg.filter((g: any) => g._count._all >= 3 && g._avg.timeSpentMs).map((g: any) => [g.questionId, Math.round(g._avg.timeSpentMs / 1000)] as [string, number]));
+  const rows = a.responses.map((r: any) => ({ questionId: r.questionId, avgTimeSec: avgSec.get(r.questionId) ?? null, section: secName.get(r.sectionId), subject: r.subject, topic: r.topic, difficulty: r.difficulty, text: r.snapshot?.text, options: r.snapshot?.options,
     explanation: a.test.showExplanations ? r.snapshot?.explanation : null, selectedKey: r.selectedKey, correctKey: r.correctKeySnapshot, isCorrect: r.isCorrect, timeSpentSec: Math.round(r.timeSpentMs / 1000) }));
   res.json({ attemptNo: a.attemptNo, testId: a.testId, testName: a.test.name, mode: a.mode, adaptive: !!a.adaptiveQuestionIds, rows });
 }));

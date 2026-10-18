@@ -4,9 +4,9 @@
 :root {
   color-scheme: light;
   /* neutrals */
-  --bg: #f7f5ef; --surface: #ffffff; --surface-2: #f2efe7; --surface-3: #e9e5d9;
-  --text: #1c1830; --muted: #5f5a75; --border: #e3ded1; --border-strong: #cdc6b3;
-  --ink: #1c1830; --input-border: #8a8399;
+  --bg: #f2f5f9; --surface: #ffffff; --surface-2: #eaeff5; --surface-3: #dde5ee;
+  --text: #101c2c; --muted: #54606f; --border: #d9e0ea; --border-strong: #b9c5d4;
+  --ink: #101c2c; --input-border: #7d8898;
   /* brand */
   --brand: #5b3fd1; --brand-hover: #4a31b5; --brand-2: #7a5cf0; --brand-soft: #efebfc; --brand-ink: #ffffff;
   --gold: #f0b429; --gold-text: #8f5b00; --gold-soft: #fdf3d9; --gold-ink: #5c3b00;
@@ -15,8 +15,8 @@
   /* exam palette states (never colour-only: each also has a text/shape cue in the UI) */
   --q-answered: #15803d; --q-review: #b45309; --q-both: #5b3fd1; --q-skipped: #c62828;
   /* typography */
-  --font-ui: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-display: "Newsreader", "Iowan Old Style", Georgia, "Times New Roman", serif;
+  --font-ui: "Hind", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Archivo Variable", "Archivo", "Hind", system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --fs-xs: .75rem; --fs-sm: .875rem; --fs-md: 1rem; --fs-lg: 1.125rem; --fs-xl: 1.375rem; --fs-2xl: 1.75rem; --fs-3xl: clamp(2rem, 4.2vw, 3rem);
   --fw-regular: 400; --fw-medium: 500; --fw-semibold: 600; --fw-bold: 700;
@@ -36,6 +36,7 @@
   --dur-1: 120ms; --dur-2: 200ms; --dur-3: 320ms;
   /* layers */
   --z-sticky: 20; --z-nav: 30; --z-dropdown: 50; --z-modal: 100; --z-toast: 120; --z-splash: 300;
+  --navy: #1a1138; --signal: #f0b429;
   --nav-h: 60px; --page-w: 1120px;
 }
 .dark {
@@ -55,9 +56,9 @@
 }
 
 /* Exam skins (see lib/skin.ts). "train" = flat railway blue + signal amber. Library = warm paper and walnut; Ground = turf green. */
-html[data-skin="train"] { --bg: #f5f2e9; --surface-2: #efebdf; --surface-3: #e4dfcf; --border: #ddd7c5; --border-strong: #c3bba2;
+html[data-skin="train"] { --bg: #f2f5f9; --surface-2: #eaeff5; --surface-3: #dde5ee; --border: #d9e0ea; --border-strong: #b9c5d4; --navy: #0f2342;
   --brand: #1d4f91; --brand-hover: #163f75; --brand-2: #2d6bb5; --brand-soft: #e6eef8; --brand-ink: #ffffff; --gold: #d49a1c; --gold-text: #7a5000; --gold-soft: #faf0d2; --q-both: #1d4f91; }
-html[data-skin="train"].dark { --bg: #0f1620; --surface: #161f2c; --surface-2: #1c2838; --surface-3: #26364b; --border: #2a3a50; --border-strong: #3c5170;
+html[data-skin="train"].dark { --navy: #0a1626; --gold: #f2c14e; --gold-text: #f2c14e; --gold-soft: #332a10; --bg: #0f1620; --surface: #161f2c; --surface-2: #1c2838; --surface-3: #26364b; --border: #2a3a50; --border-strong: #3c5170;
   --brand: #7fb2ee; --brand-hover: #a0c6f3; --brand-2: #5d9ae0; --brand-soft: #1a2a40; --brand-ink: #0b1a2c; --q-both: #7fb2ee; }
 html[data-skin="train"].astra { --bg: #090e15; --surface: #0f1620; --surface-2: #151f2d; --surface-3: #1e2c40; --border: #1f2d42; --border-strong: #324663; --brand-soft: #14233a; }
 html[data-skin="library"] { --bg: #f8f3ea; --surface-2: #f3ebdc; --surface-3: #eadfca; --border: #e6dcc6; --border-strong: #cdbd9c;

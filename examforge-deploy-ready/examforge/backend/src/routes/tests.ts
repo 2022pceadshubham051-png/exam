@@ -74,17 +74,17 @@ tests.get("/leaderboard", async (req: AuthedReq, res) => {
     take: 3000,
     include: { attempt: { include: { user: { select: { name: true, displayName: true, inventory: true } }, test: { select: { name: true } } } } },
   });
-  const byUser = new Map<string, { inv?: unknown; name: string; attempts: number; total: number; best: number; bestTest: string; accuracy: number; time: number }>();
+  const byUser = new Map<string, { uid: string; inv?: unknown; name: string; attempts: number; total: number; best: number; bestTest: string; accuracy: number; time: number }>();
   for (const r of rows) {
     const uid = r.attempt.userId;
     const name = r.attempt.user.displayName ?? r.attempt.user.name;
-    const prev = byUser.get(uid) ?? { inv: r.attempt.user.inventory, name, attempts: 0, total: 0, best: 0, bestTest: r.attempt.test.name, accuracy: 0, time: 0 };
+    const prev = byUser.get(uid) ?? { uid, inv: r.attempt.user.inventory, name, attempts: 0, total: 0, best: 0, bestTest: r.attempt.test.name, accuracy: 0, time: 0 };
     prev.attempts += 1; prev.total += r.percentage; prev.accuracy += r.accuracy; prev.time += r.timeTakenSec;
     if (r.percentage > prev.best) { prev.best = r.percentage; prev.bestTest = r.attempt.test.name; }
     byUser.set(uid, prev);
   }
   const out = [...byUser.values()]
-    .map(({ inv, ...x }) => ({ ...x, ...cosmetics(inv), average: +(x.total / x.attempts).toFixed(1), averageAccuracy: +(x.accuracy / x.attempts).toFixed(1), averageTimeSec: Math.round(x.time / x.attempts) }))
+    .map(({ inv, uid, ...x }) => ({ ...x, isMe: uid === req.user?.id, ...cosmetics(inv), average: +(x.total / x.attempts).toFixed(1), averageAccuracy: +(x.accuracy / x.attempts).toFixed(1), averageTimeSec: Math.round(x.time / x.attempts) }))
     .sort((a, b) => b.average - a.average || b.best - a.best || b.averageAccuracy - a.averageAccuracy)
     .slice(0, limit)
     .map((x, i) => ({ rank: i + 1, ...x }));

@@ -2,9 +2,9 @@
 @layer components {
   *, *::before, *::after { box-sizing: border-box; }
   html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
-  body { margin: 0; font-family: var(--font-ui); font-size: var(--fs-md); line-height: 1.5; color: var(--text); background: var(--bg); -webkit-font-smoothing: antialiased; overflow-x: clip; }
+  body { margin: 0; font-family: var(--font-ui); font-size: 1.0625rem; line-height: 1.55; color: var(--text); background: var(--bg); -webkit-font-smoothing: antialiased; overflow-x: clip; }
   .astra body { background: radial-gradient(1px 1px at 12% 18%, #ffffff55, transparent), radial-gradient(1px 1px at 78% 9%, #ffffff44, transparent), radial-gradient(1.5px 1.5px at 64% 72%, #ffffff33, transparent), radial-gradient(1px 1px at 31% 83%, #ffffff44, transparent), var(--bg); background-attachment: fixed; }
-  h1, h2, h3, h4 { margin: 0; font-weight: var(--fw-bold); line-height: 1.2; letter-spacing: -.015em; }
+  h1, h2, h3, h4 { margin: 0; font-family: var(--font-display); font-weight: 700; line-height: 1.15; letter-spacing: -.02em; }
   p { margin: 0; }
   a { color: var(--brand); text-decoration: none; }
   a:hover { text-decoration: underline; }
@@ -18,11 +18,11 @@
   .skip-link:focus { top: 12px; text-decoration: none; }
 
   /* typography helpers */
-  .display { font-family: var(--font-display); font-weight: 600; letter-spacing: -.01em; }
+  .display { font-family: var(--font-display); font-weight: 700; letter-spacing: -.02em; }
   .page-title { font-size: var(--fs-2xl); font-weight: var(--fw-bold); }
   .section-h { font-size: var(--fs-xl); font-weight: var(--fw-bold); }
   .card-title { font-size: var(--fs-lg); font-weight: var(--fw-semibold); }
-  .eyebrow { font-size: var(--fs-xs); font-weight: var(--fw-bold); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .eyebrow { font-size: var(--fs-sm); font-weight: var(--fw-semibold); color: var(--muted); }
   .muted { color: var(--muted); }
   .sub { color: var(--muted); font-size: var(--fs-sm); line-height: 1.55; }
   .mono { font-family: var(--font-mono); font-size: .84rem; }

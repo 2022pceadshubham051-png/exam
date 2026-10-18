@@ -1,7 +1,9 @@
 import React, { Component, Suspense, lazy, type ReactElement, type ErrorInfo } from "react";
 import { createRoot } from "react-dom/client"; import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
+import "@fontsource-variable/archivo";
+import "@fontsource/hind/400.css"; import "@fontsource/hind/500.css"; import "@fontsource/hind/600.css"; import "@fontsource/hind/700.css";
 import "./index.css";
-import Login from "./pages/Login"; import Landing from "./pages/Landing";
+import Login from "./pages/Login"; import Landing from "./pages/Landing"; import NotFound from "./pages/NotFound";
 import { About, Contact, Privacy, TipsList, TipPage } from "./pages/Info";
 import { getMe } from "./lib/auth"; import Splash from "./components/Splash"; import { ToastHost, initReveal } from "./components/ui"; import { initTheme } from "./lib/theme";
 
@@ -9,7 +11,7 @@ import { getMe } from "./lib/auth"; import Splash from "./components/Splash"; im
 const Exam = lazy(() => import("./pages/Exam")); const Result = lazy(() => import("./pages/Result")); const Review = lazy(() => import("./pages/Review"));
 const Dashboard = lazy(() => import("./pages/Dashboard")); const Admin = lazy(() => import("./pages/Admin")); const Progress = lazy(() => import("./pages/Progress"));
 const Leaderboard = lazy(() => import("./pages/Leaderboard")); const Coach = lazy(() => import("./pages/Coach")); const LecturePace = lazy(() => import("./pages/LecturePace"));
-const LecturePaceBoard = lazy(() => import("./pages/LecturePaceBoard")); const Welcome = lazy(() => import("./pages/Welcome")); const ProfilePage = lazy(() => import("./pages/Profile")); const Shop = lazy(() => import("./pages/Shop"));
+const LecturePaceBoard = lazy(() => import("./pages/LecturePaceBoard")); const Welcome = lazy(() => import("./pages/Welcome")); const ProfilePage = lazy(() => import("./pages/Profile")); const Shop = lazy(() => import("./pages/Shop")); const HomeTab = lazy(() => import("./pages/Home")); const Learn = lazy(() => import("./pages/Learn")); const Notebook = lazy(() => import("./pages/Notebook")); const Rooms = lazy(() => import("./pages/Rooms")); const RoomDetail = lazy(() => import("./pages/Rooms").then((m) => ({ default: m.RoomDetail })));
 initTheme(); initReveal();
 
 class AppErrorBoundary extends Component<{ children: ReactElement }, { error: Error | null }> {
@@ -24,11 +26,11 @@ class AppErrorBoundary extends Component<{ children: ReactElement }, { error: Er
 
 function Guard({ children, admin }: { children: ReactElement; admin?: boolean }) {
   const me = getMe(); const { testId } = useParams();
+  if (!me) { try { if (location.pathname.startsWith("/rooms")) sessionStorage.setItem("ef_after_login", location.pathname + location.search); } catch { /* ignore */ } }
   if (!me) return <Navigate to={testId ? `/login?test=${testId}` : "/login"} replace />;
   if (admin && me.role !== "ADMIN") return <Navigate to="/dashboard" replace />;
   return children;
 }
-const Home = () => { const me = getMe(); return <Navigate to={me ? (me.role === "ADMIN" ? "/admin" : "/dashboard") : "/login"} replace />; };
 const PageLoading = () => <div className="grid min-h-screen place-items-center" role="status"><div className="spinner" aria-hidden="true" /><span className="sr">Loading</span></div>;
 
 createRoot(document.getElementById("root")!).render(<React.StrictMode><AppErrorBoundary><><Splash /><BrowserRouter><Suspense fallback={<PageLoading />}><Routes>
@@ -36,6 +38,7 @@ createRoot(document.getElementById("root")!).render(<React.StrictMode><AppErrorB
   <Route path="/about" element={<About />} /><Route path="/contact" element={<Contact />} /><Route path="/privacy" element={<Privacy />} />
   <Route path="/tips" element={<TipsList />} /><Route path="/tips/:slug" element={<TipPage />} />
   <Route path="/login" element={<Login />} />
+  <Route path="/home" element={<Guard><HomeTab /></Guard>} /><Route path="/learn" element={<Guard><Learn /></Guard>} /><Route path="/notebook" element={<Guard><Notebook /></Guard>} /><Route path="/rooms" element={<Guard><Rooms /></Guard>} /><Route path="/rooms/:id" element={<Guard><RoomDetail /></Guard>} />
   <Route path="/dashboard" element={<Guard><Dashboard /></Guard>} />
   <Route path="/progress" element={<Guard><Progress /></Guard>} />
   <Route path="/coach" element={<Guard><Coach /></Guard>} />
@@ -49,4 +52,4 @@ createRoot(document.getElementById("root")!).render(<React.StrictMode><AppErrorB
   <Route path="/result/:attemptId" element={<Guard><Result /></Guard>} />
   <Route path="/review/:attemptId" element={<Guard><Review /></Guard>} />
   <Route path="/admin" element={<Guard admin><Admin /></Guard>} />
-  <Route path="*" element={<Home />} /></Routes></Suspense></BrowserRouter><ToastHost /></></AppErrorBoundary></React.StrictMode>);
+  <Route path="*" element={<NotFound />} /></Routes></Suspense></BrowserRouter><ToastHost /></></AppErrorBoundary></React.StrictMode>);

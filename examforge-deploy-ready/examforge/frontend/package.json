@@ -1,3 +1,1 @@
-{ "name": "examforge-frontend", "type": "module", "scripts": { "dev": "vite", "build": "tsc --noEmit && vite build" },
-  "dependencies": { "react": "^18", "react-dom": "^18", "react-router-dom": "^6", "recharts": "^2", "lucide-react": "^0.400.0" },
-  "devDependencies": { "vite": "^5", "@vitejs/plugin-react": "^4", "typescript": "^5", "tailwindcss": "^4", "@tailwindcss/vite": "^4", "@types/react": "^18", "@types/react-dom": "^18" } }
+{"name":"examforge-frontend","type":"module","scripts":{"dev":"vite","build":"tsc --noEmit && vite build"},"dependencies":{"@fontsource-variable/archivo":"^5.3.0","@fontsource/hind":"^5.3.0","lucide-react":"^0.400.0","react":"^18","react-dom":"^18","react-router-dom":"^6","recharts":"^2"},"devDependencies":{"@tailwindcss/vite":"^4","@types/react":"^18","@types/react-dom":"^18","@vitejs/plugin-react":"^4","tailwindcss":"^4","typescript":"^5","vite":"^5"}}
