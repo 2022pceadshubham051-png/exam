@@ -3,8 +3,8 @@ import { SKIN_NAMES } from "../lib/skin";
 import { useSkin } from "./Journey"; import { useCountUp } from "./ui";
 
 // Result "ticket": a railway ticket for RRB, a library issue card, or a ground scorecard. Only real data is shown.
-const pnr = (id: string) => { let h = 7; for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) % 9000000000; return String(h + 1000000000); };
-const LABELS = {
+export const pnr = (id: string) => { let h = 7; for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) % 9000000000; return String(h + 1000000000); };
+export const LABELS = {
   train: { head: "Mock Test Ticket", id: "PNR", test: "Train / Test", pass: "Confirmed", fail: "Waiting list", note: "Class: Practice" },
   library: { head: "Library Issue Card", id: "Card No.", test: "Title", pass: "Cleared", fail: "Re-issue", note: "Return: next attempt" },
   ground: { head: "Scorecard", id: "Chest No.", test: "Event", pass: "Qualified", fail: "Try again", note: "Round: Mock" },

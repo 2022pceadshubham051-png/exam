@@ -1,3 +1,4 @@
+import SubNav from "../components/SubNav";
 import { useEffect, useState } from "react";
 import { TrendingUp, TrendingDown, Target, ListChecks, Trophy, Zap, Gauge, ThumbsUp, TriangleAlert, Timer, BrainCircuit, Medal } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid, BarChart, Bar } from "recharts";
@@ -25,6 +26,7 @@ export default function Progress() {
   const ta = d?.timeAnalytics;
 
   return <Shell><div className="stack" style={{ gap: 22 }}>
+    <SubNav group="me" />
     <div className="row between"><div><h1 style={{ fontSize: "1.7rem", fontWeight: 800 }}>My progress</h1><p className="sub">See your score trend, weak areas and how efficiently you spend time.</p></div>
       <div className="row" style={{ gap: 8 }}><div className="seg">{([["exam", "Exams"], ["practice", "Practice"], ["all", "Both"]] as const).map(([k, l]) => <button key={k} onClick={() => setScope(k)} className={scope === k ? "on" : ""}>{l}</button>)}</div><Link className="btn btn-sm btn-primary" to="/coach"><Compass size={14} />Smart Coach</Link></div>
       <div className="seg" style={{ maxWidth: "100%", overflowX: "auto" }}>{periods.map(([k, l]) => <button key={k} onClick={() => setP(k)} className={p === k ? "on" : ""}>{l}</button>)}</div></div>

@@ -1,7 +1,7 @@
 import { TrainLoader } from "./Journey"; import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react"; import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, TrendingUp, ShieldCheck, Trophy, Compass } from "lucide-react";
+import { House, LayoutDashboard, GraduationCap, ShieldCheck, UserRound, Compass } from "lucide-react"; import { useT } from "../lib/i18n";
 import { getMe } from "../lib/auth"; import Tutorial from "./Tutorial"; import LevelUp from "./LevelUp"; import { BrandLockup } from "./LogoMark"; import { SiteFooter } from "./PublicShell"; import UserMenu from "./UserMenu";
-import { loadProfile, refreshCoins, cachedCoins, cachedProfile } from "../lib/profile";
+import { startSync } from "../lib/sync"; import { loadProfile, refreshCoins, cachedCoins, cachedProfile } from "../lib/profile";
 
 export const Logo = ({ size = 34 }: { size?: number }) => <BrandLockup size={size} />;
 
@@ -12,10 +12,11 @@ export default function Shell({ children, narrow }: { children: ReactNode; narro
     if (!me || me.role === "ADMIN") return;
     void refreshCoins(); const f = () => { const n = cachedCoins(); const p = prevCoins.current; prevCoins.current = n; if (typeof p === "number" && typeof n === "number" && n > p) { setGain(n - p); setTimeout(() => setGain(0), 1500); } setC(n); setPname(cachedProfile()?.name); }; window.addEventListener("ef-coins", f);
     // First login (or an older account): collect name/age/target exam once, then show content for that exam.
-    loadProfile().then((p) => { setPname(p.name); if (!p.onboarded) nav("/welcome", { replace: true }); }).catch(() => {});
+    void startSync(); loadProfile().then((p) => { setPname(p.name); if (!p.onboarded) nav("/welcome", { replace: true }); }).catch(() => {});
     return () => window.removeEventListener("ef-coins", f);
   }, []); // eslint-disable-line
-  const cls = ({ isActive }: { isActive: boolean }) => "nav-link" + (isActive ? " active" : "");
+  const t = useT(); const cls = ({ isActive }: { isActive: boolean }) => "nav-link" + (isActive ? " active" : "");
+  const here = useLocation().pathname; const grp = (ps: string[]) => () => "nav-link" + (ps.some((x) => here === x || here.startsWith(x + "/")) ? " active" : "");
   const admin = me?.role === "ADMIN";
   const loc = useLocation(); const navRef = useRef<HTMLElement>(null); const [pill, setPill] = useState<{ x: number; w: number } | null>(lastPill);
   useLayoutEffect(() => {
@@ -26,15 +27,15 @@ export default function Shell({ children, narrow }: { children: ReactNode; narro
   return <>
     <a className="skip-link" href="#main">Skip to content</a>
     <header className="nav"><div className="nav-in">
-      <Link to="/dashboard" className="brand" aria-label="ExamForge home"><BrandLockup size={32} /></Link>
+      <Link to="/home" className="brand" aria-label="ExamForge home"><BrandLockup size={32} /></Link>
       <nav className={`nav-links app-nav ${pill ? "has-pill" : ""}`} aria-label="Main" ref={navRef}>{pill && <span className="nav-pill" aria-hidden="true" style={{ transform: `translateX(${pill.x}px)`, width: pill.w }} />}
-        <NavLink to="/dashboard" className={cls}><LayoutDashboard size={17} aria-hidden="true" /><span>Tests</span></NavLink>
-        <NavLink to="/progress" className={cls}><TrendingUp size={17} aria-hidden="true" /><span>Progress</span></NavLink>
-        <NavLink to="/coach" className={cls}><Compass size={17} aria-hidden="true" /><span>Smart Coach</span></NavLink>
-        <NavLink to="/leaderboard" className={cls}><Trophy size={17} aria-hidden="true" /><span>Leaderboard</span></NavLink>
-        {admin && <NavLink to="/admin" className={cls}><ShieldCheck size={17} aria-hidden="true" /><span>Admin</span></NavLink>}
+        {admin ? <NavLink to="/admin" className={cls}><ShieldCheck size={17} aria-hidden="true" /><span>Admin</span></NavLink> : <>
+          <NavLink to="/home" className={cls}><House size={17} aria-hidden="true" /><span>{t("Home")}</span></NavLink>
+          <NavLink to="/dashboard" className={grp(["/dashboard", "/leaderboard", "/rooms"])}><LayoutDashboard size={17} aria-hidden="true" /><span>{t("Practice")}</span></NavLink>
+          <NavLink to="/coach" className={cls}><Compass size={17} aria-hidden="true" /><span>{t("Coach")}</span></NavLink>
+          <NavLink to="/learn" className={grp(["/learn", "/lecture-pace", "/tips"])}><GraduationCap size={17} aria-hidden="true" /><span>{t("Learn")}</span></NavLink>
+          <NavLink to="/profile" className={grp(["/profile", "/progress", "/notebook", "/shop"])}><UserRound size={17} aria-hidden="true" /><span>{t("Me")}</span></NavLink></>}
       </nav>
-      {!admin && <Link to="/shop" className="coin-chip" aria-label={`${coins} coins. Open the shop`}><i className="coin" aria-hidden="true" />{coins}{gain > 0 && <span className="coin-gain" aria-hidden="true">+{gain}</span>}</Link>}
       <UserMenu name={admin ? "Admin" : pname} admin={admin} />
     </div></header>
     <Tutorial /><LevelUp />

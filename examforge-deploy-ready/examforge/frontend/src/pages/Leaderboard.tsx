@@ -1,3 +1,4 @@
+import SubNav from "../components/SubNav";
 import { useEffect, useState } from "react"; import { useNavigate } from "react-router-dom";
 import { Trophy, Medal, Target, Timer, TrendingUp } from "lucide-react";
 import Shell from "../components/Shell"; import { PageHeader, Empty, SkeletonRows } from "../components/ui";
@@ -12,6 +13,7 @@ export default function Leaderboard() {
   const [rows, setRows] = useState<any[] | null>(null); const [err, setErr] = useState("");
   useEffect(() => { api("/tests/leaderboard?limit=25").then(setRows).catch((e) => setErr(e.message)); }, []);
   return <Shell><div className="stack" style={{gap:22}}>
+    <SubNav group="practice" />
     <BoardTabs active="exam" />
     <PageHeader title="Leaderboard" sub="Rankings are calculated from completed Exam-mode attempts. Untimed Practice and Smart practice never affect these standings." />
     {err && <div className="alert alert-bad" role="alert">{err}</div>}

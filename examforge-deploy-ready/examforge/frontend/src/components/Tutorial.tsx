@@ -7,11 +7,11 @@ const KEY = "ef_tutorial_done";
 
 const STEPS = [
   { t: "Welcome to ExamForge", d: "A short tour of how a test works, from picking one to reading your analysis. It takes about a minute." },
-  { t: "1. Pick a test", d: "Tests are grouped by exam. Each row shows the level, duration and number of questions. Your target exam is listed first." },
+  { t: "1. Start from Home", d: "Home shows today's test, your weak topics and your streak. Practice has every test, grouped by exam, with your target exam first." },
   { t: "2. Choose a mode", d: "Exam mode is timed and counts on the leaderboard. Practice is untimed and shows the answer after each question. Smart practice picks questions from your weaker topics." },
   { t: "3. Answer and navigate", d: "Choose an option, or press A–D. Mark a question for review if you are unsure, and use the question palette to jump around. Answers save automatically." },
   { t: "4. Submit and review", d: "You get your score, accuracy, section and topic breakdown, and an answer review with explanations." },
-  { t: "5. Decide what to practise next", d: "Progress shows your trend over time. Smart Coach ranks the topics that will add the most marks, based on what you have actually attempted." },
+  { t: "5. Decide what to practise next", d: "Your wrong answers go to the Mistake notebook and come back after 1, 3, 7, 14 and 30 days. Smart Coach ranks the topics that will add the most marks." },
 ];
 
 export default function Tutorial() {

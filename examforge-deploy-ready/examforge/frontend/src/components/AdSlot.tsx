@@ -13,7 +13,7 @@ export default function AdSlot({ slot }: { slot?: string }) {
     if (ref.current.getAttribute("data-adsbygoogle-status")) return; // React StrictMode runs effects twice
     try { ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({}); } catch { /* ad blocker or script not loaded */ }
   }, [id]);
-  if (!CLIENT || !id) return null;
+  if (!CLIENT || !id || document.documentElement.classList.contains("lite")) return null;
   return <aside className="ad-wrap" aria-label="Advertisement"><small>Advertisement</small>
     <ins ref={ref} className="adsbygoogle" style={{ display: "block" }} data-ad-client={CLIENT} data-ad-slot={id} data-ad-format="auto" data-full-width-responsive="true" /></aside>;
 }

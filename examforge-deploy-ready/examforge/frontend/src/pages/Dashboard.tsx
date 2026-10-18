@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"; import { Link } from "react-router-dom";
 import { Search, Play, ArrowRight, Eye, SlidersHorizontal, Trash2, Compass, X, TriangleAlert, CircleCheck, ClipboardList } from "lucide-react";
 import { api, fmt } from "../lib/api"; import Shell from "../components/Shell"; import AdSlot from "../components/AdSlot"; import { PageHeader, Empty, ConfirmDialog, SkeletonRows, SkeletonCards } from "../components/ui"; import { loadProfile, matchesExam, firstName, type Profile } from "../lib/profile";
-import { WeekDots, StreakFlame } from "../components/Achievement"; import { JourneyStrip } from "../components/Journey"; import { Flame } from "lucide-react"; import { showLevelUp } from "../components/LevelUp"; import { levelFromXp, xpFromAttempts, streakDays, saveLevel, savedLevel, saveXp } from "../lib/game";
+import SubNav from "../components/SubNav"; import { WeekDots, StreakFlame } from "../components/Achievement"; import { JourneyStrip } from "../components/Journey"; import { Flame } from "lucide-react"; import { showLevelUp } from "../components/LevelUp"; import { levelFromXp, xpFromAttempts, streakDays, saveLevel, savedLevel, saveXp } from "../lib/game";
 
 const diff: Record<string, string> = { EASY: "pill-ok", MEDIUM: "pill-warn", HARD: "pill-bad" };
 const kind = (a: any) => (a.mode === "PRACTICE" ? (a.adaptiveQuestionIds ? "Adaptive" : "Practice") : "Exam");
@@ -45,6 +45,7 @@ export default function Dashboard() {
 
   return <Shell>
     <div className="stack stagger" style={{ gap: 28 }}>
+      <SubNav group="practice" />
       <PageHeader title={done.length ? `Welcome back${fn ? `, ${fn}` : ""}` : `Hi${fn ? `, ${fn}` : ""}`} sub={target ? `Preparing for ${target}${prof?.targetScore ? ` · goal ${prof.targetScore}%` : ""}` : "Pick a test below and start practising."} />
 
       {active ? <section className="next-card" aria-label="Continue where you left off">

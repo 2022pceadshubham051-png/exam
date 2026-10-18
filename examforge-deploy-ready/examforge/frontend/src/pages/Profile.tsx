@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Save, Loader, TriangleAlert, Volume2, Store, UserRound, SlidersHorizontal, Palette, LifeBuoy, LogOut, CircleHelp } from "lucide-react";
 import Shell, { Loading } from "../components/Shell"; import NameTag from "../components/NameTag"; import { openTutorial } from "../components/Tutorial"; import { Field, PageHeader, toast } from "../components/ui";
 import { api } from "../lib/api"; import { getMe, logout } from "../lib/auth";
-import { SKINS, SKIN_NAMES, SKIN_HINTS, getSkinPref, setSkinPref, skinForExam, type SkinPref } from "../lib/skin"; import { STYLES, STYLE_NAMES, STYLE_HINTS, getStoredStyle, getMode, getMotion, setStyle, setMode, setMotion, type Mode } from "../lib/theme";
+import SubNav from "../components/SubNav"; import { getLang, setLang, getLite, setLite, getExamDate, setExamDate } from "../lib/prefs"; import { SKINS, SKIN_NAMES, SKIN_HINTS, getSkinPref, setSkinPref, skinForExam, type SkinPref } from "../lib/skin"; import { STYLES, STYLE_NAMES, STYLE_HINTS, getStoredStyle, getMode, getMotion, setStyle, setMode, setMotion, type Mode } from "../lib/theme";
 import { levelFromXp, xpFromAttempts, streakDays, saveLevel, saveXp, soundOn, setSound, sfx, instantCheckOn, setInstantCheck } from "../lib/game";
 import { loadProfile, setProfile, setCoins, firstName, type Profile } from "../lib/profile"; import { COMMON, mergeExams } from "./Welcome";
 
@@ -12,7 +12,7 @@ const MODES: [Mode, string, string][] = [["system", "System", "Match your device
 export default function ProfilePage() {
   const admin = getMe()?.role === "ADMIN";
   const [, force] = useState(0); const rerender = () => force((n) => n + 1);
-  useEffect(() => { window.addEventListener("ef-theme", rerender); window.addEventListener("ef-skin", rerender); return () => { window.removeEventListener("ef-theme", rerender); window.removeEventListener("ef-skin", rerender); }; }, []);
+  useEffect(() => { window.addEventListener("ef-theme", rerender); window.addEventListener("ef-skin", rerender); window.addEventListener("ef-prefs", rerender); return () => { window.removeEventListener("ef-theme", rerender); window.removeEventListener("ef-skin", rerender); window.removeEventListener("ef-prefs", rerender); }; }, []);
   const [p, setP] = useState<Profile | null>(null); const [hist, setHist] = useState<any[] | null>(null); const [shop, setShop] = useState<any | null>(null);
   const [name, setName] = useState(""); const [email, setEmail] = useState(""); const [pw, setPw] = useState(""); const [age, setAge] = useState(""); const [exam, setExam] = useState(""); const [other, setOther] = useState(""); const [score, setScore] = useState("");
   const [exams, setExams] = useState<string[]>(COMMON); const [err, setErr] = useState(""); const [errs, setErrs] = useState<Record<string, string>>({}); const [busy, setBusy] = useState(false); const [saved, setSaved] = useState(false);
@@ -67,6 +67,10 @@ export default function ProfilePage() {
     <fieldset style={{ border: 0, padding: 0, margin: 0 }}><legend className="label">Mode</legend>
       <div className="choice-grid">{MODES.map(([m, l, d]) => <button type="button" key={m} disabled={style === "astra"} aria-pressed={style === "astra" ? m === "dark" : mode === m} onClick={() => setMode(m)}><b>{l}</b><small>{d}</small></button>)}</div>
       {style === "astra" && <p className="hint">Astra is always dark. Switch to Aura to choose Light or System.</p>}</fieldset>
+    <fieldset style={{ border: 0, padding: 0, margin: 0 }}><legend className="label">Language / भाषा</legend>
+      <div className="choice-grid">{([["en", "English", "App labels in English"], ["hi", "हिन्दी", "ऐप के लेबल हिन्दी में"]] as const).map(([k, l, d]) => <button type="button" key={k} aria-pressed={getLang() === k} onClick={() => setLang(k)}><b>{l}</b><small>{d}</small></button>)}</div></fieldset>
+    <label className="switch"><input type="checkbox" checked={getLite()} onChange={(e) => setLite(e.target.checked)} /><span>Low-data mode<small>No ads and no animation. Faster on slow networks and older phones.</small></span></label>
+    <div><label className="label" htmlFor="exam-date">Exam date</label><input id="exam-date" className="input" type="date" defaultValue={getExamDate() ?? ""} onChange={(e) => setExamDate(e.target.value || null)} style={{ maxWidth: 200 }} /><p className="hint">Shows a countdown on Home. Saved on this device.</p></div>
     <label className="switch"><input type="checkbox" checked={getMotion() === "reduce"} onChange={(e) => setMotion(e.target.checked ? "reduce" : "system")} /><span>Reduce motion<small>Turns off animations. Your device's reduced-motion setting is always respected.</small></span></label>
   </section>;
 
@@ -87,6 +91,7 @@ export default function ProfilePage() {
   if (!p) return <Shell>{err ? <div className="alert alert-bad" role="alert">{err}</div> : <Loading text="Loading your profile" />}</Shell>;
 
   return <Shell><div className="stack" style={{ gap: 24 }}>
+    <SubNav group="me" />
     <PageHeader title="Profile & settings" sub={`${p.email}${p.targetExam ? ` · Preparing for ${p.targetExam}` : ""}`} />
     <div className="settings-layout">
       {nav([["details", "Your details", UserRound], ["appearance", "Appearance", Palette], ["preferences", "Sound & practice", SlidersHorizontal], ["rewards", "Level & coins", Store], ["help", "Help & account", LifeBuoy]])}

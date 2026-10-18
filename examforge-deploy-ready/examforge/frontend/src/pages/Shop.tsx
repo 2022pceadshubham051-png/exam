@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Gift, Check, Lock } from "lucide-react";
+import { Gift, Check, Lock } from "lucide-react"; import SubNav from "../components/SubNav";
 import Shell from "../components/Shell"; import { PageHeader, SkeletonRows, toast, flyCoins } from "../components/ui"; import { api } from "../lib/api"; import { setCoins } from "../lib/profile";
 import { sfx } from "../lib/game";
 
@@ -36,6 +36,7 @@ export default function Shop() {
       </div></article>;
   };
   return <Shell><div className="stack" style={{ gap: 24 }}>
+    <SubNav group="me" />
     <PageHeader title="Shop" sub="Coins come from tests, practice and Lecture Pace. Buy lifelines for Practice mode, or titles and name styles that show on the leaderboards." actions={<span className="coin-chip" aria-label={`Balance: ${s.coins} coins`}><i className="coin" aria-hidden="true" />{s.coins}</span>} />
     {err && <div className="alert alert-bad" role="alert">{err}</div>}{msg && <div className="alert alert-ok" role="status">{msg}</div>}
     <section className="dashboard-split">

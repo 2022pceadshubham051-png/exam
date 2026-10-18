@@ -1,3 +1,4 @@
+import SaveQ from "../components/SaveQ";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BrandLockup } from "../components/LogoMark"; import { Modal, ConfirmDialog, toast } from "../components/ui"; import { sfx, addBonusXp, instantCheckOn, setInstantCheck } from "../lib/game";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -207,7 +208,7 @@ export default function Exam() {
       <div key={q.id} className="q-slide">{(() => { const rv = reveal[q.id]; const practice = v.mode === "PRACTICE";
         const pick = (key: string) => { if (rv) return; save({ selectedKey: key, status: q.status.includes("REVIEW") ? "ANSWERED_REVIEW" : "ANSWERED" }); if (practice && instant) setTimeout(() => check(q.id), 350); };
         return <div className="card card-pad fade-in" key={q.id}>
-          <div className="row" style={{ gap: 6, marginBottom: 10 }}>{q.section && v.mode === "PRACTICE" && <span className="pill">{q.section}</span>}{q.topic && practice && <span className="pill pill-brand">{q.topic}</span>}</div>
+          <div className="row" style={{ gap: 6, marginBottom: 10 }}>{q.section && v.mode === "PRACTICE" && <span className="pill">{q.section}</span>}{q.topic && practice && <span className="pill pill-brand">{q.topic}</span>}<span style={{ marginLeft: "auto" }}><SaveQ key={q.id} text={q.text} options={q.options} topic={q.topic} testName={(v as any).testName ?? "Test"} /></span></div>
           <p style={{ fontSize: "1.1rem", lineHeight: 1.65, fontWeight: 600, whiteSpace: "pre-wrap", margin: "0 0 20px" }}>{q.text}</p>
           <div className="stack" style={{ gap: 10 }} role="radiogroup" aria-label="Answer options">{q.options.map((o) => <label key={o.key} className={`opt ${hidden[q.id]?.includes(o.key) ? "opt-hidden" : ""} ${q.selectedKey === o.key ? "sel" : ""} ${rv && rv.correctKey === o.key ? "right" : rv && q.selectedKey === o.key ? "wrong" : ""}`}><input className="sr" type="radio" name={`opt-${q.id}`} checked={q.selectedKey === o.key} disabled={!!rv || !!hidden[q.id]?.includes(o.key)} onChange={() => pick(o.key)} /><span className="opt-k">{o.key}</span><span style={{ flex: 1 }}>{o.text}</span>{rv && rv.correctKey === o.key && <CircleCheck size={18} color="var(--ok)" aria-label="Correct answer" />}{rv && q.selectedKey === o.key && rv.correctKey !== o.key && <CircleX size={18} color="var(--bad)" aria-label="Your answer, incorrect" />}</label>)}</div>
           {practice && <div className="stack" style={{ gap: 10, marginTop: 14 }}>
