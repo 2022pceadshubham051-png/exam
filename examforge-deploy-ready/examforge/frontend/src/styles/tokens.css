@@ -53,5 +53,22 @@
   --bg: #0c0a1a; --surface: #151129; --surface-2: #1d1838; --surface-3: #272150;
   --border: #2b2551; --border-strong: #40386f; --brand-soft: #251d4d;
 }
+
+/* Exam skins (see lib/skin.ts). "train" = flat railway blue + signal amber. Library = warm paper and walnut; Ground = turf green. */
+html[data-skin="train"] { --bg: #f5f2e9; --surface-2: #efebdf; --surface-3: #e4dfcf; --border: #ddd7c5; --border-strong: #c3bba2;
+  --brand: #1d4f91; --brand-hover: #163f75; --brand-2: #2d6bb5; --brand-soft: #e6eef8; --brand-ink: #ffffff; --gold: #d49a1c; --gold-text: #7a5000; --gold-soft: #faf0d2; --q-both: #1d4f91; }
+html[data-skin="train"].dark { --bg: #0f1620; --surface: #161f2c; --surface-2: #1c2838; --surface-3: #26364b; --border: #2a3a50; --border-strong: #3c5170;
+  --brand: #7fb2ee; --brand-hover: #a0c6f3; --brand-2: #5d9ae0; --brand-soft: #1a2a40; --brand-ink: #0b1a2c; --q-both: #7fb2ee; }
+html[data-skin="train"].astra { --bg: #090e15; --surface: #0f1620; --surface-2: #151f2d; --surface-3: #1e2c40; --border: #1f2d42; --border-strong: #324663; --brand-soft: #14233a; }
+html[data-skin="library"] { --bg: #f8f3ea; --surface-2: #f3ebdc; --surface-3: #eadfca; --border: #e6dcc6; --border-strong: #cdbd9c;
+  --brand: #8a4b1f; --brand-hover: #723b14; --brand-2: #b0692f; --brand-soft: #f6e9d8; --brand-ink: #ffffff; --gold: #d99a2b; --gold-text: #7a4e00; --gold-soft: #fbefd0; --q-both: #8a4b1f; }
+html[data-skin="library"].dark { --bg: #1a130d; --surface: #241a12; --surface-2: #2d2118; --surface-3: #3a2b1d; --border: #43331f; --border-strong: #5c4529;
+  --brand: #e3a76a; --brand-hover: #efbd88; --brand-2: #d18e4c; --brand-soft: #3a2615; --brand-ink: #2a1608; --gold: #f2c14e; --gold-text: #f2c14e; --q-both: #e3a76a; }
+html[data-skin="library"].astra { --bg: #120d08; --surface: #1c140d; --surface-2: #251a11; --surface-3: #32241a; --border: #382a1b; --border-strong: #52401f; --brand-soft: #34210f; }
+html[data-skin="ground"] { --bg: #f3f7f1; --surface-2: #ebf2e8; --surface-3: #dde9d8; --border: #d8e4d3; --border-strong: #b6caae;
+  --brand: #1f7a4d; --brand-hover: #176339; --brand-2: #2f9a67; --brand-soft: #e1f3ea; --brand-ink: #ffffff; --gold: #f0b429; --q-both: #1f7a4d; }
+html[data-skin="ground"].dark { --bg: #0e1713; --surface: #14211b; --surface-2: #1a2b23; --surface-3: #233a2f; --border: #254034; --border-strong: #35594a;
+  --brand: #5fd19a; --brand-hover: #82e0b3; --brand-2: #45b982; --brand-soft: #12332a; --brand-ink: #0a2418; --q-both: #5fd19a; }
+html[data-skin="ground"].astra { --bg: #08110d; --surface: #0d1a14; --surface-2: #12231b; --surface-3: #1a3027; --border: #1c3328; --border-strong: #2c4d3c; --brand-soft: #0f2a21; }
 @media (prefers-reduced-motion: reduce) { :root { --dur-1: 1ms; --dur-2: 1ms; --dur-3: 1ms; } }
 .reduce-motion { --dur-1: 1ms; --dur-2: 1ms; --dur-3: 1ms; }

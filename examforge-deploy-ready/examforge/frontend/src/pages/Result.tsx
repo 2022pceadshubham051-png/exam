@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"; import { useParams, Link, useNaviga
 import { Eye, Target, Clock, CircleCheck, CircleX, MinusCircle, TrendingUp, TrendingDown, ArrowRight, Sparkles, LayoutDashboard, Trash2, Compass, Trophy } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { api, fmt } from "../lib/api"; import Shell from "../components/Shell"; import AdSlot from "../components/AdSlot";
-import { Medal, Sparkline } from "../components/Achievement"; import { JourneyStrip } from "../components/Journey"; import { cachedProfile } from "../lib/profile"; import { ConfirmDialog, PageHeader, SkeletonResult, useCountUp } from "../components/ui";
+import { ResultTicket } from "../components/ResultTicket"; import { Sparkline } from "../components/Achievement"; import { JourneyStrip } from "../components/Journey"; import { cachedProfile } from "../lib/profile"; import { ConfirmDialog, PageHeader, SkeletonResult, useCountUp } from "../components/ui";
 const MarksCount = ({ n }: { n: number }) => <>{useCountUp(n)}</>; import { stars, sfx } from "../lib/game";
 
 
@@ -37,7 +37,7 @@ export default function Result() {
     <div className="stack" style={{ gap: 22 }}>
       <div className="row between"><div><h1 className="h1">{r.percentage >= 85 ? "Excellent result" : passed ? "Test cleared" : "Result"}</h1><p className="sub" aria-label={`${stars(r.percentage)} of 3 stars`}>{"★".repeat(stars(r.percentage))}{"☆".repeat(3 - stars(r.percentage))} · Attempt #{d.attemptNo} · <span className={`pill ${d.adaptive ? "pill-ok" : d.mode === "PRACTICE" ? "pill-brand" : ""}`}>{d.adaptive ? "Adaptive practice" : d.mode === "PRACTICE" ? "Practice" : "Exam"}</span></p></div>
         <div className="row"><Link className="btn" to="/dashboard"><LayoutDashboard size={16} />Dashboard</Link><Link className="btn" to={`/exam/${d.testId}`}><ArrowRight size={16} />Retake</Link><Link className="btn btn-primary" to={`/review/${attemptId}`}><Eye size={16} />Review answers</Link><button className="btn btn-danger" onClick={() => setAskDel(true)}><Trash2 size={16} />Delete</button></div></div>
-            <section className="card card-pad row" style={{ gap: 20, alignItems: "center" }}><Medal pct={r.percentage} /><div style={{ flex: 1, minWidth: 240 }}><JourneyStrip value={r.percentage} goal={cachedProfile()?.targetScore ?? null} label="This attempt" arrived="You reached your goal" /></div></section>
+<ResultTicket attemptId={String(attemptId)} testName={d.testName ?? ""} attemptNo={d.attemptNo} score={r.score} total={r.totalMarks} pct={r.percentage} passed={passed} date={d.endedAt}><JourneyStrip value={r.percentage} goal={cachedProfile()?.targetScore ?? null} label="This attempt" arrived="You reached your goal" /></ResultTicket>
       <Sparkline testId={d.testId} />
       <section className="card card-pad row" style={{ gap: 30 }}>
         <Ring value={r.percentage} label="score" pass={passed} />

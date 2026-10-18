@@ -243,3 +243,31 @@
   .time-panel { overflow: hidden; }
   .row-check { display: flex; gap: 8px; align-items: center; }
 }
+@layer components {
+  /* Result ticket. Flat paper, a perforated stub, a rubber stamp. No gradients or glow on purpose. */
+  .ticket { --paper: #fbf7ea; --ink: #2a2518; display: grid; grid-template-columns: 1fr 132px; position: relative; background: var(--paper); color: var(--ink); border: 1px solid var(--border-strong); border-radius: 6px; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; overflow: hidden; }
+  .dark .ticket { --paper: #1d2531; --ink: #e8e4d6; }
+  .ticket::before, .ticket::after { content: ""; position: absolute; right: 120px; width: 18px; height: 18px; border-radius: 50%; background: var(--bg); border: 1px solid var(--border-strong); }
+  .ticket::before { top: -10px; } .ticket::after { bottom: -10px; }
+  .tk-main { position: relative; padding: 16px 20px 18px; display: grid; gap: 6px; min-width: 0; }
+  .tk-head { font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; opacity: .7; padding-bottom: 8px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 25%, transparent); margin-bottom: 4px; }
+  .tk-row { display: flex; justify-content: space-between; gap: 14px; font-size: .88rem; padding: 3px 0; }
+  .tk-row span { opacity: .65; flex: none; } .tk-row b { font-weight: 700; text-align: right; overflow-wrap: anywhere; }
+  .tk-row:nth-of-type(n+4) b { padding-right: 130px; }
+  .tk-stamp { position: absolute; right: 18px; top: 114px; transform: rotate(-7deg); border: 2.5px double currentColor; border-radius: 4px; padding: 4px 10px; font-weight: 800; font-size: .95rem; letter-spacing: .12em; text-transform: uppercase; opacity: .85; mix-blend-mode: multiply; }
+  .dark .tk-stamp { mix-blend-mode: normal; }
+  .tk-stamp.ok { color: #1f7a3e; } .tk-stamp.no { color: #b3361f; }
+  .dark .tk-stamp.ok { color: #6fd19a; } .dark .tk-stamp.no { color: #ff9a86; }
+  .tk-stub { border-left: 2px dashed color-mix(in srgb, var(--ink) 35%, transparent); display: grid; place-content: center; text-align: center; gap: 4px; padding: 12px; }
+  .tk-stub b { font-size: 2.1rem; font-weight: 800; letter-spacing: -.02em; } .tk-stub small { font-size: .7rem; opacity: .65; }
+  .ticket .journey { padding: 12px 0 0; } .ticket .sub, .ticket .journey figcaption { color: inherit; opacity: .75; }
+  .ticket-library { --paper: #f7f0dc; border-radius: 3px; background-image: repeating-linear-gradient(transparent 0 27px, color-mix(in srgb, #3b5b8c 22%, transparent) 27px 28px); background-position: 0 44px; font-family: "Courier New", ui-monospace, monospace; }
+  .dark .ticket-library { --paper: #271d14; background-image: repeating-linear-gradient(transparent 0 27px, rgb(255 255 255 / .07) 27px 28px); }
+  .ticket-library .tk-stamp { color: #2b4a8a; font-weight: 700; border-style: solid; border-width: 2px; border-radius: 2px; }
+  .dark .ticket-library .tk-stamp { color: #9db8ee; }
+  .ticket-ground { --paper: #ffffff; border-radius: 4px; border-left: 6px solid var(--brand); font-family: ui-sans-serif, system-ui, sans-serif; }
+  .dark .ticket-ground { --paper: #14211b; }
+  .ticket-ground .tk-head { font-weight: 800; letter-spacing: .1em; } .ticket-ground .tk-stub b { font-size: 2.4rem; font-weight: 900; font-style: italic; }
+  @media (max-width: 560px) { .ticket { grid-template-columns: 1fr 96px; } .ticket::before, .ticket::after { right: 84px; } .tk-row:nth-of-type(n+4) b { padding-right: 0; } .tk-stamp { position: static; justify-self: start; margin: 6px 0 2px; } }
+}
+

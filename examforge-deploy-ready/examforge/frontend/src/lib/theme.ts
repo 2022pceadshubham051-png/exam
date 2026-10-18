@@ -7,6 +7,7 @@ export type Motion = "system" | "reduce";
 export const STYLES: Style[] = ["aura", "astra"];
 export const STYLE_NAMES: Record<Style, string> = { aura: "Aura", astra: "Astra" };
 export const STYLE_HINTS: Record<Style, string> = { aura: "Ivory and violet. Follows light or dark mode.", astra: "Deep violet night theme. Always dark." };
+import { getSkin } from "./skin";
 const K = { mode: "theme", style: "ef_style", motion: "ef_motion" };
 
 const read = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
@@ -24,7 +25,7 @@ export function applyTheme() {
   const root = document.documentElement, style = getStoredStyle(), mode = getMode();
   const dark = style === "astra" || mode === "dark" || (mode === "system" && prefersDark());
   root.classList.toggle("aura", style === "aura"); root.classList.toggle("astra", style === "astra"); root.classList.toggle("dark", dark);
-  root.classList.toggle("reduce-motion", getMotion() === "reduce");
+  root.classList.toggle("reduce-motion", getMotion() === "reduce"); root.dataset.skin = getSkin();
   document.querySelector('meta[name="theme-color"]')?.setAttribute("content", dark ? (style === "astra" ? "#0c0a1a" : "#12101e") : "#f7f5ef");
 }
 let started = false;
@@ -32,7 +33,8 @@ let started = false;
 export function initTheme() {
   applyTheme(); if (started) return; started = true;
   window.matchMedia?.("(prefers-color-scheme: dark)").addEventListener?.("change", () => { if (getMode() === "system") applyTheme(); });
-  window.addEventListener("storage", (e) => { if (e.key && Object.values(K).includes(e.key)) { applyTheme(); window.dispatchEvent(new Event("ef-theme")); } });
+  window.addEventListener("ef-skin", applyTheme);
+  window.addEventListener("storage", (e) => { if (e.key && (Object.values(K).includes(e.key) || e.key === "ef_skin" || e.key === "ef_skin_auto")) { applyTheme(); window.dispatchEvent(new Event("ef-theme")); } });
 }
 let lx = innerWidth / 2, ly = 0;
 if (typeof window !== "undefined") window.addEventListener("pointerdown", (e) => { lx = e.clientX; ly = e.clientY; }, true);

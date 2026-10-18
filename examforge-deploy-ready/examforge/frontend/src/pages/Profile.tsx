@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Save, Loader, TriangleAlert, Volume2, Store, UserRound, SlidersHorizontal, Palette, LifeBuoy, LogOut, CircleHelp } from "lucide-react";
 import Shell, { Loading } from "../components/Shell"; import NameTag from "../components/NameTag"; import { openTutorial } from "../components/Tutorial"; import { Field, PageHeader, toast } from "../components/ui";
 import { api } from "../lib/api"; import { getMe, logout } from "../lib/auth";
-import { STYLES, STYLE_NAMES, STYLE_HINTS, getStoredStyle, getMode, getMotion, setStyle, setMode, setMotion, type Mode } from "../lib/theme";
+import { SKINS, SKIN_NAMES, SKIN_HINTS, getSkinPref, setSkinPref, skinForExam, type SkinPref } from "../lib/skin"; import { STYLES, STYLE_NAMES, STYLE_HINTS, getStoredStyle, getMode, getMotion, setStyle, setMode, setMotion, type Mode } from "../lib/theme";
 import { levelFromXp, xpFromAttempts, streakDays, saveLevel, saveXp, soundOn, setSound, sfx, instantCheckOn, setInstantCheck } from "../lib/game";
 import { loadProfile, setProfile, setCoins, firstName, type Profile } from "../lib/profile"; import { COMMON, mergeExams } from "./Welcome";
 
@@ -12,7 +12,7 @@ const MODES: [Mode, string, string][] = [["system", "System", "Match your device
 export default function ProfilePage() {
   const admin = getMe()?.role === "ADMIN";
   const [, force] = useState(0); const rerender = () => force((n) => n + 1);
-  useEffect(() => { window.addEventListener("ef-theme", rerender); return () => window.removeEventListener("ef-theme", rerender); }, []);
+  useEffect(() => { window.addEventListener("ef-theme", rerender); window.addEventListener("ef-skin", rerender); return () => { window.removeEventListener("ef-theme", rerender); window.removeEventListener("ef-skin", rerender); }; }, []);
   const [p, setP] = useState<Profile | null>(null); const [hist, setHist] = useState<any[] | null>(null); const [shop, setShop] = useState<any | null>(null);
   const [name, setName] = useState(""); const [email, setEmail] = useState(""); const [pw, setPw] = useState(""); const [age, setAge] = useState(""); const [exam, setExam] = useState(""); const [other, setOther] = useState(""); const [score, setScore] = useState("");
   const [exams, setExams] = useState<string[]>(COMMON); const [err, setErr] = useState(""); const [errs, setErrs] = useState<Record<string, string>>({}); const [busy, setBusy] = useState(false); const [saved, setSaved] = useState(false);
@@ -62,6 +62,8 @@ export default function ProfilePage() {
     <div><h2 className="card-title" id="appearance-h">Appearance</h2><p className="sub">Saved on this device and applied to every page, including Lecture Pace.</p></div>
     <fieldset style={{ border: 0, padding: 0, margin: 0 }}><legend className="label">Style</legend>
       <div className="choice-grid">{STYLES.map((s) => <button type="button" key={s} aria-pressed={style === s} onClick={() => { setStyle(s); toast(`${STYLE_NAMES[s]} style on.`, "ok"); }}><b>{STYLE_NAMES[s]}</b><small>{STYLE_HINTS[s]}</small></button>)}</div></fieldset>
+    <fieldset style={{ border: 0, padding: 0, margin: 0 }}><legend className="label">Journey theme</legend>
+      <div className="choice-grid">{(["auto", ...SKINS] as SkinPref[]).map((k) => <button type="button" key={k} aria-pressed={getSkinPref() === k} onClick={() => { setSkinPref(k); toast(k === "auto" ? "Theme now follows your exam." : `${SKIN_NAMES[k]} theme on.`, "ok"); }}><b>{k === "auto" ? "Match my exam" : SKIN_NAMES[k]}</b><small>{k === "auto" ? `Currently ${SKIN_NAMES[skinForExam(p?.targetExam)]}` : SKIN_HINTS[k]}</small></button>)}</div></fieldset>
     <fieldset style={{ border: 0, padding: 0, margin: 0 }}><legend className="label">Mode</legend>
       <div className="choice-grid">{MODES.map(([m, l, d]) => <button type="button" key={m} disabled={style === "astra"} aria-pressed={style === "astra" ? m === "dark" : mode === m} onClick={() => setMode(m)}><b>{l}</b><small>{d}</small></button>)}</div>
       {style === "astra" && <p className="hint">Astra is always dark. Switch to Aura to choose Light or System.</p>}</fieldset>

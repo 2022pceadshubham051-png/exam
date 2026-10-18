@@ -8,6 +8,8 @@ export const levelFromXp = (xp: number) => {
 export const xpFromAttempts = (done: any[]) => done.reduce((s, a) => s + 30 + Math.round(a.result?.percentage ?? 0), 0) + bonusXp();
 export const bonusXp = () => { try { return Number(localStorage.getItem("ef_bonus_xp") || 0); } catch { return 0; } };
 export const addBonusXp = (n: number) => { try { localStorage.setItem("ef_bonus_xp", String(bonusXp() + n)); } catch { /* ignore */ } };
+/** True once each time the streak grows past the highest value this device has shown (drives the one-off flame bounce). */
+export function streakBumped(n: number) { try { const seen = Number(localStorage.getItem("ef_streak_seen") || 0); localStorage.setItem("ef_streak_seen", String(n)); return n > seen; } catch { return false; } }
 export const streakDays = (done: any[]) => {
   const days = new Set(done.map((a) => new Date(a.startedAt).toDateString())); let n = 0; const d = new Date();
   if (!days.has(d.toDateString())) d.setDate(d.getDate() - 1);

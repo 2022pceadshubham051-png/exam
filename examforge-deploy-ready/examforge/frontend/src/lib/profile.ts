@@ -1,12 +1,12 @@
-import { api } from "./api";
+import { api } from "./api"; import { syncSkinFromExam } from "./skin";
 
 export type Profile = { id: string; role: "USER" | "ADMIN"; name: string; email?: string; age: number | null; targetExam: string | null; targetScore: number | null; onboarded: boolean; needsName: boolean; welcomeCoins?: number };
 let cache: Profile | null = null, pending: Promise<Profile> | null = null;
 export const cachedProfile = () => cache;
-export const setProfile = (p: Profile) => { cache = p; };
+export const setProfile = (p: Profile) => { cache = p; syncSkinFromExam(p.targetExam); };
 export function loadProfile(force = false): Promise<Profile> {
   if (cache && !force) return Promise.resolve(cache);
-  pending = (pending && !force ? pending : api<Profile>("/me")).then((p) => (cache = p), (e) => { pending = null; throw e; });
+  pending = (pending && !force ? pending : api<Profile>("/me")).then((p) => { cache = p; syncSkinFromExam(p.targetExam); return p; }, (e) => { pending = null; throw e; });
   return pending;
 }
 export const firstName = (p?: Profile | null) => (p?.name ?? "").trim().split(/\s+/)[0] || "";

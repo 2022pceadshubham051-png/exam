@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"; import { Link } from "react-router-dom";
 import { Search, Play, ArrowRight, Eye, SlidersHorizontal, Trash2, Compass, X, TriangleAlert, CircleCheck, ClipboardList } from "lucide-react";
 import { api, fmt } from "../lib/api"; import Shell from "../components/Shell"; import AdSlot from "../components/AdSlot"; import { PageHeader, Empty, ConfirmDialog, SkeletonRows, SkeletonCards } from "../components/ui"; import { loadProfile, matchesExam, firstName, type Profile } from "../lib/profile";
-import { WeekDots } from "../components/Achievement"; import { JourneyStrip } from "../components/Journey"; import { Flame } from "lucide-react"; import { showLevelUp } from "../components/LevelUp"; import { levelFromXp, xpFromAttempts, streakDays, saveLevel, savedLevel, saveXp } from "../lib/game";
+import { WeekDots, StreakFlame } from "../components/Achievement"; import { JourneyStrip } from "../components/Journey"; import { Flame } from "lucide-react"; import { showLevelUp } from "../components/LevelUp"; import { levelFromXp, xpFromAttempts, streakDays, saveLevel, savedLevel, saveXp } from "../lib/game";
 
 const diff: Record<string, string> = { EASY: "pill-ok", MEDIUM: "pill-warn", HARD: "pill-bad" };
 const kind = (a: any) => (a.mode === "PRACTICE" ? (a.adaptiveQuestionIds ? "Adaptive" : "Practice") : "Exam");
@@ -99,7 +99,7 @@ export default function Dashboard() {
         <aside className="dash-aside" aria-label="Your progress">
           <div className="card card-pad mini-progress">
             <div className="row between"><h2 className="card-title">Your progress</h2><span className="pill pill-gold">Level {lv.level}</span></div>
-            {done.length ? <><dl><dt>Tests completed</dt><dd>{done.length}</dd><dt>Average score</dt><dd>{avg}%</dd><dt>Best score</dt><dd>{best}%</dd><dt>Day streak</dt><dd>{streak > 0 && <Flame size={16} className="flame" aria-hidden="true" />}{streak}</dd></dl><WeekDots done={done} /></>
+            {done.length ? <><dl><dt>Tests completed</dt><dd>{done.length}</dd><dt>Average score</dt><dd>{avg}%</dd><dt>Best score</dt><dd>{best}%</dd><dt>Day streak</dt><dd>{streak > 0 && <StreakFlame n={streak} />}{streak}</dd></dl><WeekDots done={done} /></>
               : <p className="sub">Finish your first test to see your average, best score and streak here.</p>}
             <div><div className="row between sub" style={{ marginBottom: 6 }}><span>{lv.title}</span><span className="num">{lv.into} / {lv.need} XP</span></div><div className="xpbar" role="progressbar" aria-label="XP to next level" aria-valuenow={lv.pct} aria-valuemin={0} aria-valuemax={100}><i style={{ width: `${Math.max(3, lv.pct)}%` }} /></div></div>
             <Link className="btn btn-sm" to="/progress">Full progress<ArrowRight size={14} aria-hidden="true" /></Link>

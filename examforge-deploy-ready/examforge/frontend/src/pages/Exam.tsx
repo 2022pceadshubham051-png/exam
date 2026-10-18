@@ -8,7 +8,7 @@ import {
 import { api, fmt, type View, type Q } from "../lib/api";
 
 type Pending = { questionId: string; selectedKey: string | null; status: string; timeSpentMs: number };
-const tCls = (s: number) => (s < 5 ? "crit" : s <= 10 ? "warn" : "");
+const tCls = (s: number) => (s <= 60 ? "crit" : s <= 300 ? "low" : "");
 const legend: [string, string][] = [["ANSWERED", "Answered"], ["ANSWERED_REVIEW", "Answered + marked"], ["REVIEW", "Marked for review"], ["NOT_ANSWERED", "Not answered"], ["NOT_VISITED", "Not visited"]];
 const stateLabel: Record<string, string> = { ANSWERED: "answered", ANSWERED_REVIEW: "answered and marked for review", REVIEW: "marked for review", NOT_ANSWERED: "not answered", VISITED: "not answered", NOT_VISITED: "not visited" };
 type ModeChoice = "EXAM" | "PRACTICE" | "ADAPTIVE";

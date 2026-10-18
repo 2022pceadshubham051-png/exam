@@ -112,7 +112,7 @@
   .rail-scene .rail-train { position: absolute; bottom: 7px; left: calc(100% - 64px); animation: train-run 2.6s var(--ease) both; }
   .js-reveal [data-reveal]:not(.in) .rail-train { animation: none; left: 0; }
 
-  .flame { color: var(--gold-text); display: inline-block; transform-origin: 50% 90%; animation: flicker 1.6s ease-in-out infinite; vertical-align: -3px; margin-right: 4px; }
+  .flame { color: var(--gold-text); display: inline-block; transform-origin: 50% 90%; vertical-align: -3px; margin-right: 4px; }
   .rocket { display: block; margin: 0 auto var(--s-2); animation: launch .9s var(--ease) both; } .rocket-flame { transform-origin: 22px 40px; animation: flame .25s ease-in-out infinite; }
   .leader-podium .podium-card { animation: rise .6s var(--ease) both; position: relative; overflow: hidden; }
   .podium-3 { animation-delay: .05s !important; } .podium-2 { animation-delay: .2s !important; } .podium-1 { animation-delay: .35s !important; }
@@ -177,3 +177,41 @@
   .week-dots .on i { background: var(--brand); border-color: var(--brand); }
   .week-dots .today { color: var(--text); font-weight: var(--fw-bold); } .week-dots .today i { outline: 2px solid var(--gold); outline-offset: 2px; }
 }
+@layer components {
+  /* skin rails: shelf plank for Library, lane markings for Ground */
+  [data-skin="library"] .rail { height: 6px; border-radius: 1px; background: var(--brand); }
+  [data-skin="library"] .sleeper { display: none; }
+  [data-skin="ground"] .rail { height: 4px; background: repeating-linear-gradient(90deg, var(--brand) 0 14px, transparent 14px 22px); }
+  [data-skin="ground"] .sleeper { display: none; }
+  [data-skin="ground"] .journey-train .train, [data-skin="ground"] .loop-train .train { animation-duration: .35s; }
+}
+
+/* Small, purposeful motion (transform + opacity only). Everything below is switched off by Reduce motion / the OS setting. */
+@layer components {
+  @keyframes stamp-in { 0% { transform: rotate(-7deg) scale(1.9); opacity: 0; } 55% { transform: rotate(-7deg) scale(.94); opacity: .95; }
+    68% { transform: rotate(-7deg) translate(3px, 1px); } 80% { transform: rotate(-7deg) translate(-3px, 0); } 100% { transform: rotate(-7deg) scale(1); opacity: .85; } }
+  @keyframes qpop { 0% { transform: scale(1); } 45% { transform: scale(1.15); } 100% { transform: scale(1); } }
+  @keyframes beat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.07); } }
+  @keyframes flag-wave { 0%, 100% { transform: rotate(0); } 30% { transform: rotate(-9deg); } 70% { transform: rotate(7deg); } }
+  @keyframes flame-bump { 0% { transform: translateY(0) scale(1); } 35% { transform: translateY(-5px) scale(1.25); } 65% { transform: translateY(0) scale(.95); } 100% { transform: none; } }
+
+  .tk-stamp { animation: stamp-in .5s cubic-bezier(.2, .9, .3, 1.15) 1.1s both; }
+  .qb.cur.qb-ANSWERED, .qb.cur.qb-ANSWERED_REVIEW { animation: qpop .28s var(--ease, ease-out); }
+  .timer.low { border-color: color-mix(in srgb, var(--bad) 55%, var(--border)); }
+  .timer.low b { color: var(--bad); display: inline-block; animation: beat 1s ease-in-out infinite; }
+  .arrived .station b { transform-origin: 50% 100%; animation: flag-wave .7s ease-in-out 1.8s 2; }
+  .flame.bump { animation: flame-bump .7s cubic-bezier(.3, 1.4, .5, 1) 1 both; }
+  .btn { transition: background var(--dur-1), border-color var(--dur-1), color var(--dur-1), transform .1s ease-out; }
+  .btn:hover:not(:disabled):not([aria-disabled="true"]) { transform: translateY(-1px); }
+  .btn:active:not(:disabled):not([aria-disabled="true"]) { transform: translateY(2px); }
+
+  .reduce-motion .tk-stamp { animation: none; opacity: .85; }
+  .reduce-motion .qb.cur, .reduce-motion .timer.low b, .reduce-motion .arrived .station b, .reduce-motion .flame.bump { animation: none; }
+  .reduce-motion .btn:hover:not(:disabled), .reduce-motion .btn:active:not(:disabled) { transform: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .tk-stamp { animation: none; opacity: .85; }
+    .qb.cur, .timer.low b, .arrived .station b, .flame.bump { animation: none; }
+    .btn:hover:not(:disabled), .btn:active:not(:disabled) { transform: none; }
+  }
+}
+

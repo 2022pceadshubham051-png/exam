@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"; import { Link, Navigate } from "react-router-dom";
 import { ArrowRight, Check, Timer, Sparkles, BrainCircuit } from "lucide-react";
-import { Train } from "../components/Journey"; import PublicShell from "../components/PublicShell"; import AdSlot from "../components/AdSlot"; import { getMe } from "../lib/auth"; import { SITE, TIPS } from "../lib/content";
+import { Traveler } from "../components/Journey"; import PublicShell from "../components/PublicShell"; import AdSlot from "../components/AdSlot"; import { getMe } from "../lib/auth"; import { SITE, TIPS } from "../lib/content";
 
 const after = [
   ["Score, accuracy and time", "See marks, attempted vs skipped, and how long each section took."],
@@ -59,7 +59,7 @@ export default function Landing() {
       <section className="lp-section" data-reveal aria-labelledby="how-h"><h2 id="how-h">How it works</h2>
         <ol className="lp-steps">
           {[["1", "Create a free account", "Register with your email and choose your target exam. Tests for that exam are listed first."], ["2", "Take a test", "Pick timed exam mode or untimed practice. Mark questions for review and come back to them."], ["3", "Review and improve", "Read the analysis, check explanations, then practise the topics that cost you marks."]].map(([n, t, d]) => <li key={n} data-reveal><span className="n" aria-hidden="true">{n}</span><h3>{t}</h3><p className="sub">{d}</p></li>)}
-        </ol><div className="rail-scene" aria-hidden="true"><div className="rail" /><div className="rail-train"><Train /></div></div></section>
+        </ol><div className="rail-scene" aria-hidden="true"><div className="rail" /><div className="rail-train"><Traveler /></div></div></section>
 
       <section className="lp-split" data-reveal aria-labelledby="modes-h">
         <div><h2 id="modes-h">Three ways to practise</h2><p className="sub" style={{ marginTop: 10, fontSize: "1rem" }}>Switch modes on the same test, depending on whether you are building skill or rehearsing the paper.</p>

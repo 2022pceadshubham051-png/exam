@@ -1,5 +1,12 @@
-import { useEffect, useState } from "react";
-import { api } from "../lib/api";
+import { useEffect, useState } from "react"; import { Flame } from "lucide-react";
+import { api } from "../lib/api"; import { streakBumped } from "../lib/game";
+
+/** Streak flame: bounces once, only when the streak has grown since this device last showed it. */
+export function StreakFlame({ n }: { n: number }) {
+  const [bump, setBump] = useState(false);
+  useEffect(() => { setBump(n > 0 && streakBumped(n)); }, [n]);
+  return <Flame size={16} className={`flame${bump ? " bump" : ""}`} aria-hidden="true" />;
+}
 
 /** Medal by score band. Bands are cosmetic only; they do not change pass/fail or scoring. */
 export function Medal({ pct }: { pct: number }) {
