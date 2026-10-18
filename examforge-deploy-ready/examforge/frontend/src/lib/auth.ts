@@ -10,3 +10,4 @@ export function getMe(): Me {
 export const logout = () => { localStorage.removeItem("token"); location.href = "/login"; };
 // Appearance helpers live in ./theme; re-exported so older imports keep working.
 export { STYLES, STYLE_NAMES, getStyle, setStyle, isDark, isAstra, toggleTheme } from "./theme";
+export type { Style, Mode, Motion } from "./theme";
