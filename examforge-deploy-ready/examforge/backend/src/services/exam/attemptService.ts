@@ -283,7 +283,7 @@ export async function resultWithComparison(attemptId: string, userId: string) {
     const [above, below, total] = await Promise.all([prisma.testResult.count({ where: { ...where, score: { gt: a.result.score } } }), prisma.testResult.count({ where: { ...where, score: { lt: a.result.score } } }), prisma.testResult.count({ where })]);
     field = total; rank = above + 1; percentile = total > 1 ? +((below / (total - 1)) * 100).toFixed(1) : null;
   }
-  return { attemptNo: a.attemptNo, mode: a.mode, adaptive: !!a.adaptiveQuestionIds, testId: a.testId, testName: a.test.name, passingPercent: a.test.passingPercent, showResult: a.test.showResult, result: a.result, rank, percentile, field,
+  return { attemptNo: a.attemptNo, mode: a.mode, adaptive: !!a.adaptiveQuestionIds, testId: a.testId, testName: a.test.name, endedAt: a.endedAt ?? a.startedAt, passingPercent: a.test.passingPercent, showResult: a.test.showResult, result: a.result, rank, percentile, field,
     comparison: a.mode === "EXAM" ? compareAttempts(a.result as any, prev?.result as any) : null };
 }
 
