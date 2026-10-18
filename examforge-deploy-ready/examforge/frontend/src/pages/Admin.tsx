@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react"; import { Link } from "react-router-dom";
 import { Plus, Trash2, Copy, Check, CircleCheck, CircleX, TriangleAlert, ArrowLeft, FileText, Layers, Clock, Rocket, Upload, ListChecks, Settings2, Link as LinkIcon, Sparkles, Info, X, Search, BarChart3, Pencil, Wand2, RotateCcw, Save, Download } from "lucide-react";
-import { api, fmt } from "../lib/api"; import Shell, { Loading } from "../components/Shell";
+import { api, fmt } from "../lib/api"; import Shell, { Loading } from "../components/Shell"; import { Modal, ConfirmDialog, SkeletonPage } from "../components/ui";
 
 const SAMPLE = `Question 1. Which protocol is secure?
 A) HTTP
@@ -75,7 +75,7 @@ export default function Admin() {
 
       {!test && !creating && <>
         {list && <div className="admin-toolbar card card-pad"><div className="row between" style={{gap:12,flexWrap:"wrap"}}><div><b>Test library</b><div className="sub">Search, filter and manage your live exams without opening each one.</div></div><div className="row" style={{gap:8,flexWrap:"wrap"}}><div className="seg"><button className={filter === "ALL" ? "on" : ""} onClick={() => setFilter("ALL")}>All</button><button className={filter === "LIVE" ? "on" : ""} onClick={() => setFilter("LIVE")}>Published</button><button className={filter === "DRAFT" ? "on" : ""} onClick={() => setFilter("DRAFT")}>Drafts</button></div><div style={{position:"relative",minWidth:220}}><Search size={15} style={{position:"absolute",left:12,top:12,color:"var(--muted)"}}/><input className="input" style={{paddingLeft:36}} placeholder="Search tests" value={search} onChange={(e) => setSearch(e.target.value)}/></div></div></div></div>}
-        {!list ? <Loading /> : filteredList.length ? <div className="grid-auto">{filteredList.map((t) => <article key={t.id} className="card tcard">
+        {!list ? <SkeletonPage /> : filteredList.length ? <div className="grid-auto">{filteredList.map((t) => <article key={t.id} className="card tcard">
           <div className="row between"><span className="pill pill-brand">{t.examName}</span><div className="row" style={{gap:6}}>{t.allowPracticeMode !== false && <span className="pill pill-brand"><Sparkles size={12}/>Practice</span>}{t.published ? <span className="pill pill-ok">Published</span> : <span className="pill pill-warn">Draft</span>}</div></div>
           <h3 style={{ fontSize: "1.1rem", fontWeight: 800 }}>{t.name}</h3>
           <div className="meta"><span><Clock size={15} />{Math.round(t.durationSec / 60)} min</span><span><FileText size={15} />{totalQ(t)} questions</span><span><Layers size={15} />{t.sections.length} sections</span></div>
@@ -84,9 +84,7 @@ export default function Admin() {
           : <div className="card empty"><FileText size={36} /><p>{list.length && (filter !== "ALL" || search) ? "No tests match these filters." : "You have not created any test yet."}</p><button className="btn btn-primary" style={{ marginTop: 12 }} onClick={() => setCreating(true)}><Plus size={16} />Create your first test</button></div>}
       </>}
     </div>
-    {del && <div className="modal-bg" onClick={() => setDel(null)}><div className="card modal stack" style={{ gap: 12 }} onClick={(e) => e.stopPropagation()}>
-      <h3 className="card-title">Delete "{del.name}" permanently?</h3><p className="sub">This is a hard delete. The exam, sections, questions, attempts, results and linked analytics will be removed from the database. This cannot be undone.</p>
-      <div className="row" style={{ justifyContent: "flex-end" }}><button className="btn" onClick={() => setDel(null)}>Cancel</button><button className="btn btn-danger" onClick={remove}><Trash2 size={15} />Delete</button></div></div></div>}
+    <ConfirmDialog open={!!del} danger title={`Delete "${del?.name}" permanently?`} confirmLabel="Delete" onCancel={() => setDel(null)} onConfirm={remove}>This is a hard delete. The exam, sections, questions, attempts, results and linked analytics will be removed from the database. This cannot be undone.</ConfirmDialog>
   </Shell>;
 }
 
@@ -343,7 +341,7 @@ function StructurePanel({ test, reload, flash }: { test: any; reload: () => void
         <div><button className="btn btn-sm" disabled={busy} onClick={addSec}><Plus size={14} />Add section</button></div></div>
       <div className="alert alert-warn" style={{ alignItems: "center" }}><TriangleAlert size={16} /><span style={{ flex: 1 }}>Reset removes every student's attempts, results and leaderboard entries for this test, but keeps the test and its questions.</span><button className="btn btn-sm btn-danger" onClick={() => setAskReset(true)}><RotateCcw size={14} />Reset attempts</button></div>
     </div>
-    {askReset && <div className="modal-bg" onClick={() => setAskReset(false)}><div className="card modal stack" style={{ gap: 12 }} onClick={(e) => e.stopPropagation()}><h3 className="card-title">Reset all attempts of "{test.name}"?</h3><p className="sub">This cannot be undone.</p><div className="row" style={{ justifyContent: "flex-end" }}><button className="btn" onClick={() => setAskReset(false)}>Cancel</button><button className="btn btn-danger" onClick={reset}>Reset</button></div></div></div>}
+    <ConfirmDialog open={askReset} danger title={`Reset all attempts of "${test.name}"?`} confirmLabel="Reset" onCancel={() => setAskReset(false)} onConfirm={reset}>This cannot be undone.</ConfirmDialog>
   </details>;
 }
 
@@ -359,7 +357,7 @@ function QuestionManager({ test, reload, flash }: { test: any; reload: () => voi
     catch (e: any) { flash("bad", e.message); } finally { setBusy(false); }
   };
   const remove = async () => { setBusy(true); try { const r = await api(`/questions/${del.id}`, "DELETE"); flash("ok", r.detached ? "Question removed from the test (students' history is preserved)." : "Question deleted."); setDel(null); load(); reload(); } catch (e: any) { flash("bad", e.message); } finally { setBusy(false); } };
-  if (!data) return <Loading />;
+  if (!data) return <SkeletonPage />;
   const needle = q.trim().toLowerCase();
   return <div className="stack">
     <section className="card card-pad stack"><div className="row between"><div><h2 className="card-title">Manage questions</h2><p className="sub">Fix wrong answers, change topics, delete bad questions. Auto-tag detects subject and topic for every question so Smart Coach can rate students out of 100.</p></div>
@@ -372,8 +370,7 @@ function QuestionManager({ test, reload, flash }: { test: any; reload: () => voi
         <div style={{ display: "grid", gap: 3, marginTop: 6, fontSize: ".88rem" }}>{x.options.map((o: any) => <div key={o.key} style={{ color: o.key === x.correctKey ? "var(--ok)" : undefined, fontWeight: o.key === x.correctKey ? 700 : 500 }}>{o.key}. {o.text}{o.key === x.correctKey && " ✓"}</div>)}</div>
         <div className="row" style={{ gap: 6, marginTop: 8 }}>{x.subject ? <span className="tag-chip">{subjects.find((z) => z.key === x.subject)?.name ?? x.subject}</span> : <span className="pill pill-warn">no subject</span>}{x.topic ? <span className="pill">{x.topic}</span> : <span className="pill pill-warn">no topic</span>}<span className="pill">{x.difficulty.toLowerCase()}</span>
           {x.analytics && <span className={`pill ${x.analytics.attempts >= 5 && x.analytics.correctPct < 20 ? "pill-bad" : ""}`}>{x.analytics.correctPct}% correct · {x.analytics.attempts} attempts · {x.analytics.avgSec}s{x.analytics.attempts >= 5 && x.analytics.correctPct < 20 ? " · check the answer key!" : ""}</span>}</div></div>)}</section>)}
-    {edit && <div className="modal-bg" onClick={() => !busy && setEdit(null)}><div className="card modal stack" style={{ gap: 10, maxWidth: 640, maxHeight: "90vh", overflow: "auto" }} onClick={(e) => e.stopPropagation()}>
-      <h3 className="card-title">Edit question</h3>
+    <Modal open={!!edit} onClose={() => !busy && setEdit(null)} title="Edit question" width={640} dismissible={!busy}>{edit && <div className="stack" style={{ gap: 10 }}>
       <textarea className="textarea" rows={3} value={edit.text} onChange={(e) => setEdit({ ...edit, text: e.target.value })} />
       {edit.options.map((o: any, i: number) => <div key={o.key} className="row" style={{ flexWrap: "nowrap" }}><label className="row" style={{ gap: 6, flexWrap: "nowrap", width: 70 }}><input type="radio" name="ck" checked={edit.correctKey === o.key} onChange={() => setEdit({ ...edit, correctKey: o.key })} /><b>{o.key}</b></label><input className="input" value={o.text} onChange={(e) => setEdit({ ...edit, options: edit.options.map((z: any, j: number) => j === i ? { ...z, text: e.target.value } : z) })} /></div>)}
       <p className="hint">Select the radio next to the correct option.</p>
@@ -381,7 +378,7 @@ function QuestionManager({ test, reload, flash }: { test: any; reload: () => voi
         <div><label className="label">Topic</label><input className="input" value={edit.topic ?? ""} onChange={(e) => setEdit({ ...edit, topic: e.target.value })} /></div>
         <div><label className="label">Difficulty</label><select className="input" value={edit.difficulty} onChange={(e) => setEdit({ ...edit, difficulty: e.target.value })}><option>EASY</option><option>MEDIUM</option><option>HARD</option></select></div></div>
       <div><label className="label">Explanation</label><textarea className="textarea" rows={2} value={edit.explanation ?? ""} onChange={(e) => setEdit({ ...edit, explanation: e.target.value })} /></div>
-      <div className="row" style={{ justifyContent: "flex-end" }}><button className="btn" disabled={busy} onClick={() => setEdit(null)}>Cancel</button><button className="btn btn-primary" disabled={busy} onClick={save}><Save size={15} />Save</button></div></div></div>}
-    {del && <div className="modal-bg" onClick={() => setDel(null)}><div className="card modal stack" style={{ gap: 12 }} onClick={(e) => e.stopPropagation()}><h3 className="card-title">Delete this question?</h3><p className="sub">{del.text.slice(0, 140)}</p><p className="sub">If students already answered it, it is removed from the test but their history stays intact.</p><div className="row" style={{ justifyContent: "flex-end" }}><button className="btn" onClick={() => setDel(null)}>Cancel</button><button className="btn btn-danger" disabled={busy} onClick={remove}><Trash2 size={15} />Delete</button></div></div></div>}
+      <div className="row" style={{ justifyContent: "flex-end" }}><button className="btn" disabled={busy} onClick={() => setEdit(null)}>Cancel</button><button className="btn btn-primary" disabled={busy} onClick={save}><Save size={15} />Save</button></div></div>}</Modal>
+    <ConfirmDialog open={!!del} danger busy={busy} title="Delete this question?" confirmLabel="Delete" onCancel={() => setDel(null)} onConfirm={remove}>{del?.text.slice(0, 140)}<br />If students already answered it, it is removed from the test but their history stays intact.</ConfirmDialog>
   </div>;
 }

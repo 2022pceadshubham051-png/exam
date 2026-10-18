@@ -1,20 +1,20 @@
 import { useEffect, useState } from "react"; import { useParams, Link } from "react-router-dom";
-import { CircleCheck, CircleX, MinusCircle, ArrowLeft, Clock, Lightbulb, Sparkles } from "lucide-react";
-import { api } from "../lib/api"; import Shell, { Loading } from "../components/Shell";
+import { CircleCheck, CircleX, MinusCircle, ArrowLeft, Clock, Lightbulb, Sparkles, BookOpen } from "lucide-react";
+import { api } from "../lib/api"; import Shell from "../components/Shell"; import { SkeletonPage } from "../components/ui";
 
 const SUBJ: Record<string, string> = { reasoning: "Reasoning", quant: "Maths / Quant", english: "English", ga: "General Awareness", science: "General Science", computer: "Computer", hindi: "Hindi", physics: "Physics", cs: "CS & IT", electronics: "Electronics" };
 export default function Review() {
   const { attemptId } = useParams(); const [d, setD] = useState<any>(null); const [err, setErr] = useState(""); const [f, setF] = useState("all");
   useEffect(() => { api(`/attempts/${attemptId}/review`).then(setD).catch((e) => setErr(e.message)); }, [attemptId]);
   if (err) return <Shell narrow><div className="alert alert-bad">{err}</div></Shell>;
-  if (!d) return <Shell narrow><Loading text="Loading your answers" /></Shell>;
+  if (!d) return <Shell narrow><SkeletonPage /></Shell>;
   const st = (r: any) => (r.selectedKey ? (r.isCorrect ? "correct" : "wrong") : "skipped");
   const txt = (r: any, k: string | null) => (k ? `${k}. ${r.options?.find((o: any) => o.key === k)?.text ?? ""}` : "Not answered");
   const all = d.rows.map((r: any, i: number) => ({ ...r, n: i + 1 })); const rows = all.filter((r: any) => f === "all" || st(r) === f);
   const count = (k: string) => (k === "all" ? all.length : all.filter((r: any) => st(r) === k).length);
   const wrongTopics = [...new Set(all.filter((r: any) => st(r) === "wrong" && r.topic).map((r: any) => r.topic))].slice(0, 6) as string[];
   return <Shell narrow><div className="stack">
-    <div className="row between"><div><h1 style={{ fontSize: "1.5rem", fontWeight: 800 }}>{d.testName}</h1><p className="sub">Attempt #{d.attemptNo} answer review</p></div><Link className="btn" to={`/result/${attemptId}`}><ArrowLeft size={16} />Back to result</Link></div>
+    <div className="row between"><div><h1 style={{ fontSize: "1.5rem", fontWeight: 800 }}><BookOpen size={22} className="book-flip" aria-hidden="true" />{d.testName}</h1><p className="sub">Attempt #{d.attemptNo} answer review</p></div><Link className="btn" to={`/result/${attemptId}`}><ArrowLeft size={16} />Back to result</Link></div>
     {wrongTopics.length > 0 && <div className="card card-pad stack" style={{ gap: 8 }}><b>Practice the topics you got wrong</b><div className="row">{wrongTopics.map((t) => <Link key={t} className="btn btn-sm" to={`/exam/${d.testId}?mode=practice&topic=${encodeURIComponent(t)}`}><Sparkles size={14} />{t}</Link>)}</div></div>}
     <div className="seg" style={{ width: "fit-content", maxWidth: "100%", overflowX: "auto" }}>{["all", "correct", "wrong", "skipped"].map((k) => <button key={k} onClick={() => setF(k)} className={f === k ? "on" : ""} style={{ textTransform: "capitalize" }}>{k}<span className="pill">{count(k)}</span></button>)}</div>
     {rows.map((r: any) => <article key={r.n} className={`card q-card ${st(r)}`}>

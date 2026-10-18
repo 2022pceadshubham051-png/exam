@@ -1,22 +1,19 @@
 import { useEffect, useState } from "react"; import { useParams, Link, useNavigate } from "react-router-dom";
 import { Eye, Target, Clock, CircleCheck, CircleX, MinusCircle, TrendingUp, TrendingDown, ArrowRight, Sparkles, LayoutDashboard, Trash2, Compass, Trophy } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { api, fmt } from "../lib/api"; import Shell, { Loading } from "../components/Shell"; import AdSlot from "../components/AdSlot";
-import { CapToss } from "../components/StudyFx"; import { TeacherAvatar } from "../components/Scenes"; import { comicBurst } from "../components/Confetti"; import { confetti } from "../components/Confetti"; import { stars, sfx } from "../lib/game";
+import { api, fmt } from "../lib/api"; import Shell from "../components/Shell"; import AdSlot from "../components/AdSlot";
+import { Medal, Sparkline } from "../components/Achievement"; import { JourneyStrip } from "../components/Journey"; import { cachedProfile } from "../lib/profile"; import { ConfirmDialog, PageHeader, SkeletonResult, useCountUp } from "../components/ui";
+const MarksCount = ({ n }: { n: number }) => <>{useCountUp(n)}</>; import { stars, sfx } from "../lib/game";
 
-function CountUp({ to, suffix = "" }: { to: number; suffix?: string }) {
-  const [v, setV] = useState(0);
-  useEffect(() => { let raf = 0; const t0 = performance.now(); const tick = (t: number) => { const k = Math.min(1, (t - t0) / 1100); setV(Math.round(to * (1 - Math.pow(1 - k, 3)))); if (k < 1) raf = requestAnimationFrame(tick); }; raf = requestAnimationFrame(tick); return () => cancelAnimationFrame(raf); }, [to]);
-  return <>{v}{suffix}</>;
-}
 
 const tone: Record<string, [string, string]> = { GREAT: ["Great improvement", "pill-ok"], IMPROVING: ["You are improving", "pill-ok"], STABLE: ["Performance stable", "pill-brand"], DROPPED: ["Performance dropped", "pill-bad"], FIRST: ["First attempt", "pill-brand"] };
 
-export function Ring({ value, label }: { value: number; label: string }) {
+export function Ring({ value, label, pass }: { value: number; label: string; pass?: boolean }) {
+  const shown = useCountUp(Math.round(value));
   const r = 62, c = 2 * Math.PI * r, off = c * (1 - Math.max(0, Math.min(100, value)) / 100);
-  return <div className="ring-wrap"><svg width="150" height="150" viewBox="0 0 150 150"><defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#4f46e5" /><stop offset="100%" stopColor="#c026d3" /></linearGradient></defs>
-    <circle cx="75" cy="75" r={r} fill="none" stroke="var(--surface-2)" strokeWidth="13" /><circle cx="75" cy="75" r={r} fill="none" stroke="url(#rg)" strokeWidth="13" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={off} transform="rotate(-90 75 75)" style={{ transition: "stroke-dashoffset .8s" }} /></svg>
-    <div className="ring-v"><b>{Math.round(value)}%</b><small>{label}</small></div></div>;
+  return <div className={`ring-wrap${pass ? " pass" : ""}`}><svg width="150" height="150" viewBox="0 0 150 150"><defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="var(--brand)" /><stop offset="100%" stopColor="var(--brand)" /></linearGradient></defs>
+    <circle cx="75" cy="75" r={r} fill="none" stroke="var(--surface-2)" strokeWidth="13" /><circle cx="75" cy="75" r={r} fill="none" stroke="url(#rg)" strokeWidth="13" strokeLinecap="round" strokeDasharray={c} transform="rotate(-90 75 75)" style={{ "--off": off, "--c": c } as any} /></svg>
+    <div className="ring-v"><b>{shown}%</b><small>{label}</small></div></div>;
 }
 
 export default function Result() {
@@ -24,9 +21,9 @@ export default function Result() {
   useEffect(() => { api(`/results/${attemptId}`).then(setD).catch((e) => setErr(e.message)); }, [attemptId]);
   const remove = async () => { setDelBusy(true); setDelErr(""); try { await api(`/attempts/${attemptId}`, "DELETE"); nav("/dashboard", { replace: true }); } catch (e: any) { setDelErr(e.message); setDelBusy(false); } };
   const winPct: number | null = d?.result ? d.result.percentage : null; const winPass = winPct !== null && winPct >= (d?.passingPercent ?? 40);
-  useEffect(() => { if (winPct === null) return; const t = setTimeout(() => { if (winPass) { confetti(winPct >= 85 ? 160 : 90); comicBurst("good", winPct >= 85 ? "LEGEND!" : "CLEARED!"); sfx("win"); } else sfx("pop"); }, 450); return () => clearTimeout(t); }, [winPct, winPass]);
-  if (err) return <Shell><div className="alert alert-bad">{err}</div></Shell>;
-  if (!d) return <Shell><Loading text="Calculating your result" /></Shell>;
+  useEffect(() => { if (winPct === null) return; const t = setTimeout(() => sfx(winPass ? "win" : "pop"), 300); return () => clearTimeout(t); }, [winPct, winPass]);
+  if (err) return <Shell><div className="alert alert-bad" role="alert">{err}</div></Shell>;
+  if (!d) return <Shell><SkeletonResult /></Shell>;
   if (d.showResult === false) return <Shell><div className="card card-pad stack" style={{ maxWidth: 620, margin: "12vh auto" }}><h1 style={{ fontSize: "1.5rem", fontWeight: 800 }}>Result is hidden</h1><p className="sub">The administrator has disabled immediate result viewing for this test. Your attempt has still been saved.</p><div><Link className="btn btn-primary" to="/dashboard"><LayoutDashboard size={16} />Back to dashboard</Link></div></div></Shell>;
   const r = d.result, c = d.comparison; const [tl, tc] = c ? (tone[c.status] ?? ["", ""]) : ["", ""];
   const passed = r.percentage >= (d.passingPercent ?? 40);
@@ -38,15 +35,13 @@ export default function Result() {
   const stat = (I: any, l: string, v: string | number, col?: string) => <div className="stat"><div className="stat-l"><I size={14} color={col} />{l}</div><div className="stat-v">{v}</div></div>;
   return <Shell>
     <div className="stack" style={{ gap: 22 }}>
-      <div className="row between"><div><h1 style={{ fontSize: "1.7rem", fontWeight: 800 }}>Your result</h1><p className="sub">Attempt #{d.attemptNo} · <span className={`pill ${d.adaptive ? "pill-ok" : d.mode === "PRACTICE" ? "pill-brand" : ""}`}>{d.adaptive ? "Adaptive practice" : d.mode === "PRACTICE" ? "Practice" : "Exam"}</span></p></div>
+      <div className="row between"><div><h1 className="h1">{r.percentage >= 85 ? "Excellent result" : passed ? "Test cleared" : "Result"}</h1><p className="sub" aria-label={`${stars(r.percentage)} of 3 stars`}>{"★".repeat(stars(r.percentage))}{"☆".repeat(3 - stars(r.percentage))} · Attempt #{d.attemptNo} · <span className={`pill ${d.adaptive ? "pill-ok" : d.mode === "PRACTICE" ? "pill-brand" : ""}`}>{d.adaptive ? "Adaptive practice" : d.mode === "PRACTICE" ? "Practice" : "Exam"}</span></p></div>
         <div className="row"><Link className="btn" to="/dashboard"><LayoutDashboard size={16} />Dashboard</Link><Link className="btn" to={`/exam/${d.testId}`}><ArrowRight size={16} />Retake</Link><Link className="btn btn-primary" to={`/review/${attemptId}`}><Eye size={16} />Review answers</Link><button className="btn btn-danger" onClick={() => setAskDel(true)}><Trash2 size={16} />Delete</button></div></div>
-      <section className="card card-pad result-hero">
-        <div className="result-mascot"><div className="result-cast"><TeacherAvatar size={128} cheer={passed} />{passed && <CapToss />}</div><div className="stars">{[0, 1, 2].map((n) => <span key={n} className={n < stars(r.percentage) ? "on" : ""} style={{ "--i": n } as any}>★</span>)}</div>
-          <div className="result-say">{r.percentage >= 85 ? "Legendary run!" : passed ? "Level cleared!" : "So close! Try again."}</div></div>
-      </section>
+            <section className="card card-pad row" style={{ gap: 20, alignItems: "center" }}><Medal pct={r.percentage} /><div style={{ flex: 1, minWidth: 240 }}><JourneyStrip value={r.percentage} goal={cachedProfile()?.targetScore ?? null} label="This attempt" arrived="You reached your goal" /></div></section>
+      <Sparkline testId={d.testId} />
       <section className="card card-pad row" style={{ gap: 30 }}>
-        <Ring value={r.percentage} label="score" />
-        <div style={{ flex: 1, minWidth: 220 }}><div className="stat-l">Marks obtained</div><div style={{ fontSize: "2.4rem", fontWeight: 800, letterSpacing: "-.03em" }}><CountUp to={Math.round(r.score)} /> <span className="muted" style={{ fontSize: "1.2rem" }}>/ {r.totalMarks}</span></div>
+        <Ring value={r.percentage} label="score" pass={passed} />
+        <div style={{ flex: 1, minWidth: 220 }}><div className="stat-l">Marks obtained</div><div style={{ fontSize: "2.4rem", fontWeight: 800, letterSpacing: "-.03em" }}><MarksCount n={Math.round(r.score)} /> <span className="muted" style={{ fontSize: "1.2rem" }}>/ {r.totalMarks}</span></div>
           <div className="row" style={{ marginTop: 8, gap: 8 }}><span className={`pill ${tc}`}>{tl}</span><span className={`pill ${passed ? "pill-ok" : "pill-bad"}`}>{passed ? "Passed" : "Below passing score"}</span><span className="pill pill-warn">+{30 + Math.round(r.percentage)} XP</span></div><p className="sub" style={{ marginTop: 10, fontSize: ".92rem" }}>{c?.message ?? (d.adaptive ? "Your adaptive session was built from your previous exam performance. Use the review to see where your time and accuracy changed." : "This attempt has been saved to your history.")}</p></div></section>
       <section className="grid-stats">{stat(Target, "Accuracy", `${r.accuracy}%`)}{stat(CircleCheck, "Correct", r.correct, "#16a34a")}{stat(CircleX, "Wrong", r.incorrect, "#dc2626")}{stat(MinusCircle, "Skipped", r.unanswered)}{stat(Clock, "Time taken", fmt(r.timeTakenSec))}</section>
       {c?.delta && <section className="card card-pad stack" style={{ gap: 10 }}><h2 className="card-title row" style={{ gap: 8 }}><Sparkles size={18} />Compared with your last attempt</h2>
@@ -63,6 +58,6 @@ export default function Result() {
         <div className="card table-wrap" style={{ boxShadow: "none" }}><table className="t"><thead><tr><th>Topic</th><th>Questions</th><th>Correct</th><th>Wrong</th><th>Accuracy</th><th>Avg time</th></tr></thead><tbody>{topics.map((t: any) => <tr key={t.name}><td><b>{t.name}</b></td><td>{t.total}</td><td>{t.correct}</td><td>{t.incorrect}</td><td><span className={`pill ${t.accuracy >= 70 ? "pill-ok" : t.accuracy >= 40 ? "pill-warn" : "pill-bad"}`}>{t.accuracy}%</span></td><td>{t.avgTimeSec}s</td></tr>)}</tbody></table></div></section>}
       <AdSlot />
       <div className="row"><Link className="btn" to="/progress">See overall progress<ArrowRight size={16} /></Link><Link className="btn btn-primary" to="/coach"><Compass size={16} />What should I improve next?</Link></div>
-      {askDel && <div className="modal-bg" onClick={() => !delBusy && setAskDel(false)}><div className="card modal stack" style={{ gap: 12 }} onClick={(e) => e.stopPropagation()}><h3 className="card-title">Delete this attempt?</h3><p className="sub">The attempt, answers and result are removed from your history, progress and Smart Coach. This cannot be undone.</p>{delErr && <div className="alert alert-bad">{delErr}</div>}<div className="row" style={{ justifyContent: "flex-end" }}><button className="btn" disabled={delBusy} onClick={() => setAskDel(false)}>Cancel</button><button className="btn btn-danger" disabled={delBusy} onClick={remove}><Trash2 size={15} />{delBusy ? "Deleting..." : "Delete"}</button></div></div></div>}
+      <ConfirmDialog open={askDel} danger busy={delBusy} error={delErr} title="Delete this attempt?" confirmLabel="Delete" onCancel={() => setAskDel(false)} onConfirm={remove}>The attempt, answers and result are removed from your history, progress and Smart Coach. This cannot be undone.</ConfirmDialog>
     </div></Shell>;
 }

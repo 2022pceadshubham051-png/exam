@@ -290,7 +290,12 @@ a.mini { display: flex; align-items: center; text-decoration: none; color: var(-
 .tring .t { fill: none; stroke: var(--line); stroke-width: 8; }
 .tring .p { fill: none; stroke: var(--accent); stroke-width: 8; stroke-linecap: round; }
 .tring.brk .p { stroke: var(--good); }
-.tring .c { position: absolute; inset: 0; display: grid; place-content: center; gap: 2px; }
+.tring.run .hg { animation: hgflip 4s ease-in-out infinite; transform-origin: 50% 50%; }
+.tring.run .hg .sand { animation: hgsand 4s linear infinite; transform-origin: 11px 4px; }
+@keyframes hgflip { 0%, 85% { transform: rotate(0); } 100% { transform: rotate(180deg); } }
+@keyframes hgsand { 0% { transform: scaleY(1); } 85%, 100% { transform: scaleY(.2); } }
+@media (prefers-reduced-motion: reduce) { .tring.run .hg, .tring.run .hg .sand { animation: none; } }
+.tring .c { position: absolute; inset: 0; display: grid; place-content: center; gap: 2px; padding-top: 4px; }
 .tring .tm { font-family: var(--f-display); font-weight: 800; font-size: 54px; letter-spacing: -0.03em; line-height: 1; }
 .setrow { display: flex; gap: 10px 18px; align-items: center; justify-content: center; flex-wrap: wrap; }
 select { background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; max-width: 100%; }
@@ -419,35 +424,13 @@ html.embed .panel, html.embed .strip, html.embed .sheet, html.embed .empty { bor
 html.embed .course.on { border-radius: 16px; box-shadow: var(--ef-shadow-1, none); }
 html.embed .lec, html.embed .ms, html.embed .rv, html.embed .noteitem, html.embed .mockrow, html.embed .badge, html.embed .fcard, html.embed .tlr, html.embed .big-note, html.embed .banner { border-radius: 16px; }
 html.embed .btn, html.embed .ghost, html.embed select, html.embed .field input, html.embed .field textarea { border-radius: 14px; }
-html.embed .btn { font-family: var(--f-body); font-weight: 650; box-shadow: none; border-radius: 12px; }
+html.embed .btn { font-weight: 800; box-shadow: var(--ef-shadow-1, none); }
 html.embed .btn.line { box-shadow: none; }
-html.embed h1, html.embed h2, html.embed h3, html.embed .btn { font-family: var(--f-body); }
-/* Keep the embedded planner visually native to ExamForge across every theme. */
-html.embed .panel, html.embed .strip, html.embed .sheet, html.embed .empty {
-  border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--ef-shadow, none); backdrop-filter: none;
-}
-html.embed .course.on { border-color: var(--accent); outline: none; box-shadow: var(--ef-shadow-1, none); }
-html.embed .cd.today { border-width: 1px; }
-html.embed .cd.sel { outline: 2px solid var(--accent); outline-offset: 1px; }
-html.embed .btn:not(.line) { background: var(--accent); color: var(--accent-ink); border: 1px solid var(--accent); }
-html.embed .btn.line, html.embed .ghost { background: var(--surface); color: var(--fg); border: 1px solid var(--line); }
+html.embed h1, html.embed h2, html.embed h3, html.embed .brand, html.embed .btn { font-family: var(--f-display); }
+html.embed[data-efstyle="toon"] .panel, html.embed[data-efstyle="toon"] .strip, html.embed[data-efstyle="toon"] .sheet, html.embed[data-efstyle="toon"] .empty { border: 3px solid var(--ef-ink); }
+html.embed[data-efstyle="toon"] .btn { border: 3px solid var(--ef-ink); }
+html.embed[data-efstyle="astra"] .panel, html.embed[data-efstyle="astra"] .strip, html.embed[data-efstyle="astra"] .sheet, html.embed[data-efstyle="astra"] .empty { border: 1.5px solid rgb(150 130 255 / .45); backdrop-filter: blur(10px); }
 html.embed .overlay { background: var(--scrim); }
-/* ExamForge integration: remove the standalone two-column workspace and let the planner use the same page flow as the rest of the app. */
-html.embed body { padding-bottom: 8px; }
-html.embed .app { max-width: none; gap: 18px; }
-html.embed .top { min-height: 0; margin-bottom: 0; }
-html.embed .layout { display: flex; flex-direction: column; gap: 18px; }
-html.embed .side { position: static; display: grid; gap: 8px; width: 100%; padding: 0; background: transparent; border: 0; box-shadow: none; }
-html.embed .side-head { padding: 0 2px; }
-html.embed .list { display: flex; flex-wrap: wrap; gap: 8px; overflow: visible; padding: 0; }
-html.embed .course { flex: 1 1 180px; min-width: 0; max-width: 100%; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: transparent; }
-html.embed .course:hover, html.embed .course.on { background: var(--surface); }
-html.embed .course.on { border-color: var(--accent); }
-html.embed main#main { width: 100%; min-width: 0; }
-@media (max-width: 600px) {
-  html.embed .course { flex-basis: 145px; }
-  html.embed .top { gap: 8px; }
-}
 </style>
 
 <div class="app">
@@ -1208,8 +1191,8 @@ html.embed main#main { width: 100%; min-width: 0; }
     var perHr = total >= 30 ? (totalX / (total / 60)).toFixed(1) : '—';
     return '<div class="pane"><section class="cols even">' +
       '<div class="panel timer"><span class="label" id="tmMode">' + (isBreak ? 'Break time' : 'Focus session') + '</span>' +
-      '<div class="tring' + (isBreak ? ' brk' : '') + '" id="tmWrap"><svg viewBox="0 0 220 220" aria-hidden="true"><circle class="t" cx="110" cy="110" r="96"/><circle class="p" id="tmRing" cx="110" cy="110" r="96" stroke-dasharray="' + (RC * rem / focus.total).toFixed(1) + ' ' + RC.toFixed(1) + '"/></svg>' +
-      '<div class="c"><span class="tm num" id="tmText">' + mmss(rem) + '</span><span class="note">' + (focus.running ? 'running' : 'paused') + '</span></div></div>' +
+      '<div class="tring' + (isBreak ? ' brk' : '') + (focus.running ? ' run' : '') + '" id="tmWrap"><svg viewBox="0 0 220 220" aria-hidden="true"><circle class="t" cx="110" cy="110" r="96"/><circle class="p" id="tmRing" cx="110" cy="110" r="96" stroke-dasharray="' + (RC * rem / focus.total).toFixed(1) + ' ' + RC.toFixed(1) + '"/></svg>' +
+      '<div class="c"><svg class="hg" width="14" height="18" viewBox="0 0 22 28" aria-hidden="true" style="margin:0 auto 4px"><path d="M3 2h16M3 26h16" stroke="var(--muted)" stroke-width="2" stroke-linecap="round"/><path d="M5 2c0 7 5 8 6 12-1 4-6 5-6 12h12c0-7-5-8-6-12 1-4 6-5 6-12z" fill="none" stroke="var(--muted)" stroke-width="1.6" stroke-linejoin="round"/><path class="sand" d="M7 4h8c-1 4-3 5-4 7-1-2-3-3-4-7z" fill="var(--accent)"/></svg><span class="tm num" id="tmText">' + mmss(rem) + '</span><span class="note">' + (focus.running ? 'running' : 'paused') + '</span></div></div>' +
       '<div class="actions" style="justify-content:center"><button class="btn" type="button" data-act="ftoggle">' + (focus.running ? 'Pause' : (rem < focus.total ? 'Resume' : 'Start')) + '</button><button class="btn line" type="button" data-act="freset">Reset</button><button class="btn line" type="button" data-act="fskip">' + (isBreak ? 'Skip break' : 'Finish early') + '</button></div>' +
       (isBreak ? '' : '<div class="actions" style="justify-content:center;align-items:center"><button class="btn line" type="button" data-act="fdist">Got distracted (+1)</button><span class="note num">' + focus.dist + ' this session</span></div>') +
       '<div class="actions" style="justify-content:center"><button class="btn line" type="button" data-act="zen">Zen mode</button></div>' + soundHtml() + '<div class="setrow"><span class="label">Focus</span>' + segHtml('flen', [[15, '15'], [25, '25'], [45, '45'], [50, '50']], state.settings.focusLen, focus.running) + '<span class="label">Break</span>' + segHtml('blen', [[5, '5'], [10, '10'], [15, '15']], state.settings.breakLen, focus.running) + '</div>' +

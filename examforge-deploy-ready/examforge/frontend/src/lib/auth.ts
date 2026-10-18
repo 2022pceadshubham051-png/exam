@@ -8,18 +8,5 @@ export function getMe(): Me {
   } catch { return null; }
 }
 export const logout = () => { localStorage.removeItem("token"); location.href = "/login"; };
-export type Style = "aura" | "astra";
-export const STYLES: Style[] = ["aura", "astra"];
-export const STYLE_NAMES: Record<Style, string> = { aura: "Aura (clean)", astra: "Astra (dark space)" };
-export function getStyle(): Style { const c = document.documentElement.classList; return c.contains("astra") ? "astra" : "aura"; }
-export const isAstra = () => getStyle() === "astra";
-export function setStyle(s: Style) {
-  const root = document.documentElement; root.classList.remove("aura", "astra");
-  root.classList.add(s);
-  let pref = ""; try { pref = localStorage.getItem("theme") || ""; localStorage.setItem("ef_style", s); } catch { /* ignore */ }
-  if (s === "astra") root.classList.add("dark"); else root.classList.toggle("dark", pref ? pref === "dark" : matchMedia("(prefers-color-scheme: dark)").matches);
-}
-export const nextStyle = (): Style => STYLES[(STYLES.indexOf(getStyle()) + 1) % STYLES.length];
-export const cycleStyle = () => { const n = nextStyle(); setStyle(n); return n; };
-export const isDark = () => document.documentElement.classList.contains("dark");
-export function toggleTheme() { if (isAstra()) { setStyle("aura"); return; } const d = document.documentElement.classList.toggle("dark"); try { localStorage.setItem("theme", d ? "dark" : "light"); } catch { /* ignore */ } }
+// Appearance helpers live in ./theme; re-exported so older imports keep working.
+export { STYLES, STYLE_NAMES, getStyle, setStyle, isDark, isAstra, toggleTheme } from "./theme";

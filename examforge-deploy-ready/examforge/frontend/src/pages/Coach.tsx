@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react"; import { Link } from "react-router-dom";
-import { TeacherScene } from "../components/Scenes";
 import { Compass, Target, Gauge, TrendingUp, ThumbsUp, TriangleAlert, Play, Clock, BookOpen, Zap, Flame, ListChecks, Info, CalendarDays, Sparkles } from "lucide-react";
-import { api } from "../lib/api"; import Shell, { Loading } from "../components/Shell"; import { Ring } from "./Result";
+import { api } from "../lib/api"; import Shell, { Loading } from "../components/Shell"; import Radar from "../components/Radar"; import { PageHeader } from "../components/ui"; import { Ring } from "./Result";
 
 const levelPill: Record<string, string> = { Strong: "pill-ok", Good: "pill-ok", Average: "pill-warn", Weak: "pill-bad", Critical: "pill-bad" };
 const levelColor = (s: number) => (s >= 80 ? "#16a34a" : s >= 65 ? "#65a30d" : s >= 50 ? "#d97706" : s >= 35 ? "#ea580c" : "#dc2626");
@@ -42,27 +41,24 @@ export default function Coach() {
   const bp = d?.exam;
 
   return <Shell><div className="stack" style={{ gap: 22 }}>
-    <section className="hero"><div className="blob" style={{ width: 220, height: 220, background: "#22d3ee", right: -40, top: -60 }} /><div className="hero-mascot"><TeacherScene className="sc-round" /></div>
-      <span className="pill pill-brand" style={{ position: "relative" }}><Compass size={14} />Smart Coach</span>
-      <h1 style={{ marginTop: 10 }}>What should you work on next?</h1>
-      <p>Pick your exam. ExamForge auto-detects the subject and topic of every question you solve (Reasoning, Maths, English, GA, Technical...), rates each one out of 100 and ranks what will add the most marks.</p></section>
+    <PageHeader title="What should you work on next?" sub="Pick your exam. ExamForge detects the subject and topic of every question you solve, rates each out of 100 and ranks what will add the most marks." />
 
     <section className="card card-pad stack">
       <div className="row between"><div><h2 className="card-title">1. Which exam are you preparing for?</h2><p className="sub">Subjects and weightage come from the exam pattern. Your choice is saved.</p></div>
-        <div className="seg">{GROUPS.map((g) => <button key={g} className={group === g ? "on" : ""} onClick={() => { setGroup(g); if (g === "Custom") setExam("custom"); else { const f = exams.find((e) => e.group === g); if (f) setExam(f.id); } }}>{g}</button>)}</div></div>
-      {group !== "Custom" ? <div className="grid-auto" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(230px,1fr))" }}>{inGroup.map((e) => <button key={e.id} className={`mode-card ${exam === e.id ? "chosen" : ""}`} onClick={() => setExam(e.id)} style={{ textAlign: "left" }}>
+        <div className="seg" role="group" aria-label="Exam group">{GROUPS.map((g) => <button key={g} aria-pressed={group === g} className={group === g ? "on" : ""} onClick={() => { setGroup(g); if (g === "Custom") setExam("custom"); else { const f = exams.find((e) => e.group === g); if (f) setExam(f.id); } }}>{g}</button>)}</div></div>
+      {group !== "Custom" ? <div className="grid-auto" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(230px,1fr))" }}>{inGroup.map((e) => <button key={e.id} aria-pressed={exam === e.id} className={`mode-card ${exam === e.id ? "chosen" : ""}`} onClick={() => setExam(e.id)} style={{ textAlign: "left" }}>
         <span><b>{e.name}</b><small>{e.stage} · {e.subjects.length} subjects · {e.totalQuestions} Q · {e.durationMin} min</small></span><span className="mode-check">{exam === e.id ? "✓" : ""}</span></button>)}</div>
         : <div className="stack" style={{ gap: 10 }}><p className="sub">Set your own weightage (any numbers, they are converted to percentages).</p>
           <div className="form-grid">{catalog.subjects.map((s: any) => <div key={s.key}><label className="label">{s.name}</label><input className="input" type="number" min={0} max={500} value={weights[s.key] ?? 0} onChange={(e) => setWeights({ ...weights, [s.key]: +e.target.value })} /></div>)}</div></div>}
       <div className="form-grid">
-        <div><label className="label">Data to analyse</label><div className="seg" style={{ width: "100%" }}>{[["all", "Exam + Practice"], ["exam", "Exam only"], ["practice", "Practice only"]].map(([k, l]) => <button key={k} style={{ flex: 1, justifyContent: "center" }} className={scope === k ? "on" : ""} onClick={() => setScope(k)}>{l}</button>)}</div></div>
-        <div><label className="label">Your target rating: <b>{target}/100</b></label><input type="range" min={40} max={100} step={5} value={target} onChange={(e) => setTarget(+e.target.value)} style={{ width: "100%" }} /></div>
+        <div><label className="label">Data to analyse</label><div className="seg" style={{ width: "100%" }}>{[["all", "Exam + Practice"], ["exam", "Exam only"], ["practice", "Practice only"]].map(([k, l]) => <button key={k} aria-pressed={scope === k} style={{ flex: 1, justifyContent: "center" }} className={scope === k ? "on" : ""} onClick={() => setScope(k)}>{l}</button>)}</div></div>
+        <div><label className="label" htmlFor="coach-target">Your target rating: <b>{target}/100</b></label><input id="coach-target" type="range" min={40} max={100} step={5} value={target} onChange={(e) => setTarget(+e.target.value)} style={{ width: "100%" }} /></div>
       </div>
       {bp?.note && <div className="alert alert-info"><Info size={16} /><span>{bp.note}</span></div>}
       {bp && bp.confidence !== "high" && <div className="alert alert-warn"><TriangleAlert size={16} /><span>This pattern is approximate. Confirm marks and sections with the latest official notice.</span></div>}
     </section>
 
-    {err && <div className="alert alert-bad">{err}</div>}
+    {err && <div className="alert alert-bad" role="alert">{err}</div>}
     {(!d || (busy && !d)) ? <Loading text="Analysing every question you solved" /> : !d.attemptedAny ? <div className="card empty"><Gauge size={36} /><p>No solved questions yet. Take any test (Exam or Practice) and your ratings appear here automatically.</p><Link className="btn btn-primary" style={{ marginTop: 12 }} to="/dashboard"><Play size={16} />Open tests</Link></div> : <>
       <section className="card card-pad row" style={{ gap: 30, opacity: busy ? 0.6 : 1, transition: "opacity .2s" }}>
         <Ring value={d.readiness} label="ready" />
@@ -74,6 +70,7 @@ export default function Coach() {
           <div className="stat"><div className="stat-l"><Target size={14} />Projected marks</div><div className="stat-v">{d.projectedMarks}<small className="muted" style={{ fontSize: ".8rem" }}> / {d.totalMarks}</small></div></div>
         </div></section>
 
+      {d.subjects.filter((s: any) => s.rating).length >= 3 && <section className="card card-pad stack"><h2 className="card-title">Your subject map</h2><Radar target={d.target} items={d.subjects.filter((s: any) => s.rating).map((s: any) => ({ name: s.name, score: s.rating.score }))} /></section>}
       <section className="card card-pad stack"><div><h2 className="card-title">2. Subject-wise rating and weightage</h2><p className="sub">{bp.subjects.length} subjects in this exam. Weightage = share of total marks. Marks at stake = marks you are still losing in that subject.</p></div>
         <div className="stack" style={{ gap: 14 }}>{d.subjects.map((s: any) => <div key={s.key} className="qcard">
           <div className="row between" style={{ flexWrap: "nowrap", alignItems: "flex-start" }}>

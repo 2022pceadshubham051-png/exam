@@ -1,9 +1,12 @@
-import { useEffect, useState } from "react"; import { TeacherAvatar } from "./Scenes"; import { confetti } from "./Confetti"; import { sfx } from "../lib/game";
+import { Rocket } from "./Journey";
+import { useEffect, useState } from "react"; import { Modal } from "./ui"; import { sfx } from "../lib/game";
 export const showLevelUp = (level: number, title: string) => window.dispatchEvent(new CustomEvent("ef:levelup", { detail: { level, title } }));
-/** Full-screen "LEVEL UP!" celebration. */
+/** Level-up notice. Calm by design: a short dialog, one soft sound (if sound is on), no confetti. */
 export default function LevelUp() {
   const [d, setD] = useState<{ level: number; title: string } | null>(null);
-  useEffect(() => { const on = (e: Event) => { setD((e as CustomEvent).detail); sfx("level"); setTimeout(() => confetti(150), 250); setTimeout(() => confetti(90, { x: 0.2, y: 0.5 }), 700); setTimeout(() => confetti(90, { x: 0.8, y: 0.5 }), 900); }; window.addEventListener("ef:levelup", on); return () => window.removeEventListener("ef:levelup", on); }, []);
-  if (!d) return null;
-  return <div className="levelup" onClick={() => setD(null)}><div className="lu-rays" /><div className="lu-card"><TeacherAvatar size={120} cheer /><div className="lu-title">LEVEL UP!</div><div className="lu-level"><span>Level</span><b>{d.level}</b></div><div className="lu-rank">You are now a <b>{d.title}</b></div><button className="btn btn-primary">Awesome!</button></div></div>;
+  useEffect(() => { const on = (e: Event) => { setD((e as CustomEvent).detail); sfx("level"); }; window.addEventListener("ef:levelup", on); return () => window.removeEventListener("ef:levelup", on); }, []);
+  return <Modal open={!!d} onClose={() => setD(null)} title={d ? `You reached level ${d.level}` : ""} width={380}>
+    <Rocket /><p className="sub" style={{ fontSize: "1rem" }}>Your rank is now <b className="levelup-badge" style={{ color: "var(--gold-text)" }}>{d?.title}</b>. Levels come from the tests you complete and the practice you do.</p>
+    <div className="modal-actions"><button className="btn btn-primary" onClick={() => setD(null)}>Continue</button></div>
+  </Modal>;
 }

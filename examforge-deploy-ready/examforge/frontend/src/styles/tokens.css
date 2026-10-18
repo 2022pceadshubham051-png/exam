@@ -1,0 +1,57 @@
+/* ExamForge design tokens: the single source of truth for colour, type, space, radius, elevation, motion and layering.
+   Brand: violet (primary) + gold (restrained accent) on ivory / ink neutrals.
+   Themes: default (light), .dark, and the .astra "night" style (always dark). Lecture Pace (iframe) reads these same variables. */
+:root {
+  color-scheme: light;
+  /* neutrals */
+  --bg: #f7f5ef; --surface: #ffffff; --surface-2: #f2efe7; --surface-3: #e9e5d9;
+  --text: #1c1830; --muted: #5f5a75; --border: #e3ded1; --border-strong: #cdc6b3;
+  --ink: #1c1830; --input-border: #8a8399;
+  /* brand */
+  --brand: #5b3fd1; --brand-hover: #4a31b5; --brand-2: #7a5cf0; --brand-soft: #efebfc; --brand-ink: #ffffff;
+  --gold: #f0b429; --gold-text: #8f5b00; --gold-soft: #fdf3d9; --gold-ink: #5c3b00;
+  /* status */
+  --ok: #15803d; --ok-soft: #e3f5e8; --bad: #c62828; --bad-soft: #fde8e8; --warn: #9a5b00; --warn-soft: #fdf0d2; --info: #0b6a9a; --info-soft: #e0f1fa;
+  /* exam palette states (never colour-only: each also has a text/shape cue in the UI) */
+  --q-answered: #15803d; --q-review: #b45309; --q-both: #5b3fd1; --q-skipped: #c62828;
+  /* typography */
+  --font-ui: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Newsreader", "Iowan Old Style", Georgia, "Times New Roman", serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --fs-xs: .75rem; --fs-sm: .875rem; --fs-md: 1rem; --fs-lg: 1.125rem; --fs-xl: 1.375rem; --fs-2xl: 1.75rem; --fs-3xl: clamp(2rem, 4.2vw, 3rem);
+  --fw-regular: 400; --fw-medium: 500; --fw-semibold: 600; --fw-bold: 700;
+  /* spacing: 4px rhythm */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-10: 40px; --s-12: 48px; --s-16: 64px;
+  /* shape */
+  --r-sm: 8px; --r-md: 10px; --r-lg: 14px; --r-xl: 20px; --r-pill: 999px; --r: var(--r-lg);
+  /* elevation: flat by default, shadow only for floating layers */
+  --shadow-1: 0 1px 2px rgb(28 24 48 / .06);
+  --shadow-2: 0 8px 24px rgb(28 24 48 / .10);
+  --shadow-3: 0 20px 60px rgb(28 24 48 / .22);
+  --shadow: var(--shadow-1);
+  --ring: 0 0 0 3px color-mix(in srgb, var(--brand) 35%, transparent);
+  --focus: 2px solid var(--brand);
+  /* motion */
+  --ease: cubic-bezier(.2, .7, .2, 1); --spring: var(--ease);
+  --dur-1: 120ms; --dur-2: 200ms; --dur-3: 320ms;
+  /* layers */
+  --z-sticky: 20; --z-nav: 30; --z-dropdown: 50; --z-modal: 100; --z-toast: 120; --z-splash: 300;
+  --nav-h: 60px; --page-w: 1120px;
+}
+.dark {
+  color-scheme: dark;
+  --bg: #12101e; --surface: #1b1830; --surface-2: #231f3b; --surface-3: #2d2850;
+  --text: #ece9f8; --muted: #a8a2c2; --border: #312b52; --border-strong: #463e73; --ink: #ece9f8; --input-border: #8179a8;
+  --brand: #a591ff; --brand-hover: #bba9ff; --brand-2: #8f78ff; --brand-soft: #2a2250; --brand-ink: #15112b;
+  --gold: #f2c14e; --gold-text: #f2c14e; --gold-soft: #332a10; --gold-ink: #f7d98a;
+  --ok: #5fd38a; --ok-soft: #12301f; --bad: #ff8d8d; --bad-soft: #3b1a1d; --warn: #f2b84b; --warn-soft: #36290c; --info: #7cc7ef; --info-soft: #0f2c3d;
+  --q-answered: #5fd38a; --q-review: #f2b84b; --q-both: #a591ff; --q-skipped: #ff8d8d;
+  --shadow-1: 0 1px 2px rgb(0 0 0 / .4); --shadow-2: 0 8px 24px rgb(0 0 0 / .45); --shadow-3: 0 20px 60px rgb(0 0 0 / .6);
+}
+/* Astra: the "night" style. Same brand colours, deeper surfaces, a faint static star field. Always dark. */
+.astra {
+  --bg: #0c0a1a; --surface: #151129; --surface-2: #1d1838; --surface-3: #272150;
+  --border: #2b2551; --border-strong: #40386f; --brand-soft: #251d4d;
+}
+@media (prefers-reduced-motion: reduce) { :root { --dur-1: 1ms; --dur-2: 1ms; --dur-3: 1ms; } }
+.reduce-motion { --dur-1: 1ms; --dur-2: 1ms; --dur-3: 1ms; }

@@ -17,13 +17,13 @@ function themeCss() {
   const v: Record<string, string> = {
     "--bg": css(cs, "--bg"), "--surface": css(cs, "--surface"), "--surface-2": css(cs, "--surface-2"),
     "--fg": css(cs, "--text"), "--muted": css(cs, "--muted"),
-    "--line": css(cs, "--border", `color-mix(in srgb, ${css(cs, "--text")} 14%, transparent)`),
+    "--line": false ? css(cs, "--border") : `color-mix(in srgb, ${css(cs, "--text")} 14%, transparent)`,
     "--accent": css(cs, "--brand"), "--accent-ink": css(cs, "--brand-ink", dark ? "#0b1020" : "#ffffff"),
     "--good": css(cs, "--ok", "#16a34a"), "--warn": css(cs, "--bad", "#dc2626"),
     "--scrim": dark ? "rgba(3,6,20,.66)" : "rgba(20,30,60,.38)",
     "--f-body": body, "--f-display": display,
     "--ef-shadow": css(cs, "--shadow", "none"), "--ef-shadow-1": css(cs, "--shadow-1", "none"),
-    "--ef-r": "18px", "--ef-ink": css(cs, "--ink", "#2b1b55"),
+    "--ef-r": false ? "24px" : "22px", "--ef-ink": css(cs, "--ink", "#2b1b55"),
   };
   return `:root:root:root{${Object.entries(v).map(([k, x]) => `${k}:${x}`).join(";")};color-scheme:${dark ? "dark" : "light"}}`;
 }

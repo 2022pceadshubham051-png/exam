@@ -22,7 +22,11 @@ export const savedLevel = () => { try { return Number(localStorage.getItem("ef_l
 
 let ctx: AudioContext | null = null;
 export const soundOn = () => { try { return localStorage.getItem("ef_sound") !== "off"; } catch { return true; } };
-export const toggleSound = () => { try { localStorage.setItem("ef_sound", soundOn() ? "off" : "on"); } catch { /* ignore */ } return soundOn(); };
+export const setSound = (on: boolean) => { try { localStorage.setItem("ef_sound", on ? "on" : "off"); } catch { /* ignore */ } window.dispatchEvent(new Event("ef-theme")); return on; };
+export const toggleSound = () => setSound(!soundOn());
+/** Practice mode: reveal the answer right after picking an option. Persisted so it is not reset on every question. */
+export const instantCheckOn = () => { try { return localStorage.getItem("ef_instant") !== "off"; } catch { return true; } };
+export const setInstantCheck = (on: boolean) => { try { localStorage.setItem("ef_instant", on ? "on" : "off"); } catch { /* ignore */ } };
 const tone = (f: number, t0: number, dur: number, type: OscillatorType = "sine", vol = 0.07) => {
   if (!ctx) return; const o = ctx.createOscillator(), g = ctx.createGain(); o.type = type; o.frequency.value = f;
   g.gain.setValueAtTime(0, ctx.currentTime + t0); g.gain.linearRampToValueAtTime(vol, ctx.currentTime + t0 + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + t0 + dur);
