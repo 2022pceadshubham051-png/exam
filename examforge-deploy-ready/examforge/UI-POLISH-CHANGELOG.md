@@ -25,3 +25,14 @@ This pass focuses on shared branding, visual consistency, startup UX, and access
 ## Validation limitation
 
 A complete TypeScript type-check and Vite production build could not be completed in this environment because npm dependency installation failed while resolving packages from `registry.npmjs.org` (`EAI_AGAIN`). Run `npm ci` and `npm run build` in an environment with registry access before deploying. Browser-based end-to-end checks were not run here.
+
+
+# v38 design pass
+
+- **Type:** Archivo (headings, numbers) + Hind (body, supports Devanagari). Both self-hosted through `@fontsource`, so the Google Fonts request is gone.
+- **Palette:** the default "train" skin moves from cream to a cool paper white with railway blue and a signal-amber accent. Library and Ground skins are unchanged. Fixed low-contrast gold text in train + dark mode.
+- **Landing:** new hero with a live sample exam screen (ticking timer, answering loop), exam list, a keyboard-accessible mode switcher, a sample result report, FAQ and a single scroll-triggered "how it works" moment. All sample content is labelled as sample.
+- **Result:** tokenised colours (no hardcoded greens/reds), legend on the section chart, larger marks, percentile track on the rank card.
+- **Global:** labels in sentence case instead of tracked caps, press feedback on buttons, new 404 page (unknown URLs no longer silently redirect).
+- **Cleanup:** the unused root-level stylesheets (`aura.css`, `astra.css`, `cartoon.css` ...) were never imported; they now live in `frontend/src/_unused-css/` and can be deleted.
+- Verified: `npm run build` (tsc + vite) passes; checked in Chromium at 1280px and 390px, light and dark.

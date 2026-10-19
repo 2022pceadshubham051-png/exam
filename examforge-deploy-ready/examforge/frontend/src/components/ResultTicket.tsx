@@ -2,16 +2,12 @@ import type { ReactNode } from "react";
 import { SKIN_NAMES } from "../lib/skin";
 import { useSkin } from "./Journey"; import { useCountUp } from "./ui";
 
-// Result "ticket": a railway ticket (RRB), library card, ground scorecard, OMR sheet (SSC), passbook (banking), OPD slip (NEET) or lab report (JEE/GATE). Only real data is shown.
+// Result "ticket": a railway ticket for RRB, a library issue card, or a ground scorecard. Only real data is shown.
 export const pnr = (id: string) => { let h = 7; for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) % 9000000000; return String(h + 1000000000); };
 export const LABELS = {
   train: { head: "Mock Test Ticket", id: "PNR", test: "Train / Test", pass: "Confirmed", fail: "Waiting list", note: "Class: Practice" },
   library: { head: "Library Issue Card", id: "Card No.", test: "Title", pass: "Cleared", fail: "Re-issue", note: "Return: next attempt" },
   ground: { head: "Scorecard", id: "Chest No.", test: "Event", pass: "Qualified", fail: "Try again", note: "Round: Mock" },
-  ssc: { head: "OMR Answer Sheet", id: "Roll No.", test: "Paper", pass: "Qualified", fail: "Not qualified", note: "Tier: Mock" },
-  bank: { head: "Passbook", id: "A/c No.", test: "Entry", pass: "Credited", fail: "Pending", note: "Next entry: next attempt" },
-  neet: { head: "OPD Slip", id: "Reg. No.", test: "Case", pass: "Healthy", fail: "Follow-up", note: "Next visit: next attempt" },
-  lab: { head: "Lab Report", id: "Exp. No.", test: "Experiment", pass: "Verified", fail: "Recheck", note: "Next run: next attempt" },
 } as const;
 
 export function ResultTicket({ attemptId, testName, attemptNo, score, total, pct, passed, date, children }: { attemptId: string; testName: string; attemptNo: number; score: number; total: number; pct: number; passed: boolean; date?: string | null; children?: ReactNode }) {

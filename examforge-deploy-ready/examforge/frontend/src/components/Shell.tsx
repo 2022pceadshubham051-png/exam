@@ -1,5 +1,5 @@
 import { TrainLoader } from "./Journey"; import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react"; import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { House, LayoutDashboard, GraduationCap, ShieldCheck, UserRound, Compass } from "lucide-react"; import { useT } from "../lib/i18n";
+import { House, LayoutDashboard, Timer, Users, ShieldCheck, UserRound, Compass } from "lucide-react"; import { useT } from "../lib/i18n";
 import { getMe } from "../lib/auth"; import Tutorial from "./Tutorial"; import LevelUp from "./LevelUp"; import { BrandLockup } from "./LogoMark"; import { SiteFooter } from "./PublicShell"; import UserMenu from "./UserMenu";
 import { startSync } from "../lib/sync"; import { loadProfile, refreshCoins, cachedCoins, cachedProfile } from "../lib/profile";
 
@@ -31,9 +31,10 @@ export default function Shell({ children, narrow }: { children: ReactNode; narro
       <nav className={`nav-links app-nav ${pill ? "has-pill" : ""}`} aria-label="Main" ref={navRef}>{pill && <span className="nav-pill" aria-hidden="true" style={{ transform: `translateX(${pill.x}px)`, width: pill.w }} />}
         {admin ? <NavLink to="/admin" className={cls}><ShieldCheck size={17} aria-hidden="true" /><span>Admin</span></NavLink> : <>
           <NavLink to="/home" className={cls}><House size={17} aria-hidden="true" /><span>{t("Home")}</span></NavLink>
-          <NavLink to="/dashboard" className={grp(["/dashboard", "/leaderboard", "/rooms"])}><LayoutDashboard size={17} aria-hidden="true" /><span>{t("Practice")}</span></NavLink>
+          <NavLink to="/dashboard" className={grp(["/dashboard", "/leaderboard"])}><LayoutDashboard size={17} aria-hidden="true" /><span>{t("Practice")}</span></NavLink>
           <NavLink to="/coach" className={cls}><Compass size={17} aria-hidden="true" /><span>{t("Coach")}</span></NavLink>
-          <NavLink to="/learn" className={grp(["/learn", "/lecture-pace", "/tips"])}><GraduationCap size={17} aria-hidden="true" /><span>{t("Learn")}</span></NavLink>
+          <NavLink to="/lecture-pace" className={grp(["/lecture-pace"])}><Timer size={17} aria-hidden="true" /><span>{t("Lecture Pace")}</span></NavLink>
+          <NavLink to="/rooms" className={grp(["/rooms"])}><Users size={17} aria-hidden="true" /><span>{t("Rooms")}</span></NavLink>
           <NavLink to="/profile" className={grp(["/profile", "/progress", "/notebook", "/shop"])}><UserRound size={17} aria-hidden="true" /><span>{t("Me")}</span></NavLink></>}
       </nav>
       <UserMenu name={admin ? "Admin" : pname} admin={admin} />

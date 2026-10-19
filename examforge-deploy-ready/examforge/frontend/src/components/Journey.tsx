@@ -42,69 +42,10 @@ export function Runner({ puff = true, className = "" }: { puff?: boolean; classN
   </svg>;
 }
 
-/** SSC skin: a pen that writes the track. A little ink mist trails behind it. */
-export function PenWriter({ puff = true, className = "" }: { puff?: boolean; className?: string }) {
-  return <svg className={`train ${className}`} width="64" height="34" viewBox="0 0 64 34" aria-hidden="true" focusable="false">
-    {puff && <g className="puffs" fill="var(--brand)"><circle className="puff p1" cx="9" cy="23" r="1.8" /><circle className="puff p2" cx="9" cy="23" r="1.4" /><circle className="puff p3" cx="9" cy="23" r="1.1" /></g>}
-    <g className="tv pen-g">
-      <rect x="9" y="12" width="33" height="10" rx="5" fill="var(--brand)" />
-      <rect x="9" y="12" width="9" height="10" rx="4.5" fill="var(--text)" />
-      <rect x="20" y="10.2" width="17" height="2.6" rx="1.3" fill="var(--gold)" />
-      <rect x="41" y="13" width="7" height="8" rx="1" fill="var(--text)" />
-      <path d="M48 13.2 L61.5 17.4 L48 21.6 Z" fill="var(--gold)" />
-      <path d="M50 17.4 H60" stroke="var(--text)" strokeWidth="1" strokeLinecap="round" opacity=".7" />
-      <circle cx="53.5" cy="17.4" r="1.1" fill="var(--text)" />
-    </g>
-  </svg>;
-}
-
-/** Bank skin: a rupee coin that rolls (it narrows to its edge and turns back). */
-export function RupeeCoin({ puff = true, className = "" }: { puff?: boolean; className?: string }) {
-  return <svg className={`train ${className}`} width="64" height="34" viewBox="0 0 64 34" aria-hidden="true" focusable="false">
-    {puff && <g className="puffs" fill="var(--gold)"><circle className="puff p1" cx="22" cy="28" r="2" /><circle className="puff p2" cx="22" cy="28" r="1.6" /><circle className="puff p3" cx="22" cy="28" r="1.2" /></g>}
-    <ellipse cx="42" cy="31" rx="12" ry="2" fill="var(--text)" opacity=".16" />
-    <g className="tv coin-g">
-      <circle cx="42" cy="16" r="13.5" fill="var(--gold)" />
-      <circle cx="42" cy="16" r="10.5" fill="none" stroke="var(--gold-text)" strokeWidth="1.2" opacity=".55" />
-      <path d="M37.5 11 H46.5 M37.5 15 H46.5 M37.5 11 H41 a4 4 0 0 1 0 8 H37.5 L45.5 25" fill="none" stroke="var(--gold-ink)" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" />
-    </g>
-  </svg>;
-}
-
-/** NEET skin: a heart that beats, trailing a line from the monitor. */
-export function Heartbeat({ puff = true, className = "" }: { puff?: boolean; className?: string }) {
-  return <svg className={`train ${className}`} width="64" height="34" viewBox="0 0 64 34" aria-hidden="true" focusable="false">
-    <path className="tv ecg-line" d="M1 21 H12 L16 21 L19.5 12 L24 29 L28 17 L30.5 21 H36" fill="none" stroke="var(--brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    {puff && <circle className="tv ecg-blip" cx="36" cy="21" r="1.8" fill="var(--brand)" />}
-    <path className="tv heart-g" d="M49 28.5 C37.5 21 37.5 9.5 44.2 8.6 C47.2 8.2 49 10.6 49 12.2 C49 10.6 50.8 8.2 53.8 8.6 C60.5 9.5 60.5 21 49 28.5Z" fill="var(--gold)" />
-    <path d="M43.5 12.2 C42 13 41.6 14.8 42.4 16.2" fill="none" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" opacity=".55" />
-  </svg>;
-}
-
-/** Lab skin: an atom whose electrons orbit the nucleus. */
-export function Atom({ puff = true, className = "" }: { puff?: boolean; className?: string }) {
-  return <svg className={`train ${className}`} width="64" height="34" viewBox="0 0 64 34" aria-hidden="true" focusable="false">
-    {puff && <g className="puffs" fill="var(--gold)"><circle className="puff p1" cx="26" cy="22" r="1.6" /><circle className="puff p2" cx="26" cy="22" r="1.3" /><circle className="puff p3" cx="26" cy="22" r="1" /></g>}
-    <g className="tv atom-g">
-      <g fill="none" stroke="var(--brand)" strokeWidth="1.6">
-        <ellipse cx="42" cy="17" rx="15" ry="5.6" /><ellipse cx="42" cy="17" rx="15" ry="5.6" transform="rotate(60 42 17)" /><ellipse cx="42" cy="17" rx="15" ry="5.6" transform="rotate(120 42 17)" />
-      </g>
-      <circle cx="57" cy="17" r="2.2" fill="var(--gold)" /><circle cx="34.5" cy="30" r="2.2" fill="var(--gold)" /><circle cx="34.5" cy="4" r="2.2" fill="var(--gold)" />
-    </g>
-    <circle cx="42" cy="17" r="4" fill="var(--text)" /><circle cx="42" cy="17" r="1.6" fill="var(--gold)" />
-  </svg>;
-}
-
-/** The traveller for the current exam skin. */
+/** The traveller for the current exam skin (train / book cart / runner). */
 export function Traveler({ puff = true, className = "", skin }: { puff?: boolean; className?: string; skin?: Skin }) {
   const cur = useSkin(), k = skin ?? cur;
-  if (k === "library") return <BookCart puff={puff} className={className} />;
-  if (k === "ground") return <Runner puff={puff} className={className} />;
-  if (k === "ssc") return <PenWriter puff={puff} className={className} />;
-  if (k === "bank") return <RupeeCoin puff={puff} className={className} />;
-  if (k === "neet") return <Heartbeat puff={puff} className={className} />;
-  if (k === "lab") return <Atom puff={puff} className={className} />;
-  return <Train puff={puff} className={className} />;
+  return k === "library" ? <BookCart puff={puff} className={className} /> : k === "ground" ? <Runner puff={puff} className={className} /> : <Train puff={puff} className={className} />;
 }
 
 /** Track from 0 to 100 percent. The train rests at `value`; a flag marks `goal`. Real numbers only. */
