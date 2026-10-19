@@ -71,5 +71,22 @@ html[data-skin="ground"] { --bg: #f3f7f1; --surface-2: #ebf2e8; --surface-3: #dd
 html[data-skin="ground"].dark { --bg: #0e1713; --surface: #14211b; --surface-2: #1a2b23; --surface-3: #233a2f; --border: #254034; --border-strong: #35594a;
   --brand: #5fd19a; --brand-hover: #82e0b3; --brand-2: #45b982; --brand-soft: #12332a; --brand-ink: #0a2418; --q-both: #5fd19a; }
 html[data-skin="ground"].astra { --bg: #08110d; --surface: #0d1a14; --surface-2: #12231b; --surface-3: #1a3027; --border: #1c3328; --border-strong: #2c4d3c; --brand-soft: #0f2a21; }
+/* More exam skins. SSC = pen (maroon + saffron), Bank = rupee coin (bottle green + gold), NEET = heartbeat (clinical teal + coral), Lab = atom on a ruler (violet + orange). */
+html[data-skin="ssc"] { --navy: #3a1420; --bg: #f8f4f2; --surface-2: #f1ebe7; --surface-3: #e7dfd9; --border: #e3d9d2; --border-strong: #cbbdb2;
+  --brand: #8f2a3c; --brand-hover: #741f2f; --brand-2: #b0405a; --brand-soft: #f8e8ec; --brand-ink: #ffffff; --gold: #e68a1c; --gold-text: #8a4a00; --gold-soft: #fdeed7; --gold-ink: #5c3200; --q-both: #8f2a3c; }
+html[data-skin="ssc"].dark { --navy: #2a0e16; --bg: #1a1214; --surface: #241a1d; --surface-2: #2d2125; --surface-3: #3a2b30; --border: #43323a; --border-strong: #5c4550;
+  --brand: #f09aab; --brand-hover: #f6b6c2; --brand-2: #e07a91; --brand-soft: #3a1d27; --brand-ink: #2a0c14; --gold: #f2a33a; --gold-text: #f2a33a; --gold-soft: #36250d; --gold-ink: #f9cf94; --q-both: #f09aab; }
+html[data-skin="bank"] { --navy: #0b2e20; --bg: #f6f6ee; --surface-2: #eeeee1; --surface-3: #e2e2d0; --border: #e0dfcb; --border-strong: #c2bfa2;
+  --brand: #11603f; --brand-hover: #0c4a31; --brand-2: #1f8057; --brand-soft: #dcefe5; --brand-ink: #ffffff; --gold: #d9a21b; --gold-text: #7a5600; --gold-soft: #fbf0d0; --gold-ink: #4f3800; --q-both: #5b3fd1; }
+html[data-skin="bank"].dark { --navy: #08170f; --bg: #0e1712; --surface: #14201a; --surface-2: #1a2a22; --surface-3: #233a2f; --border: #233f31; --border-strong: #356049;
+  --brand: #6fd9a0; --brand-hover: #92e5b8; --brand-2: #4cc388; --brand-soft: #12331f; --brand-ink: #062414; --gold: #f2c14e; --gold-text: #f2c14e; --gold-soft: #332a10; --gold-ink: #f7d98a; --q-both: #a591ff; }
+html[data-skin="neet"] { --navy: #0a3a38; --bg: #f2f8f8; --surface-2: #e7f1f1; --surface-3: #d8e8e8; --border: #d5e4e4; --border-strong: #b3cccc;
+  --brand: #0f766e; --brand-hover: #0b5f58; --brand-2: #1d958b; --brand-soft: #dcf2ef; --brand-ink: #ffffff; --gold: #e5484d; --gold-text: #b42337; --gold-soft: #fde8ea; --gold-ink: #6b0f1c; --q-both: #5b3fd1; }
+html[data-skin="neet"].dark { --navy: #062423; --bg: #0c1717; --surface: #122121; --surface-2: #182c2c; --surface-3: #223d3d; --border: #234444; --border-strong: #356666;
+  --brand: #5fd6c9; --brand-hover: #86e3d9; --brand-2: #3bbfb1; --brand-soft: #103533; --brand-ink: #03201d; --gold: #ff7a85; --gold-text: #ff7a85; --gold-soft: #3a1519; --gold-ink: #ffb3b9; --q-both: #a591ff; }
+html[data-skin="lab"] { --navy: #1b1445; --bg: #f5f4fb; --surface-2: #edebf7; --surface-3: #e0ddf0; --border: #dedbef; --border-strong: #bfb9df;
+  --brand: #5b3fd1; --brand-hover: #4a31b5; --brand-2: #7a5cf0; --brand-soft: #efebfc; --brand-ink: #ffffff; --gold: #f08a24; --gold-text: #8a4600; --gold-soft: #fdebd5; --gold-ink: #5a2c00; --q-both: #5b3fd1; }
+html[data-skin="lab"].dark { --navy: #120e30; --bg: #0f0d1c; --surface: #181530; --surface-2: #201c3d; --surface-3: #2b2650; --border: #2f2a58; --border-strong: #463f80;
+  --brand: #a591ff; --brand-hover: #bba9ff; --brand-2: #8f78ff; --brand-soft: #2a2250; --brand-ink: #15112b; --gold: #ffa84d; --gold-text: #ffa84d; --gold-soft: #36230c; --gold-ink: #ffd09a; --q-both: #a591ff; }
 @media (prefers-reduced-motion: reduce) { :root { --dur-1: 1ms; --dur-2: 1ms; --dur-3: 1ms; } }
 .reduce-motion { --dur-1: 1ms; --dur-2: 1ms; --dur-3: 1ms; }

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react"; import { Link, Navigate } from "react-router-dom";
 import { ArrowRight, Timer, BookOpenCheck, Target, ChevronDown } from "lucide-react";
-import { Traveler } from "../components/Journey"; import PublicShell from "../components/PublicShell"; import AdSlot from "../components/AdSlot"; import { getMe } from "../lib/auth"; import { SITE, TIPS } from "../lib/content";
+import { Traveler } from "../components/Journey"; import PublicShell from "../components/PublicShell"; import AdSlot from "../components/AdSlot"; import { getMe } from "../lib/auth"; import { SITE, TIPS } from "../lib/content"; import { getSkin, skinForExam, type Skin } from "../lib/skin";
 
 const EXAMS = ["SSC CGL", "RRB NTPC", "UPSC Prelims", "JEE Main", "NEET UG", "Bank PO", "GATE"];
 
@@ -54,11 +54,11 @@ const MODES: { id: Mode; label: string; icon: typeof Timer; title: string; body:
 
 function ModePanel({ mode }: { mode: Mode }) {
   if (mode === "exam") return <div className="lp-demo" aria-label="Sample timers">
-    {[["Test", "02:59:12"], ["Section 2", "00:41:05"], ["Question 5", "01:18"]].map(([l, t]) => <div key={l} className="lp-timer-row"><span>{l}</span><b className="num">{t}</b></div>)}
+    {[["Test", "02:59:12", 96], ["Section 2", "00:41:05", 61], ["Question 5", "01:18", 22]].map(([l, t, w]) => <div key={l} className="lp-timer-row"><span>{l}</span><b className="num">{t}</b><i className="drain" style={{ width: `${w}%` }} aria-hidden="true" /></div>)}
     <div className="lp-demo-note">Marking: +2 correct, −0.5 wrong, 0 skipped <em>(example scheme)</em></div>
   </div>;
   if (mode === "practice") return <div className="lp-demo" aria-label="Sample practice feedback">
-    <div className="opt right" aria-hidden="true"><span className="opt-k">B</span><span>20 m/s</span></div>
+    <div className="opt right" aria-hidden="true"><span className="opt-k">B</span><span>20 m/s</span><svg className="tick-draw" width="20" height="20" viewBox="0 0 20 20" style={{ marginLeft: "auto", color: "var(--ok)" }} fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M4 10.5l4 4 8-9" /></svg></div>
     <p className="lp-expl"><b>Correct.</b> Speed = distance ÷ time = 120 m ÷ 6 s = 20 m/s.</p>
   </div>;
   return <div className="lp-demo" aria-label="Sample weak topics">
@@ -108,12 +108,12 @@ function Report() {
   </section>;
 }
 
-function How() {
+function How({ skin }: { skin?: Skin }) {
   const [ref, on] = useInView<HTMLElement>();
   return <section ref={ref} className={`lp-section lp-how${on ? " in" : ""}`} aria-labelledby="how-h"><h2 id="how-h">From sign-up to your first score</h2>
     <ol className="lp-steps">
       {[["1", "Create a free account", "Register with your email and choose your target exam. Tests for that exam are listed first."], ["2", "Take a test", "Pick timed exam mode or untimed practice. Mark questions for review and come back to them."], ["3", "Review and improve", "Read the analysis, check explanations, then practise the topics that cost you marks."]].map(([n, t, d], i) => <li key={n} style={{ ["--i" as any]: i }}><span className="n" aria-hidden="true">{n}</span><h3>{t}</h3><p>{d}</p></li>)}
-    </ol><div className="rail-scene" aria-hidden="true"><div className="rail" /><div className="rail-train"><Traveler /></div></div></section>;
+    </ol><div className="rail-scene" aria-hidden="true"><div className="rail" /><div className="rail-train"><Traveler skin={skin} /></div></div></section>;
 }
 
 const FAQ = [
@@ -126,6 +126,13 @@ const FAQ = [
 
 export default function Landing() {
   useEffect(() => { document.title = `${SITE} | Free online mock tests with analysis`; }, []);
+  const [pick, setPick] = useState<string | null>(null); const [skin, setSkin] = useState<Skin | undefined>(undefined);
+  const choose = (e: string) => {
+    const root = document.documentElement, next = pick === e ? null : e, k = next ? skinForExam(next) : getSkin();
+    root.classList.add("theme-fade"); window.setTimeout(() => root.classList.remove("theme-fade"), 400);
+    root.dataset.skin = k; setPick(next); setSkin(next ? k : undefined);
+  };
+  useEffect(() => () => { document.documentElement.dataset.skin = getSkin(); }, []);
   const me = getMe(); if (me) return <Navigate to={me.role === "ADMIN" ? "/admin" : "/dashboard"} replace />;
   return <PublicShell>
     <div className="lp">
@@ -139,12 +146,13 @@ export default function Landing() {
         <ExamPreview />
       </section>
 
-      <section className="lp-exams-row" aria-label="Exams you can practise for"><span>Practise for</span><ul>{EXAMS.map((e) => <li key={e}>{e}</li>)}</ul></section>
+      <section className="lp-exams-row" aria-label="Exams you can practise for"><span>Practise for</span><ul>{EXAMS.map((e, i) => <li key={e} style={{ ["--i" as any]: i }}><button type="button" aria-pressed={pick === e} onClick={() => choose(e)}>{e}</button></li>)}</ul></section>
+      {pick && <p className="lp-skin-hint" role="status">That is how ExamForge looks for {pick}. Your theme follows your exam once you sign up.</p>}
 
       <Modes />
       <Report />
 
-      <How />
+      <How skin={skin} />
 
       <section className="lp-split lp-faq" aria-labelledby="faq-h">
         <div><h2 id="faq-h">Before you start</h2><p className="lp-lead">Short answers to what students ask first.</p></div>
