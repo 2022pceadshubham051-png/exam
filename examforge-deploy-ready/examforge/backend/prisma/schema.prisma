@@ -58,6 +58,8 @@ model User {
   dailyEntries DailyEntry[]
   duelEntries DuelEntry[]
   reports QuestionReport[]
+  enrollments Enrollment[]
+  lessonProgress LessonProgress[]
 }
 
 model Test {
@@ -374,4 +376,78 @@ model QuestionReport {
   createdAt DateTime @default(now())
   @@unique([userId, questionId])
   @@index([status, createdAt])
+}
+
+// ---- Courses: admin-made video courses (YouTube) with subjects, lecture notes, price and enrollment ----
+enum EnrollStatus {
+  PENDING
+  ACTIVE
+}
+
+model Course {
+  id String @id @default(cuid())
+  title String
+  description String?
+  posterUrl String? @db.Text
+  examName String?
+  priceInr Int @default(0)
+  paymentInfo String?
+  published Boolean @default(false)
+  featured Boolean @default(true)
+  createdAt DateTime @default(now())
+  subjects CourseSubject[]
+  lessons Lesson[]
+  enrollments Enrollment[]
+}
+
+model CourseSubject {
+  id String @id @default(cuid())
+  courseId String
+  name String
+  position Int @default(0)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons Lesson[]
+  @@index([courseId])
+}
+
+model Lesson {
+  id String @id @default(cuid())
+  courseId String
+  subjectId String
+  title String
+  youtubeId String?
+  notes String? @db.Text
+  notesUrl String?
+  durationMin Int?
+  isPreview Boolean @default(false)
+  position Int @default(0)
+  createdAt DateTime @default(now())
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  subject CourseSubject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  progress LessonProgress[]
+  @@index([courseId])
+  @@index([subjectId])
+}
+
+model Enrollment {
+  id String @id @default(cuid())
+  userId String
+  courseId String
+  status EnrollStatus @default(ACTIVE)
+  amountInr Int @default(0)
+  paymentRef String?
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  @@unique([userId, courseId])
+  @@index([courseId, status])
+}
+
+model LessonProgress {
+  userId String
+  lessonId String
+  doneAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  @@id([userId, lessonId])
 }
