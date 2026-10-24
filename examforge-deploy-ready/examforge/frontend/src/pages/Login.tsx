@@ -1,18 +1,18 @@
 import { PaperPlane } from "../components/Journey"; import { useState, type FormEvent } from "react"; import { useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff, Sun, Moon, ArrowRight, Loader, TriangleAlert } from "lucide-react";
 import { api } from "../lib/api"; import { loadProfile } from "../lib/profile"; import { BrandLockup } from "../components/LogoMark"; import { Field } from "../components/ui";
-import { toggleTheme, isDark, getMe } from "../lib/auth";
+import { toggleTheme, isDark, getMe } from "../lib/auth"; import { savedRef, clearRef } from "../lib/engage";
 
 const points = [["Real exam feel", "Timed tests with section timers, like the actual paper."], ["Know your weak spots", "Topic-wise accuracy after every attempt."], ["Fair scoring", "Correct answers stay on the server until you submit."]];
 
 export default function Login() {
-  const [f, setF] = useState({ email: "", password: "", name: "" }); const [reg, setReg] = useState(false); const [err, setErr] = useState("");
+  const [f, setF] = useState({ email: "", password: "", name: "" }); const [reg, setReg] = useState(() => !!savedRef() && !getMe()); const [err, setErr] = useState("");
   const [sent, setSent] = useState(false); const [show, setShow] = useState(false); const [busy, setBusy] = useState(false); const [, force] = useState(0); const nav = useNavigate();
   const set = (k: string) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
   const submit = async (e: FormEvent) => {
     e.preventDefault(); if (busy) return; setErr(""); setBusy(true);
     try {
-      const r = await api(reg ? "/auth/register" : "/auth/login", "POST", reg ? f : { identifier: f.email, password: f.password });
+      const r = await api(reg ? "/auth/register" : "/auth/login", "POST", reg ? { ...f, ref: savedRef() } : { identifier: f.email, password: f.password }); if (reg) clearRef();
       localStorage.setItem("token", r.token); const calm = document.documentElement.classList.contains("reduce-motion") || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches; if (!calm) { setSent(true); await new Promise((ok) => setTimeout(ok, 750)); } const t = new URLSearchParams(location.search).get("test");
       if (r.user.role !== "ADMIN") { const p = await loadProfile(true).catch(() => null); if (p && !p.onboarded) { nav(`/welcome${t ? `?test=${t}` : ""}`, { replace: true }); return; } }
       let after: string | null = null; try { after = sessionStorage.getItem("ef_after_login"); sessionStorage.removeItem("ef_after_login"); } catch { /* ignore */ }

@@ -5,14 +5,14 @@ import "@fontsource/hind/400.css"; import "@fontsource/hind/500.css"; import "@f
 import "./index.css";
 import Login from "./pages/Login"; import Landing from "./pages/Landing"; import NotFound from "./pages/NotFound";
 import { About, Contact, Privacy, TipsList, TipPage } from "./pages/Info";
-import { getMe } from "./lib/auth"; import Splash from "./components/Splash"; import { ToastHost, initReveal } from "./components/ui"; import { initTheme } from "./lib/theme";
+import { getMe } from "./lib/auth"; import { api } from "./lib/api"; import { captureRef } from "./lib/engage"; import Splash from "./components/Splash"; import InstallPrompt from "./components/InstallPrompt"; import { ToastHost, initReveal } from "./components/ui"; import { initTheme } from "./lib/theme";
 
 // Signed-in screens are split into their own chunks so the landing and login pages stay light (charts and the admin panel load on demand).
 const Exam = lazy(() => import("./pages/Exam")); const Result = lazy(() => import("./pages/Result")); const Review = lazy(() => import("./pages/Review"));
 const Dashboard = lazy(() => import("./pages/Dashboard")); const Admin = lazy(() => import("./pages/Admin")); const Progress = lazy(() => import("./pages/Progress"));
 const Leaderboard = lazy(() => import("./pages/Leaderboard")); const Coach = lazy(() => import("./pages/Coach")); const LecturePace = lazy(() => import("./pages/LecturePace"));
-const LecturePaceBoard = lazy(() => import("./pages/LecturePaceBoard")); const Welcome = lazy(() => import("./pages/Welcome")); const ProfilePage = lazy(() => import("./pages/Profile")); const Shop = lazy(() => import("./pages/Shop")); const HomeTab = lazy(() => import("./pages/Home")); const Notebook = lazy(() => import("./pages/Notebook")); const Rooms = lazy(() => import("./pages/Rooms")); const RoomDetail = lazy(() => import("./pages/Rooms").then((m) => ({ default: m.RoomDetail })));
-initTheme(); initReveal();
+const LecturePaceBoard = lazy(() => import("./pages/LecturePaceBoard")); const Welcome = lazy(() => import("./pages/Welcome")); const ProfilePage = lazy(() => import("./pages/Profile")); const Shop = lazy(() => import("./pages/Shop")); const HomeTab = lazy(() => import("./pages/Home")); const Notebook = lazy(() => import("./pages/Notebook")); const Rooms = lazy(() => import("./pages/Rooms")); const Daily = lazy(() => import("./pages/Daily")); const Duels = lazy(() => import("./pages/Duels")); const DuelPlay = lazy(() => import("./pages/Duels").then((m) => ({ default: m.DuelPlay }))); const League = lazy(() => import("./pages/League")); const AdminReports = lazy(() => import("./pages/AdminReports")); const Revise = lazy(() => import("./pages/Revise")); const RoomDetail = lazy(() => import("./pages/Rooms").then((m) => ({ default: m.RoomDetail })));
+initTheme(); initReveal(); captureRef();
 
 class AppErrorBoundary extends Component<{ children: ReactElement }, { error: Error | null }> {
   state = { error: null as Error | null };
@@ -26,19 +26,35 @@ class AppErrorBoundary extends Component<{ children: ReactElement }, { error: Er
 
 function Guard({ children, admin }: { children: ReactElement; admin?: boolean }) {
   const me = getMe(); const { testId } = useParams();
-  if (!me) { try { if (location.pathname.startsWith("/rooms")) sessionStorage.setItem("ef_after_login", location.pathname + location.search); } catch { /* ignore */ } }
+  if (!me) { try { if (/^\/(rooms|duel|daily)/.test(location.pathname)) sessionStorage.setItem("ef_after_login", location.pathname + location.search); } catch { /* ignore */ } }
   if (!me) return <Navigate to={testId ? `/login?test=${testId}` : "/login"} replace />;
   if (admin && me.role !== "ADMIN") return <Navigate to="/dashboard" replace />;
   return children;
 }
 const PageLoading = () => <div className="grid min-h-screen place-items-center" role="status"><div className="spinner" aria-hidden="true" /><span className="sr">Loading</span></div>;
 
-createRoot(document.getElementById("root")!).render(<React.StrictMode><AppErrorBoundary><><Splash /><BrowserRouter><Suspense fallback={<PageLoading />}><Routes>
+// Start the first screen's data requests right now, in parallel with downloading the screen's code (instead of after it).
+// Without this the API calls only begin once the page chunk has been parsed and rendered, about 0.6 s later on a slow phone.
+const EARLY: Record<string, string[]> = {
+  "/home": ["/profile", "/coins", "/sync", "/streak", "/daily", "/history?limit=60", "/tests?limit=100&q=", "/progress?period=all&scope=all", "/tests/leaderboard?limit=20"],
+  "/dashboard": ["/profile", "/coins", "/sync", "/history", "/tests?limit=100&q="],
+  "/daily": ["/profile", "/coins", "/streak", "/daily"], "/notebook": ["/profile", "/coins", "/sync"], "/shop": ["/profile", "/coins", "/shop"],
+};
+if (localStorage.getItem("token")) for (const p of EARLY[location.pathname] ?? []) api(p).catch(() => {});
+
+// Warm the most-used screens while the browser is idle, so tapping a tab feels instant (skipped on data saver / low-data mode).
+const warm = () => { const c = (navigator as any).connection; if (c?.saveData || /2g|3g/.test(c?.effectiveType ?? "") || localStorage.getItem("ef_lite") === "1" || !localStorage.getItem("token")) return; void Promise.allSettled([import("./pages/Home"), import("./pages/Dashboard"), import("./pages/Daily"), import("./pages/Notebook"), import("./pages/Revise")]); };
+// Wait until the current screen is fully loaded (5 s after load) so warming never competes with what the student is waiting for.
+window.addEventListener("load", () => setTimeout(() => ((window as any).requestIdleCallback ? (window as any).requestIdleCallback(warm, { timeout: 5000 }) : warm()), 5000));
+if ("serviceWorker" in navigator && import.meta.env.PROD) window.addEventListener("load", () => { navigator.serviceWorker.register("/sw.js").catch(() => {}); });
+
+createRoot(document.getElementById("root")!).render(<React.StrictMode><AppErrorBoundary><><Splash /><InstallPrompt /><BrowserRouter><Suspense fallback={<PageLoading />}><Routes>
   <Route path="/" element={<Landing />} />
   <Route path="/about" element={<About />} /><Route path="/contact" element={<Contact />} /><Route path="/privacy" element={<Privacy />} />
   <Route path="/tips" element={<TipsList />} /><Route path="/tips/:slug" element={<TipPage />} />
   <Route path="/login" element={<Login />} />
   <Route path="/home" element={<Guard><HomeTab /></Guard>} /><Route path="/learn" element={<Navigate to="/rooms" replace />} /><Route path="/notebook" element={<Guard><Notebook /></Guard>} /><Route path="/rooms" element={<Guard><Rooms /></Guard>} /><Route path="/rooms/:id" element={<Guard><RoomDetail /></Guard>} />
+  <Route path="/daily" element={<Guard><Daily /></Guard>} /><Route path="/duel" element={<Guard><Duels /></Guard>} /><Route path="/duel/:code" element={<Guard><DuelPlay /></Guard>} /><Route path="/league" element={<Guard><League /></Guard>} /><Route path="/admin/reports" element={<Guard admin><AdminReports /></Guard>} /><Route path="/revise" element={<Guard><Revise /></Guard>} />
   <Route path="/dashboard" element={<Guard><Dashboard /></Guard>} />
   <Route path="/progress" element={<Guard><Progress /></Guard>} />
   <Route path="/coach" element={<Guard><Coach /></Guard>} />
@@ -53,3 +69,4 @@ createRoot(document.getElementById("root")!).render(<React.StrictMode><AppErrorB
   <Route path="/review/:attemptId" element={<Guard><Review /></Guard>} />
   <Route path="/admin" element={<Guard admin><Admin /></Guard>} />
   <Route path="*" element={<NotFound />} /></Routes></Suspense></BrowserRouter><ToastHost /></></AppErrorBoundary></React.StrictMode>);
+requestAnimationFrame(() => requestAnimationFrame(() => document.getElementById("boot")?.remove()));

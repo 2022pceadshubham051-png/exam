@@ -1,28 +1,28 @@
 import { useEffect, useMemo, useState } from "react"; import { Link } from "react-router-dom";
-import { Play, Flame, CalendarDays, ArrowRight, BookMarked, Trophy, Languages, Target } from "lucide-react";
+import { Play, Flame, CalendarDays, ArrowRight, BookMarked, Trophy, Languages, Target, Zap, Swords } from "lucide-react";
 import Shell from "../components/Shell"; import { SkeletonPage } from "../components/ui"; import { JourneyStrip } from "../components/Journey"; import { WeekDots } from "../components/Achievement";
-import { api, fmt } from "../lib/api"; import { loadProfile, firstName, matchesExam, cachedCoins, type Profile } from "../lib/profile"; import { streakDays } from "../lib/game";
-import { useT } from "../lib/i18n"; import { getLang, setLang, getExamDate, setExamDate, daysUntil } from "../lib/prefs"; import { dueNotes } from "../lib/notebook";
+import { api, swr, fmt } from "../lib/api"; import { loadProfile, firstName, matchesExam, cachedCoins, type Profile } from "../lib/profile"; import { streakDays } from "../lib/game";
+import { type StreakInfo } from "../lib/engage"; import { useT } from "../lib/i18n"; import { getLang, setLang, getExamDate, setExamDate, daysUntil } from "../lib/prefs"; import { dueNotes, revisedToday } from "../lib/notebook"; import GoalRing from "../components/GoalRing";
 
 const hour = () => { const h = new Date().getHours(); return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening"; };
 
 export default function Home() {
   const t = useT();
   const [prof, setProf] = useState<Profile | null>(null); const [hist, setHist] = useState<any[] | null>(null); const [tests, setTests] = useState<any[] | null>(null);
-  const [weak, setWeak] = useState<any[] | null>(null); const [board, setBoard] = useState<any[] | null>(null);
+  const [st, setSt] = useState<StreakInfo | null>(null); const [daily, setDaily] = useState<any>(null); const [weak, setWeak] = useState<any[] | null>(null); const [board, setBoard] = useState<any[] | null>(null);
   const [date, setDate] = useState(getExamDate()); const [editDate, setEditDate] = useState(false); const [, bump] = useState(0);
   useEffect(() => {
-    loadProfile().then(setProf).catch(() => {});
-    api("/history").then((d) => setHist(Array.isArray(d) ? d : [])).catch(() => setHist([]));
-    api("/tests?limit=100&q=").then((d) => setTests(Array.isArray(d) ? d : [])).catch(() => setTests([]));
-    api("/progress?period=all&scope=all").then((d) => setWeak(d?.weak ?? [])).catch(() => setWeak([]));
-    api("/tests/leaderboard?limit=20").then((d) => setBoard(Array.isArray(d) ? d : [])).catch(() => setBoard([]));
+    loadProfile().then(setProf).catch(() => {}); swr("/streak", setSt).catch(() => {}); swr("/daily", setDaily).catch(() => {});
+    swr("/history?limit=60", (d: any) => setHist(Array.isArray(d) ? d : [])).catch(() => setHist([]));
+    swr("/tests?limit=100&q=", (d: any) => setTests(Array.isArray(d) ? d : [])).catch(() => setTests([]));
+    swr("/progress?period=all&scope=all", (d: any) => setWeak(d?.weak ?? [])).catch(() => setWeak([]));
+    swr("/tests/leaderboard?limit=20", (d: any) => setBoard(Array.isArray(d) ? d : [])).catch(() => setBoard([]));
     const f = () => bump((n) => n + 1); window.addEventListener("ef-notebook", f); return () => window.removeEventListener("ef-notebook", f);
   }, []);
   const ready = prof && hist && tests;
   const done = useMemo(() => (hist ?? []).filter((a) => a.result), [hist]);
   const active = (hist ?? []).find((a) => !a.result && !a.resultHidden);
-  const target = prof?.targetExam ?? null, streak = streakDays(done), days = daysUntil(date);
+  const target = prof?.targetExam ?? null, streak = st ? st.current : streakDays(done), days = daysUntil(date);
   const next = useMemo(() => {
     const doneIds = new Set(done.map((a) => a.test.id)); const mine = (tests ?? []).filter((x) => matchesExam(x.examName, target));
     const pool = mine.length ? mine : tests ?? []; return pool.find((x) => !doneIds.has(x.id)) ?? pool[0];
@@ -38,11 +38,12 @@ export default function Home() {
     <header className="home-head">
       <div><p className="sub">{t(hour())}</p><h1 className="h1">{firstName(prof) || "Student"}</h1></div>
       <div className="home-chips">
-        {streak > 0 && <span className="chip"><Flame size={15} aria-hidden="true" />{streak} {t("day streak")}</span>}
+        {(streak > 0 || st?.atRisk) && <Link to="/daily" className="chip" title={st?.atRisk && !st.doneToday ? t("Practise something today to save your streak") : undefined}><Flame size={15} aria-hidden="true" />{streak} {t("day streak")}{st?.atRisk && !st.doneToday ? " ⚠" : ""}{(st?.freezes ?? 0) > 0 ? ` · 🧊${st!.freezes}` : ""}</Link>}
         <button type="button" className="chip chip-btn" onClick={() => setEditDate((v) => !v)} aria-expanded={editDate}><CalendarDays size={15} aria-hidden="true" />{days === null ? t("Set exam date") : days > 0 ? `${days} ${t("days left")}` : days === 0 ? t("Exam day") : t("Set exam date")}</button>
-        <button type="button" className="chip chip-btn" onClick={() => setLang(getLang() === "en" ? "hi" : "en")} aria-label="Language"><Languages size={15} aria-hidden="true" />{getLang() === "en" ? "हिं" : "EN"}</button>
+        <button type="button" className="chip chip-btn" onClick={() => setLang(getLang() === "en" ? "hi" : "en")} aria-label="Language"><Languages size={15} aria-hidden="true" />{getLang() === "en" ? "HI" : "EN"}</button>
       </div>
     </header>
+    {ready && <GoalRing goals={[{ label: "Daily Challenge", done: daily?.status === "done", to: "/daily" }, { label: "Finish a test today", done: done.some((a) => new Date(a.endedAt ?? 0).toDateString() === new Date().toDateString()), to: "/dashboard" }, { label: "Revise 5 cards", done: revisedToday() >= 5, to: "/revise" }]} />}
     {editDate && <div className="card card-pad row" style={{ gap: 10 }}><label className="label" htmlFor="exdate" style={{ margin: 0 }}>{t("Exam date")}</label><input id="exdate" className="input" type="date" value={date ?? ""} min={new Date().toISOString().slice(0, 10)} onChange={(e) => { setDate(e.target.value || null); setExamDate(e.target.value || null); }} style={{ maxWidth: 190 }} /></div>}
 
     <section className="plan-card" aria-label={t("Today's plan")}>
@@ -50,6 +51,11 @@ export default function Home() {
       {active ? <><h2>{active.test.name}</h2><p className="sub">{t("Your answers are saved.")}</p><Link className="btn btn-primary btn-lg" to={`/exam/${active.test.id}`}><Play size={18} aria-hidden="true" />{t("Continue")}</Link></>
         : next ? <><h2>{next.name}</h2><p className="sub">{next.examName} · {fmt(next.durationSec)} · {qCount(next)} Q</p><Link className="btn btn-primary btn-lg" to={`/exam/${next.id}`}><Play size={18} aria-hidden="true" />{done.length ? t("Start test") : t("Take your first test")}</Link></>
         : <><h2>{t("No tests yet")}</h2><Link className="btn" to="/dashboard">{t("Practice")}</Link></>}
+    </section>
+
+    <section className="home-grid" aria-label={t("Daily")}>
+      <Link className="card card-pad stack tap-card" style={{ gap: 6 }} to="/daily"><Zap size={20} aria-hidden="true" /><b>{t("Daily Challenge")}</b><span className="sub">{daily?.status === "done" ? `${t("Done")}: ${daily.summary?.correct}/${daily.summary?.total}${daily.summary?.rank ? ` · ${t("rank")} #${daily.summary.rank}` : ""}` : daily?.status === "playing" ? t("Resume now, your clock is running") : t("10 questions · 10 min · grow your streak")}</span></Link>
+      <Link className="card card-pad stack tap-card" style={{ gap: 6 }} to="/duel"><Swords size={20} aria-hidden="true" /><b>{t("Duel")}</b><span className="sub">{t("Challenge a friend")}</span></Link>
     </section>
 
     <section className="card" aria-label={t("Your journey")}>{done.length && avg !== null ? <JourneyStrip value={avg} goal={prof?.targetScore ?? null} label="Average score" /> : <div className="card-pad"><p className="sub"><Target size={15} aria-hidden="true" /> {t("Take your first test")}</p></div>}</section>
@@ -65,7 +71,7 @@ export default function Home() {
 
     <section className="home-grid" aria-label={t("This week")}>
       <div className="card card-pad stack" style={{ gap: 10 }}><h2 className="card-title">{t("This week")}</h2><WeekDots done={done} />{last && <Link className="sub" to={`/review/${last.id}`}>{t("Last result")}: {Math.round(last.result.percentage)}% · {t("Review mistakes")} <ArrowRight size={13} aria-hidden="true" /></Link>}</div>
-      <Link className="card card-pad stack tap-card" style={{ gap: 6 }} to="/notebook"><BookMarked size={20} aria-hidden="true" /><b>{t("Mistake notebook")}</b><span className="sub">{due} {t("to revise today")}</span></Link>
+      <Link className="card card-pad stack tap-card" style={{ gap: 6 }} to={due ? "/revise" : "/notebook"}><BookMarked size={20} aria-hidden="true" /><b>{t("Mistake notebook")}</b><span className="sub">{due} {t("to revise today")}{due ? ` · ${t("start")}` : ""}</span></Link>
       <Link className="card card-pad stack tap-card" style={{ gap: 6 }} to="/leaderboard"><Trophy size={20} aria-hidden="true" /><b>{t("Rankings")}</b><span className="sub">{myRow ? `#${myRow.rank} · ${myRow.average}%` : board?.[0] ? `${t("Top of the board")}: ${board[0].name} · ${board[0].average}%` : "—"}</span></Link>
     </section>
   </div></Shell>;

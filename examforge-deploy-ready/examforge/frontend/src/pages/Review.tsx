@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react"; import { useParams, Link } from "react-router-dom";
 import { CircleCheck, CircleX, MinusCircle, ArrowLeft, Clock, Lightbulb, Sparkles, BookOpen } from "lucide-react";
-import { Bookmark, BookmarkCheck } from "lucide-react"; import { addNote, removeNote, qKey, isSaved } from "../lib/notebook"; import { api, fmt } from "../lib/api"; import Shell from "../components/Shell"; import { SkeletonPage } from "../components/ui";
+import { Bookmark, BookmarkCheck } from "lucide-react"; import { addNote, removeNote, qKey, isSaved, ingestReview } from "../lib/notebook"; import ReportQuestion from "../components/ReportQuestion"; import DoubtButton from "../components/DoubtButton"; import { api, fmt } from "../lib/api"; import Shell from "../components/Shell"; import { SkeletonPage } from "../components/ui";
 
 const SUBJ: Record<string, string> = { reasoning: "Reasoning", quant: "Maths / Quant", english: "English", ga: "General Awareness", science: "General Science", computer: "Computer", hindi: "Hindi", physics: "Physics", cs: "CS & IT", electronics: "Electronics" };
 export default function Review() {
   const { attemptId } = useParams(); const [d, setD] = useState<any>(null); const [err, setErr] = useState(""); const [f, setF] = useState("all"); const [, bump] = useState(0);
-  useEffect(() => { api(`/attempts/${attemptId}/review`).then((x) => { setD(x); for (const r of x.rows ?? []) if (isSaved(r.text)) addNote({ text: r.text, options: r.options ?? [], correctKey: r.correctKey, explanation: r.explanation, topic: r.topic, testName: x.testName, kind: "saved" }); }).catch((e) => setErr(e.message)); }, [attemptId]);
+  useEffect(() => { api(`/attempts/${attemptId}/review`).then((x) => { setD(x); ingestReview(x); for (const r of x.rows ?? []) if (isSaved(r.text)) addNote({ text: r.text, options: r.options ?? [], correctKey: r.correctKey, explanation: r.explanation, topic: r.topic, testName: x.testName, kind: "saved" }); }).catch((e) => setErr(e.message)); }, [attemptId]);
   if (err) return <Shell narrow><div className="alert alert-bad">{err}</div></Shell>;
   if (!d) return <Shell narrow><SkeletonPage /></Shell>;
   const st = (r: any) => (r.selectedKey ? (r.isCorrect ? "correct" : "wrong") : "skipped");
@@ -24,6 +24,8 @@ export default function Review() {
       <div className={`ans ${st(r) === "correct" ? "good" : st(r) === "wrong" ? "badc" : ""}`}>{st(r) === "correct" ? <CircleCheck size={18} /> : st(r) === "wrong" ? <CircleX size={18} /> : <MinusCircle size={18} />}<span><b>Your answer:</b> {txt(r, r.selectedKey)}</span></div>
       {st(r) !== "correct" && <div className="ans good"><CircleCheck size={18} /><span><b>Correct answer:</b> {txt(r, r.correctKey)}</span></div>}
       {r.explanation && <div className="ans" style={{ alignItems: "flex-start" }}><Lightbulb size={18} style={{ flex: "none" }} /><span>{r.explanation}</span></div>}
+      <div className="row" style={{ gap: 8, flexWrap: "wrap", alignItems: "flex-start" }}><ReportQuestion questionId={r.questionId} /></div>
+      <DoubtButton text={r.text} options={r.options ?? []} correctKey={r.correctKey} selectedKey={r.selectedKey} explanation={r.explanation} topic={r.topic} />
     </article>)}
     {!rows.length && <div className="card empty"><p>Nothing in this filter.</p></div>}
   </div></Shell>;

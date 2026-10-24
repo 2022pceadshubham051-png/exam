@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"; import { Link } from "react-router-dom";
 import { Search, Play, ArrowRight, Eye, SlidersHorizontal, Trash2, Compass, X, TriangleAlert, CircleCheck, ClipboardList } from "lucide-react";
-import { api, fmt } from "../lib/api"; import Shell from "../components/Shell"; import AdSlot from "../components/AdSlot"; import { PageHeader, Empty, ConfirmDialog, SkeletonRows, SkeletonCards } from "../components/ui"; import { loadProfile, matchesExam, firstName, type Profile } from "../lib/profile";
+import { api, swr, fmt } from "../lib/api"; import Shell from "../components/Shell"; import AdSlot from "../components/AdSlot"; import { PageHeader, Empty, ConfirmDialog, SkeletonRows, SkeletonCards } from "../components/ui"; import { loadProfile, matchesExam, firstName, type Profile } from "../lib/profile";
 import SubNav from "../components/SubNav"; import { WeekDots, StreakFlame } from "../components/Achievement"; import { JourneyStrip } from "../components/Journey"; import { Flame } from "lucide-react"; import { showLevelUp } from "../components/LevelUp"; import { levelFromXp, xpFromAttempts, streakDays, saveLevel, savedLevel, saveXp } from "../lib/game";
 
 const diff: Record<string, string> = { EASY: "pill-ok", MEDIUM: "pill-warn", HARD: "pill-bad" };
@@ -13,15 +13,16 @@ export default function Dashboard() {
   const [ask, setAsk] = useState<null | { title: string; body: any; label: string }>(null); const [note, setNote] = useState<null | { ok: boolean; m: string }>(null); const [busyDel, setBusyDel] = useState(false); const [showAll, setShowAll] = useState(false);
   useEffect(() => { loadProfile().then(setProf).catch(() => {}); }, []);
   const loadHist = () => api("/history").then((d) => setHist(Array.isArray(d) ? d : [])).catch(() => setHist([]));
-  useEffect(() => { void loadHist(); }, []);
+  useEffect(() => { swr("/history", (d: any) => setHist(Array.isArray(d) ? d : [])).catch(() => setHist([])); }, []);
   useEffect(() => {
     let cancelled = false;
+    // No debounce for the first load (q is empty): only typing in the search box waits 250 ms. The empty search shows its last result instantly.
     const timer = setTimeout(() => {
-      setTests(null);
-      api(`/tests?limit=100&q=${encodeURIComponent(q)}`)
-        .then((data) => { if (cancelled) return; if (!Array.isArray(data)) throw new Error("Unexpected response from the tests API."); setTests(data); setErr(""); })
-        .catch((e) => { if (cancelled) return; setTests([]); setErr(e instanceof Error ? e.message : "Unable to load tests."); });
-    }, 250);
+      const ok = (data: unknown) => { if (cancelled) return; if (!Array.isArray(data)) throw new Error("Unexpected response from the tests API."); setTests(data); setErr(""); };
+      const bad = (e: unknown) => { if (cancelled) return; setTests([]); setErr(e instanceof Error ? e.message : "Unable to load tests."); };
+      const path = `/tests?limit=100&q=${encodeURIComponent(q)}`;
+      if (q) { setTests(null); api(path).then(ok).catch(bad); } else swr(path, ok).catch(bad);
+    }, q ? 250 : 0);
     return () => { cancelled = true; clearTimeout(timer); };
   }, [q]);
 

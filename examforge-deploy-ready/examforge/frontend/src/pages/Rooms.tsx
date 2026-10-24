@@ -1,11 +1,11 @@
 import { useEffect, useState, type FormEvent } from "react"; import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Users, Plus, LogIn, Share2, Copy, LogOut, Play } from "lucide-react";
-import Shell from "../components/Shell"; import SubNav from "../components/SubNav"; import { Empty, PageHeader, SkeletonRows, toast } from "../components/ui"; import { api, fmt } from "../lib/api"; import { useT } from "../lib/i18n";
+import Shell from "../components/Shell"; import SubNav from "../components/SubNav"; import { Empty, PageHeader, SkeletonRows, toast } from "../components/ui"; import { api, fmt } from "../lib/api"; import { shareText } from "../lib/engage"; import { useT } from "../lib/i18n";
 
 const invite = (r: { code: string; name: string }) => `Join my study room "${r.name}" on ExamForge. Code: ${r.code}\n${location.origin}/rooms?join=${r.code}`;
 async function share(r: { code: string; name: string }) {
   const text = invite(r);
-  try { if (navigator.share) await navigator.share({ title: "ExamForge study room", text }); else { await navigator.clipboard.writeText(text); toast("Invite copied. Paste it in WhatsApp.", "ok"); } } catch { /* share cancelled */ }
+  try { await shareText(text, "ExamForge study room"); } catch { await navigator.clipboard?.writeText(text); toast("Invite copied. Paste it in WhatsApp.", "ok"); }
 }
 
 /** List of my rooms, plus create and join. */
