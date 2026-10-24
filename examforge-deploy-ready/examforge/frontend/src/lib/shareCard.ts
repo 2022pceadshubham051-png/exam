@@ -1,7 +1,7 @@
 import { LABELS, pnr } from "../components/ResultTicket"; import { getSkin } from "./skin";
 // Draws the result ticket to a PNG (no external requests, no personal data beyond the student's own score) and shares or downloads it.
 const css = (n: string, d: string) => getComputedStyle(document.documentElement).getPropertyValue(n).trim() || d;
-export type CardInput = { attemptId: string; testName: string; attemptNo: number; score: number; total: number; pct: number; passed: boolean };
+export type CardInput = { attemptId: string; testName: string; attemptNo: number; score: number; total: number; pct: number; passed: boolean; streak?: number; link?: string };
 
 export function drawCard(i: CardInput): HTMLCanvasElement {
   const skin = getSkin(), L = LABELS[skin], W = 1080, H = 620, c = document.createElement("canvas"); c.width = W; c.height = H; const g = c.getContext("2d")!;
@@ -18,7 +18,8 @@ export function drawCard(i: CardInput): HTMLCanvasElement {
   g.save(); g.translate(sx - 190, 470); g.rotate(-0.12); g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 5; g.font = `800 34px ${mono}`; const label = (i.passed ? L.pass : L.fail).toUpperCase(), w = g.measureText(label).width + 40; g.globalAlpha = .9;
   g.strokeRect(-w / 2, -34, w, 56); g.strokeRect(-w / 2 + 6, -28, w - 12, 44); g.textAlign = "center"; g.fillText(label, 0, 6); g.restore();
   g.textAlign = "center"; g.fillStyle = ink; g.font = `800 120px ${mono}`; g.fillText(`${Math.round(i.pct)}%`, sx + 150, 300); g.globalAlpha = .65; g.font = `22px ${mono}`; g.fillText(L.note, sx + 150, 350);
-  g.textAlign = "left"; g.globalAlpha = .55; g.font = `20px ${mono}`; g.fillText(location.host, 70, H - 62); g.globalAlpha = 1;
+  g.textAlign = "left"; g.globalAlpha = .75; g.font = `700 22px ${mono}`; g.fillText(`Can you beat ${Math.round(i.pct)}%?  ${location.host}`, 70, H - 62); g.globalAlpha = 1;
+  if ((i.streak ?? 0) > 1) { g.textAlign = "right"; g.fillStyle = ink; g.font = `700 24px ${mono}`; g.fillText(`\u{1F525} ${i.streak}-day streak`, sx - 30, 92); g.textAlign = "left"; }
   return c;
 }
 
@@ -26,7 +27,7 @@ export function drawCard(i: CardInput): HTMLCanvasElement {
 export async function shareCard(i: CardInput): Promise<"shared" | "downloaded" | "cancelled"> {
   const blob: Blob | null = await new Promise((r) => drawCard(i).toBlob(r, "image/png"));
   if (!blob) throw new Error("Could not draw the card.");
-  const file = new File([blob], "examforge-result.png", { type: "image/png" }), text = `I scored ${Math.round(i.pct)}% in ${i.testName} on ExamForge.`;
+  const file = new File([blob], "examforge-result.png", { type: "image/png" }), text = `Maine ExamForge pe "${i.testName}" me ${Math.round(i.pct)}% score kiya! Kya tum mujhe beat kar sakte ho?${i.link ? ` ${i.link}` : ""}`;
   const nav = navigator as Navigator & { canShare?: (d: any) => boolean };
   try { if (nav.canShare?.({ files: [file] })) { await nav.share({ files: [file], text, title: "ExamForge result" }); return "shared"; } } catch (e: any) { if (e?.name === "AbortError") return "cancelled"; }
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "examforge-result.png"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); return "downloaded";

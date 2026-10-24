@@ -7,7 +7,7 @@ export function getMe(): Me {
     return { id: p.id, role: p.role };
   } catch { return null; }
 }
-export const logout = () => { localStorage.removeItem("token"); location.href = "/login"; };
+export const logout = () => { localStorage.removeItem("token"); try { Object.keys(sessionStorage).filter((k) => k.startsWith("ef_swr:")).forEach((k) => sessionStorage.removeItem(k)); } catch { /* ignore */ } location.href = "/login"; };
 // Appearance helpers live in ./theme; re-exported so older imports keep working.
 export { STYLES, STYLE_NAMES, getStyle, setStyle, isDark, isAstra, toggleTheme } from "./theme";
 export type { Style, Mode, Motion } from "./theme";
