@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react"; import { Link } from "react-router-dom";
-import { Play, Flame, CalendarDays, ArrowRight, BookMarked, Trophy, Languages, Target, Zap, Swords } from "lucide-react";
+import { Play, Flame, CalendarDays, ArrowRight, BookMarked, Trophy, Languages, Target, Zap, Swords, GraduationCap } from "lucide-react";
 import Shell from "../components/Shell"; import { SkeletonPage } from "../components/ui"; import { JourneyStrip } from "../components/Journey"; import { WeekDots } from "../components/Achievement";
 import { api, swr, fmt } from "../lib/api"; import { loadProfile, firstName, matchesExam, cachedCoins, type Profile } from "../lib/profile"; import { streakDays } from "../lib/game";
-import { type StreakInfo } from "../lib/engage"; import { useT } from "../lib/i18n"; import { getLang, setLang, getExamDate, setExamDate, daysUntil } from "../lib/prefs"; import { dueNotes, revisedToday } from "../lib/notebook"; import GoalRing from "../components/GoalRing";
+import { type StreakInfo } from "../lib/engage"; import { useT } from "../lib/i18n"; import { getLang, setLang, getExamDate, setExamDate, daysUntil } from "../lib/prefs"; import { dueNotes, revisedToday } from "../lib/notebook"; import GoalRing from "../components/GoalRing"; import Poster from "../components/Poster"; import { rupees } from "../lib/courses";
 
 const hour = () => { const h = new Date().getHours(); return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening"; };
 
@@ -10,13 +10,14 @@ export default function Home() {
   const t = useT();
   const [prof, setProf] = useState<Profile | null>(null); const [hist, setHist] = useState<any[] | null>(null); const [tests, setTests] = useState<any[] | null>(null);
   const [st, setSt] = useState<StreakInfo | null>(null); const [daily, setDaily] = useState<any>(null); const [weak, setWeak] = useState<any[] | null>(null); const [board, setBoard] = useState<any[] | null>(null);
-  const [date, setDate] = useState(getExamDate()); const [editDate, setEditDate] = useState(false); const [, bump] = useState(0);
+  const [courses, setCourses] = useState<any[]>([]); const [date, setDate] = useState(getExamDate()); const [editDate, setEditDate] = useState(false); const [, bump] = useState(0);
   useEffect(() => {
     loadProfile().then(setProf).catch(() => {}); swr("/streak", setSt).catch(() => {}); swr("/daily", setDaily).catch(() => {});
     swr("/history?limit=60", (d: any) => setHist(Array.isArray(d) ? d : [])).catch(() => setHist([]));
     swr("/tests?limit=100&q=", (d: any) => setTests(Array.isArray(d) ? d : [])).catch(() => setTests([]));
     swr("/progress?period=all&scope=all", (d: any) => setWeak(d?.weak ?? [])).catch(() => setWeak([]));
     swr("/tests/leaderboard?limit=20", (d: any) => setBoard(Array.isArray(d) ? d : [])).catch(() => setBoard([]));
+    swr("/courses", (d: any) => setCourses(Array.isArray(d) ? d : [])).catch(() => {});
     const f = () => bump((n) => n + 1); window.addEventListener("ef-notebook", f); return () => window.removeEventListener("ef-notebook", f);
   }, []);
   const ready = prof && hist && tests;
@@ -52,6 +53,15 @@ export default function Home() {
         : next ? <><h2>{next.name}</h2><p className="sub">{next.examName} · {fmt(next.durationSec)} · {qCount(next)} Q</p><Link className="btn btn-primary btn-lg" to={`/exam/${next.id}`}><Play size={18} aria-hidden="true" />{done.length ? t("Start test") : t("Take your first test")}</Link></>
         : <><h2>{t("No tests yet")}</h2><Link className="btn" to="/dashboard">{t("Practice")}</Link></>}
     </section>
+
+    {courses.length > 0 && <section className="stack" style={{ gap: 10 }} aria-labelledby="courses-h">
+      <div className="row between"><h2 className="card-title row" style={{ gap: 8 }} id="courses-h"><GraduationCap size={18} aria-hidden="true" />{t("Courses for you")}</h2><Link className="sub" to="/courses">{t("See all")} <ArrowRight size={13} aria-hidden="true" /></Link></div>
+      <div className="poster-strip">{courses.slice(0, 8).map((c) => <Link key={c.id} to={`/courses/${c.id}`} className="card course-card tap-card" aria-label={c.title}>
+        <Poster src={c.posterUrl} title={c.title} />
+        <div className="course-body"><b className="course-title">{c.title}</b>
+          {c.enrollment === "ACTIVE" ? <><div className="bar"><i style={{ width: `${c.progress}%` }} /></div><span className="sub">{t("Continue learning")} · {c.progress}%</span></>
+            : c.enrollment === "PENDING" ? <span className="pill pill-warn">{t("Payment under review")}</span> : <span className="course-price">{c.priceInr > 0 ? rupees(c.priceInr) : t("Free")}</span>}</div></Link>)}</div>
+    </section>}
 
     <section className="home-grid" aria-label={t("Daily")}>
       <Link className="card card-pad stack tap-card" style={{ gap: 6 }} to="/daily"><Zap size={20} aria-hidden="true" /><b>{t("Daily Challenge")}</b><span className="sub">{daily?.status === "done" ? `${t("Done")}: ${daily.summary?.correct}/${daily.summary?.total}${daily.summary?.rank ? ` · ${t("rank")} #${daily.summary.rank}` : ""}` : daily?.status === "playing" ? t("Resume now, your clock is running") : t("10 questions · 10 min · grow your streak")}</span></Link>

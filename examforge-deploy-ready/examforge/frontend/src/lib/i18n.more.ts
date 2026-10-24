@@ -1,6 +1,16 @@
 // Hindi (Devanagari) for the engagement screens. Keys are the English text; {name} placeholders are filled in by tr().
 // A test (i18n.coverage.test.ts) fails if a t("...") string in these screens has no Hindi, or if Hindi is not written in Devanagari.
 export const hiMore: Record<string, string> = {
+  // Courses
+  "Courses": "कोर्स", "Courses for you": "आपके लिए कोर्स", "See all": "सभी देखें", "Free": "मुफ़्त", "Video lessons with notes, made for your exam.": "आपकी परीक्षा के लिए नोट्स के साथ वीडियो लेक्चर।",
+  "All courses": "सभी कोर्स", "My courses": "मेरे कोर्स", "Enrolled": "एनरोल्ड", "Payment under review": "पेमेंट की जाँच चल रही है", "lessons": "लेक्चर", "subjects": "विषय", "complete": "पूरा",
+  "You have not enrolled in any course yet": "आपने अभी तक कोई कोर्स नहीं लिया है", "No courses yet": "अभी कोई कोर्स नहीं", "Open All courses and pick one to start learning.": "सभी कोर्स खोलकर एक चुनें और पढ़ाई शुरू करें।",
+  "New courses will appear here soon.": "नए कोर्स जल्द ही यहाँ दिखेंगे।", "Enroll to unlock this lesson.": "यह लेक्चर खोलने के लिए एनरोल करें।", "You are enrolled. Happy learning!": "आप एनरोल हो गए हैं। पढ़ाई शुभ हो!",
+  "Payment sent. You get access as soon as it is approved.": "पेमेंट भेज दी गई है। मंज़ूरी मिलते ही एक्सेस मिल जाएगा।", "You get access as soon as it is approved.": "मंज़ूरी मिलते ही एक्सेस मिल जाएगा।",
+  "No video for this lesson yet.": "इस लेक्चर का वीडियो अभी नहीं है।", "Completed": "पूरा हुआ", "Mark as complete": "पूरा हुआ मार्क करें", "Previous": "पिछला", "Next lesson": "अगला लेक्चर",
+  "Lecture notes": "लेक्चर नोट्स", "Open notes (PDF / link)": "नोट्स खोलें (PDF / लिंक)", "Continue learning": "पढ़ाई जारी रखें", "Start learning": "पढ़ाई शुरू करें", "How to pay": "पेमेंट कैसे करें",
+  "Payment / UPI transaction ID": "पेमेंट / UPI ट्रांज़ैक्शन ID", "Paste the transaction ID after paying": "पेमेंट के बाद ट्रांज़ैक्शन ID यहाँ पेस्ट करें", "Submit payment & enroll": "पेमेंट भेजें और एनरोल करें",
+  "Enroll for free": "मुफ़्त में एनरोल करें", "Course content": "कोर्स की सामग्री", "Free preview": "मुफ़्त प्रीव्यू", "Lessons are coming soon.": "लेक्चर जल्द आ रहे हैं।",
   // AI tutor
   "Don't understand? Ask the AI tutor": "समझ नहीं आया? AI ट्यूटर से पूछिए",
   "AI tutor": "AI ट्यूटर",
