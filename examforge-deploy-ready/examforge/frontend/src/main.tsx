@@ -11,7 +11,7 @@ import { getMe } from "./lib/auth"; import { api } from "./lib/api"; import { ca
 const Exam = lazy(() => import("./pages/Exam")); const Result = lazy(() => import("./pages/Result")); const Review = lazy(() => import("./pages/Review"));
 const Dashboard = lazy(() => import("./pages/Dashboard")); const Admin = lazy(() => import("./pages/Admin")); const Progress = lazy(() => import("./pages/Progress"));
 const Leaderboard = lazy(() => import("./pages/Leaderboard")); const Coach = lazy(() => import("./pages/Coach")); const LecturePace = lazy(() => import("./pages/LecturePace"));
-const LecturePaceBoard = lazy(() => import("./pages/LecturePaceBoard")); const Welcome = lazy(() => import("./pages/Welcome")); const ProfilePage = lazy(() => import("./pages/Profile")); const Shop = lazy(() => import("./pages/Shop")); const HomeTab = lazy(() => import("./pages/Home")); const Notebook = lazy(() => import("./pages/Notebook")); const Rooms = lazy(() => import("./pages/Rooms")); const Daily = lazy(() => import("./pages/Daily")); const Duels = lazy(() => import("./pages/Duels")); const DuelPlay = lazy(() => import("./pages/Duels").then((m) => ({ default: m.DuelPlay }))); const League = lazy(() => import("./pages/League")); const AdminReports = lazy(() => import("./pages/AdminReports")); const Revise = lazy(() => import("./pages/Revise")); const RoomDetail = lazy(() => import("./pages/Rooms").then((m) => ({ default: m.RoomDetail })));
+const LecturePaceBoard = lazy(() => import("./pages/LecturePaceBoard")); const Welcome = lazy(() => import("./pages/Welcome")); const ProfilePage = lazy(() => import("./pages/Profile")); const Shop = lazy(() => import("./pages/Shop")); const HomeTab = lazy(() => import("./pages/Home")); const Notebook = lazy(() => import("./pages/Notebook")); const Rooms = lazy(() => import("./pages/Rooms")); const Daily = lazy(() => import("./pages/Daily")); const Duels = lazy(() => import("./pages/Duels")); const DuelPlay = lazy(() => import("./pages/Duels").then((m) => ({ default: m.DuelPlay }))); const League = lazy(() => import("./pages/League")); const AdminReports = lazy(() => import("./pages/AdminReports")); const Revise = lazy(() => import("./pages/Revise")); const Courses = lazy(() => import("./pages/Courses")); const CourseDetail = lazy(() => import("./pages/Courses").then((m) => ({ default: m.CourseDetail }))); const AdminCourses = lazy(() => import("./pages/AdminCourses")); const RoomDetail = lazy(() => import("./pages/Rooms").then((m) => ({ default: m.RoomDetail })));
 initTheme(); initReveal(); captureRef();
 
 class AppErrorBoundary extends Component<{ children: ReactElement }, { error: Error | null }> {
@@ -36,14 +36,14 @@ const PageLoading = () => <div className="grid min-h-screen place-items-center" 
 // Start the first screen's data requests right now, in parallel with downloading the screen's code (instead of after it).
 // Without this the API calls only begin once the page chunk has been parsed and rendered, about 0.6 s later on a slow phone.
 const EARLY: Record<string, string[]> = {
-  "/home": ["/profile", "/coins", "/sync", "/streak", "/daily", "/history?limit=60", "/tests?limit=100&q=", "/progress?period=all&scope=all", "/tests/leaderboard?limit=20"],
+  "/home": ["/courses", "/profile", "/coins", "/sync", "/streak", "/daily", "/history?limit=60", "/tests?limit=100&q=", "/progress?period=all&scope=all", "/tests/leaderboard?limit=20"],
   "/dashboard": ["/profile", "/coins", "/sync", "/history", "/tests?limit=100&q="],
   "/daily": ["/profile", "/coins", "/streak", "/daily"], "/notebook": ["/profile", "/coins", "/sync"], "/shop": ["/profile", "/coins", "/shop"],
 };
 if (localStorage.getItem("token")) for (const p of EARLY[location.pathname] ?? []) api(p).catch(() => {});
 
 // Warm the most-used screens while the browser is idle, so tapping a tab feels instant (skipped on data saver / low-data mode).
-const warm = () => { const c = (navigator as any).connection; if (c?.saveData || /2g|3g/.test(c?.effectiveType ?? "") || localStorage.getItem("ef_lite") === "1" || !localStorage.getItem("token")) return; void Promise.allSettled([import("./pages/Home"), import("./pages/Dashboard"), import("./pages/Daily"), import("./pages/Notebook"), import("./pages/Revise")]); };
+const warm = () => { const c = (navigator as any).connection; if (c?.saveData || /2g|3g/.test(c?.effectiveType ?? "") || localStorage.getItem("ef_lite") === "1" || !localStorage.getItem("token")) return; void Promise.allSettled([import("./pages/Home"), import("./pages/Dashboard"), import("./pages/Daily"), import("./pages/Courses"), import("./pages/Notebook"), import("./pages/Revise")]); };
 // Wait until the current screen is fully loaded (5 s after load) so warming never competes with what the student is waiting for.
 window.addEventListener("load", () => setTimeout(() => ((window as any).requestIdleCallback ? (window as any).requestIdleCallback(warm, { timeout: 5000 }) : warm()), 5000));
 if ("serviceWorker" in navigator && import.meta.env.PROD) window.addEventListener("load", () => { navigator.serviceWorker.register("/sw.js").catch(() => {}); });
@@ -55,6 +55,7 @@ createRoot(document.getElementById("root")!).render(<React.StrictMode><AppErrorB
   <Route path="/login" element={<Login />} />
   <Route path="/home" element={<Guard><HomeTab /></Guard>} /><Route path="/learn" element={<Navigate to="/rooms" replace />} /><Route path="/notebook" element={<Guard><Notebook /></Guard>} /><Route path="/rooms" element={<Guard><Rooms /></Guard>} /><Route path="/rooms/:id" element={<Guard><RoomDetail /></Guard>} />
   <Route path="/daily" element={<Guard><Daily /></Guard>} /><Route path="/duel" element={<Guard><Duels /></Guard>} /><Route path="/duel/:code" element={<Guard><DuelPlay /></Guard>} /><Route path="/league" element={<Guard><League /></Guard>} /><Route path="/admin/reports" element={<Guard admin><AdminReports /></Guard>} /><Route path="/revise" element={<Guard><Revise /></Guard>} />
+  <Route path="/courses" element={<Guard><Courses /></Guard>} /><Route path="/courses/:id" element={<Guard><CourseDetail /></Guard>} /><Route path="/admin/courses" element={<Guard admin><AdminCourses /></Guard>} />
   <Route path="/dashboard" element={<Guard><Dashboard /></Guard>} />
   <Route path="/progress" element={<Guard><Progress /></Guard>} />
   <Route path="/coach" element={<Guard><Coach /></Guard>} />
