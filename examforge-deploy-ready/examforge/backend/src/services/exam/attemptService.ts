@@ -4,6 +4,7 @@ import { calculateScore, groupPerformance, type ScoreInput } from "./scoring";
 import { compareAttempts } from "../analytics/analytics";
 import { buildAdaptiveSelection } from "../analytics/adaptive";
 import { detect, normalizeSubject, SUBJECT_NAMES } from "../syllabus/classifier";
+import { afterSubmit } from "../referral";
 
 type Opt = { key: string; text: string };
 type AttemptMode = "EXAM" | "PRACTICE";
@@ -238,10 +239,12 @@ export async function wrongKeys(attemptId: string, questionId: string) {
 async function chunked<T>(items: T[], size: number, fn: (x: T) => Promise<unknown>) { for (let i = 0; i < items.length; i += size) await Promise.all(items.slice(i, i + size).map(fn)); }
 
 export async function submit(attemptId: string, auto = false) {
+  let finishedBy: string | null = null;
   try {
-    return await prisma.$transaction(async (tx) => {
+    const out = await prisma.$transaction(async (tx) => {
       const a = await tx.testAttempt.findUnique({ where: { id: attemptId }, include: { test: { include: { sections: { select: { id: true, name: true } } } }, responses: { include: { question: { include: { options: true } } } } } });
       if (!a || a.status !== "IN_PROGRESS") return null;
+      finishedBy = a.userId;
       const t = a.test;
       const rows: (ScoreInput & { id: string })[] = a.responses.map((r) => {
         const p = present(r.question as any, t.shuffleOptions, a.shuffleSeed); const tag = tagQuestion(r.question);
@@ -266,6 +269,8 @@ export async function submit(attemptId: string, auto = false) {
       await tx.testAttempt.update({ where: { id: attemptId }, data: { status: auto ? "AUTO_SUBMITTED" : "SUBMITTED", endedAt: now } });
       return result;
     }, TX);
+    if (out && finishedBy) await afterSubmit(finishedBy); // streak + invite reward; never throws
+    return out;
   } catch (e: any) { if (e?.code === "P2002") return null; throw e; } // concurrent submit already created the result
 }
 

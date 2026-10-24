@@ -74,8 +74,8 @@ attempts.post("/attempts/:id/tab-switch", wrap(async (req, res) => {
 attempts.post("/attempts/:id/submit", wrap(async (req, res) => { if (!(await own(req, req.params.id))) return res.sendStatus(404); await svc.submit(req.params.id); res.json({ ok: true }); }));
 attempts.get("/results/:id", wrap(async (req, res) => { const r = await svc.resultWithComparison(req.params.id, req.user!.id); r ? res.json(r) : res.sendStatus(404); }));
 
-attempts.get("/history", wrap(async (req, res) => { await syncEarnings(req.user!.id); res.json(await prisma.testAttempt.findMany({
-  where: { userId: req.user!.id }, orderBy: { startedAt: "desc" }, take: 300,
+attempts.get("/history", wrap(async (req, res) => { await syncEarnings(req.user!.id); const take = Math.min(300, Math.max(1, parseInt(String(req.query.limit ?? "300"), 10) || 300)); res.json(await prisma.testAttempt.findMany({
+  where: { userId: req.user!.id }, orderBy: { startedAt: "desc" }, take,
   include: { result: true, test: { select: { id: true, name: true, examName: true, maxAttempts: true, showResult: true } } },
 }).then((rows) => rows.map(({ test: { showResult, ...test }, ...a }) =>
   // Official attempts of tests with hidden results: keep the row, drop the numbers.

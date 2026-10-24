@@ -102,6 +102,7 @@ tests.get("/", async (req: AuthedReq, res) => {
   const { q, exam } = req.query as Record<string, string>;
   const pageNo = Math.max(1, parseInt(String(req.query.page ?? "1"), 10) || 1);
   const limit = Math.min(100, Math.max(1, parseInt(String(req.query.limit ?? "20"), 10) || 20));
+  if (req.user!.role !== "ADMIN") res.set("Cache-Control", "private, max-age=20, stale-while-revalidate=60"); // the list changes rarely
   res.json(
     await prisma.test.findMany({
       where: {

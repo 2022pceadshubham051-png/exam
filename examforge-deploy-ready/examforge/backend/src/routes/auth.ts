@@ -1,11 +1,13 @@
 import { Router } from "express"; import bcrypt from "bcrypt"; import { z } from "zod";
 import { prisma } from "../lib/db"; import { sign } from "../middleware/auth";
 export const auth = Router();
-const creds = z.object({ email: z.string().trim().toLowerCase().email(), password: z.string().min(8).max(128), name: z.string().trim().min(1).max(80).optional() });
+const creds = z.object({ email: z.string().trim().toLowerCase().email(), password: z.string().min(8).max(128), name: z.string().trim().min(1).max(80).optional(), ref: z.string().trim().max(12).optional() });
 auth.post("/register", async (req, res) => {
   const p = creds.safeParse(req.body); if (!p.success || !p.data.name) return res.status(400).json({ error: "Invalid input" });
   if (await prisma.user.findUnique({ where: { email: p.data.email } })) return res.status(409).json({ error: "Email exists" });
-  const u = await prisma.user.create({ data: { email: p.data.email, name: p.data.name, passwordHash: await bcrypt.hash(p.data.password, 12) } });
+  // A valid invite code links the new student to the friend who shared it (rewarded later, after the first finished test).
+  const inviter = p.data.ref ? await prisma.user.findUnique({ where: { refCode: p.data.ref.toUpperCase() }, select: { id: true } }) : null;
+  const u = await prisma.user.create({ data: { email: p.data.email, name: p.data.name, passwordHash: await bcrypt.hash(p.data.password, 12), ...(inviter ? { referredBy: inviter.id } : {}) } });
   res.json({ token: sign(u), user: { id: u.id, name: u.name, role: u.role } });
 });
 auth.post("/login", async (req, res) => {

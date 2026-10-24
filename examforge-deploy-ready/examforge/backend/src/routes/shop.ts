@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { prisma } from "../lib/db"; import { requireAuth, type AuthedReq } from "../middleware/auth";
-import { ITEMS, byId, readInv } from "../services/shopCatalog";
+import { ITEMS, byId, readInv, isConsumable } from "../services/shopCatalog";
 import { award, balance, syncEarnings, dayKey, DAILY_COINS } from "../services/coins";
 
 export const shop = Router();
@@ -27,12 +27,14 @@ shop.post("/shop/buy", async (req: AuthedReq, res) => {
   const out = await prisma.$transaction(async (tx) => {
     const u = await tx.user.findUnique({ where: { id: userId }, select: { inventory: true } });
     const inv = readInv(u?.inventory);
-    if (item.kind !== "lifeline" && inv.owned.includes(item.id)) return { err: "You already own this." };
+    if (!isConsumable(item.kind) && inv.owned.includes(item.id)) return { err: "You already own this." };
+    if (item.kind === "freeze" && inv.freezes >= 5) return { err: "You can hold at most 5 streak freezes." };
     if (item.kind === "lifeline" && inv.lifelines >= 50) return { err: "You can hold at most 50 lifelines." };
     const sum = await tx.coinTx.aggregate({ where: { userId }, _sum: { amount: true } });
     if ((sum._sum.amount ?? 0) < item.price) return { err: "Not enough coins yet. Take a test or claim your daily coins!" };
     await tx.coinTx.create({ data: { userId, amount: -item.price, reason: "buy", ref: `${item.id}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}` } });
     if (item.kind === "lifeline") inv.lifelines += 1;
+    else if (item.kind === "freeze") inv.freezes += 1;
     else { inv.owned.push(item.id); inv.equipped = { ...inv.equipped, [item.kind]: item.id }; } // equip right away
     await tx.user.update({ where: { id: userId }, data: { inventory: inv as any } });
     return {};

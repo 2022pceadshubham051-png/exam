@@ -1,15 +1,18 @@
 import "./lib/asyncErrors";
-import express from "express"; import bcrypt from "bcrypt"; import { prisma } from "./lib/db"; import helmet from "helmet"; import cors from "cors"; import rateLimit from "express-rate-limit";
-import { tests } from "./routes/tests"; import { progress } from "./routes/progress"; import { auth } from "./routes/auth"; import { attempts } from "./routes/attempts"; import { questions } from "./routes/questions"; import { coach } from "./routes/coach"; import { lecturePace } from "./routes/lecturePace"; import { me } from "./routes/me"; import { shop } from "./routes/shop"; import { rooms } from "./routes/rooms"; import { sync } from "./routes/sync";
+import express from "express"; import bcrypt from "bcrypt"; import { prisma } from "./lib/db"; import helmet from "helmet"; import cors from "cors"; import compression from "compression"; import rateLimit from "express-rate-limit";
+import { tests } from "./routes/tests"; import { progress } from "./routes/progress"; import { auth } from "./routes/auth"; import { attempts } from "./routes/attempts"; import { questions } from "./routes/questions"; import { coach } from "./routes/coach"; import { lecturePace } from "./routes/lecturePace"; import { me } from "./routes/me"; import { shop } from "./routes/shop"; import { rooms } from "./routes/rooms"; import { sync } from "./routes/sync"; import { daily } from "./routes/daily"; import { duels } from "./routes/duels"; import { streak } from "./routes/streak"; import { ai } from "./routes/ai"; import { invite } from "./routes/invite"; import { league } from "./routes/league"; import { reports } from "./routes/reports";
 const app = express();
 // Behind Vercel/Render proxies: without this every user shares one rate-limit bucket.
 app.set("trust proxy", 1);
 const origins = process.env.CORS_ORIGIN?.split(",").map((o) => o.trim().replace(/\/$/, "")).filter(Boolean);
-app.use(helmet(), cors({ origin: origins?.length ? origins : true }), express.json({ limit: "2mb" }));
+app.use(compression(), helmet(), cors({ origin: origins?.length ? origins : true }), express.json({ limit: "2mb" }));
 app.get("/api/health", (_, res) => res.json({ ok: true }));
-// Make sure the admin account exists before serving any request (serverless can freeze after cold start).
+// The admin account is created in the background (not on the request path: bcrypt at cost 12 takes ~250 ms, which used to delay every
+// first request after a cold start). Logging in as the admin waits for it, so the account always exists when it is needed.
 let seeded: Promise<void> | null = null;
-app.use((_req, _res, next) => { seeded ??= ensureAdmin(); seeded.then(() => next(), () => next()); });
+const seedAdmin = () => (seeded ??= ensureAdmin());
+void seedAdmin();
+app.use("/api/auth/login", (req, _res, next) => { const u = process.env.ADMIN_USERNAME, id = String(req.body?.identifier ?? req.body?.email ?? "").trim(); if (u && id === u) seedAdmin().then(() => next(), () => next()); else next(); });
 app.use("/api/auth", rateLimit({ windowMs: 15 * 60_000, max: 50 }), auth);
 app.use("/api/questions", questions);
 app.use("/api/tests", tests);
@@ -21,6 +24,13 @@ app.use("/api", coach);
 app.use("/api", attempts);
 app.use("/api", rooms);
 app.use("/api", sync);
+app.use("/api", daily);
+app.use("/api", duels);
+app.use("/api", streak);
+app.use("/api", ai);
+app.use("/api", invite);
+app.use("/api", league);
+app.use("/api", reports);
 if (!process.env.JWT_SECRET) console.error("JWT_SECRET is not set: login and register will fail until you add it.");
 app.use("/api", (_req, res) => res.status(404).json({ error: "Not found" }));
 // Central error handler: validation problems -> 400, missing rows -> 404, everything else -> a clean 500 (never a hung request).
