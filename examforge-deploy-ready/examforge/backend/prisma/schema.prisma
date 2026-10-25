@@ -429,6 +429,7 @@ model Lesson {
   subjectId String
   title String
   youtubeId String?
+  bunnyId String?
   notes String? @db.Text
   notesUrl String?
   durationMin Int?

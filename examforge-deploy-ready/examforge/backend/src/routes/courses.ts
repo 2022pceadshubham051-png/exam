@@ -1,7 +1,7 @@
 import { Router } from "express"; import { z } from "zod";
 import { prisma } from "../lib/db"; import { requireAuth, requireAdmin, type AuthedReq } from "../middleware/auth";
 import { wrap, fail } from "./util";
-import { youtubeId } from "../services/youtube";
+import { youtubeId } from "../services/youtube"; import { bunnyId, bunnySrc } from "../services/bunny"; import { playlistId, fetchPlaylist } from "../services/youtubePlaylist";
 import { couponProblem, discountFor, normalizeCode } from "../services/courses/coupons"; import { slugify, uniqueSlug, SLUG_RE } from "../services/courses/slug"; import { notifyUsers } from "../services/push";
 
 /** Video courses: the admin builds a course (poster, price, subjects, YouTube lessons, notes); students enroll and watch.
@@ -60,14 +60,14 @@ courses.get("/courses", wrap(async (req, res) => {
 }));
 
 courses.get("/courses/:id", wrap(async (req, res) => {
-  const c = await prisma.course.findFirst({ where: byIdOrSlug(req.params.id), include: { subjects: { orderBy: { position: "asc" }, include: { lessons: { orderBy: { position: "asc" }, select: { id: true, title: true, durationMin: true, isPreview: true, notesUrl: true, youtubeId: true } } } } } });
+  const c = await prisma.course.findFirst({ where: byIdOrSlug(req.params.id), include: { subjects: { orderBy: { position: "asc" }, include: { lessons: { orderBy: { position: "asc" }, select: { id: true, title: true, durationMin: true, isPreview: true, notesUrl: true, youtubeId: true, bunnyId: true } } } } } });
   if (!c || (!c.published && !isAdmin(req))) throw fail(404, "Course not found.");
   const a = await access(req, c.id);
   const [dn, wn] = await Promise.all([prisma.lessonProgress.findMany({ where: { userId: req.user!.id, lesson: { courseId: c.id } }, select: { lessonId: true } }), prisma.lesson.findMany({ where: { courseId: c.id, notes: { not: null } }, select: { id: true } })]);
   const done = new Set(dn.map((d) => d.lessonId)), withNotes = new Set(wn.map((d) => d.id));
   let total = 0, got = 0;
   const subjects = c.subjects.map((s) => ({ id: s.id, name: s.name, lessons: s.lessons.map((l) => { total++; if (done.has(l.id)) got++; return {
-    id: l.id, title: l.title, durationMin: l.durationMin, isPreview: l.isPreview, hasVideo: !!l.youtubeId, hasNotes: withNotes.has(l.id) || !!l.notesUrl, done: done.has(l.id), locked: !a.full && !l.isPreview }; }) }));
+    id: l.id, title: l.title, durationMin: l.durationMin, isPreview: l.isPreview, hasVideo: !!(l.youtubeId || l.bunnyId), hasNotes: withNotes.has(l.id) || !!l.notesUrl, done: done.has(l.id), locked: !a.full && !l.isPreview }; }) }));
   const [rt, revs, mine] = await Promise.all([ratingsFor([c.id]),
     prisma.courseReview.findMany({ where: { courseId: c.id }, orderBy: { createdAt: "desc" }, take: 30, include: { user: { select: { name: true, displayName: true } } } }),
     prisma.courseReview.findUnique({ where: { userId_courseId: { userId: req.user!.id, courseId: c.id } } })]);
@@ -86,7 +86,7 @@ courses.get("/courses/:id/lessons/:lid", wrap(async (req, res) => {
   // The watermark text comes from the server (never from the browser), so a student cannot change whose name is shown on the video.
   const me = await prisma.user.findUnique({ where: { id: req.user!.id }, select: { name: true, displayName: true, email: true, username: true } });
   const watermark = me ? `${me.displayName || me.name} · ${me.email.includes("@") ? me.email : me.username ?? ""}` : "";
-  res.json({ id: l.id, title: l.title, youtubeId: l.youtubeId, notes: l.notes, notesUrl: l.notesUrl, durationMin: l.durationMin, done, watermark, courseId: l.courseId });
+  res.json({ id: l.id, title: l.title, youtubeId: l.youtubeId, bunnySrc: l.bunnyId ? bunnySrc(l.bunnyId) : null, notes: l.notes, notesUrl: l.notesUrl, durationMin: l.durationMin, done, watermark, courseId: l.courseId });
 }));
 
 /** Price after an optional coupon. Throws a 400 with a student-friendly message when the code cannot be used. */
@@ -191,10 +191,26 @@ admin.post("/courses/:id/subjects", wrap(async (req, res) => {
 admin.put("/subjects/:id", wrap(async (req, res) => { res.json(await prisma.courseSubject.update({ where: { id: req.params.id }, data: { name: z.string().trim().min(1).max(80).parse(req.body?.name) } })); }));
 admin.delete("/subjects/:id", wrap(async (req, res) => { await prisma.courseSubject.delete({ where: { id: req.params.id } }); res.json({ ok: true }); }));
 
+/** Paste a YouTube playlist link: every video becomes a lesson (title + length), in playlist order. Videos already in the target subject are skipped, so it is safe to run again after adding videos to the playlist. */
+admin.post("/courses/:id/import-playlist", wrap(async (req, res) => {
+  const key = process.env.YOUTUBE_API_KEY; if (!key) throw fail(400, "Playlist import is not set up: add YOUTUBE_API_KEY on the server (see DEPLOY.md).");
+  const b = z.object({ url: z.string().trim().min(5).max(300), subjectId: z.string().optional().or(z.literal("")), preview: z.coerce.number().int().min(0).max(50).default(0) }).parse(req.body);
+  const course = await prisma.course.findUnique({ where: { id: req.params.id }, select: { id: true } }); if (!course) throw fail(404, "Course not found.");
+  const pid = playlistId(b.url); if (!pid) throw fail(400, "That is not a playlist link. It should contain list=PL… (open the playlist and copy its address).");
+  let pl; try { pl = await fetchPlaylist(pid, key); } catch (e: any) { throw fail(e.status === 404 ? 404 : 400, e.reason === "quotaExceeded" ? "YouTube daily limit reached. Try again tomorrow." : e.message || "Could not read the playlist."); }
+  if (!pl.videos.length) throw fail(400, "No public videos found in this playlist.");
+  let subject = b.subjectId ? await prisma.courseSubject.findFirst({ where: { id: b.subjectId, courseId: course.id } }) : null; if (b.subjectId && !subject) throw fail(404, "Subject not found.");
+  if (!subject) subject = await prisma.courseSubject.create({ data: { courseId: course.id, name: pl.title.slice(0, 80), position: await nextPos({ courseId: course.id }, "courseSubject") } });
+  const have = new Set((await prisma.lesson.findMany({ where: { subjectId: subject.id }, select: { youtubeId: true } })).map((l: any) => l.youtubeId)), fresh = pl.videos.filter((v) => !have.has(v.videoId));
+  let pos = await nextPos({ subjectId: subject.id }, "lesson");
+  if (fresh.length) await prisma.lesson.createMany({ data: fresh.map((v, i) => ({ courseId: course.id, subjectId: subject!.id, title: v.title.slice(0, 160) || `Lesson ${pos + i + 1}`, youtubeId: v.videoId, durationMin: v.durationMin, isPreview: pos + i < b.preview, position: pos + i })) });
+  res.json({ subjectId: subject.id, subject: subject.name, added: fresh.length, skipped: pl.videos.length - fresh.length });
+}));
+
 const lessonData = (b: z.infer<typeof lessonBody>) => {
-  const video = clean(b.video), id = video ? youtubeId(video) : null;
-  if (video && !id) throw fail(400, "That does not look like a YouTube link. Paste the video URL (youtube.com/watch?v=… or youtu.be/…).");
-  return { title: b.title, youtubeId: id, notes: clean(b.notes), notesUrl: clean(b.notesUrl), durationMin: b.durationMin === "" || b.durationMin == null ? null : b.durationMin, isPreview: !!b.isPreview };
+  const video = clean(b.video), bn = video ? bunnyId(video) : null, id = video && !bn ? youtubeId(video) : null;
+  if (video && !id && !bn) throw fail(400, "That does not look like a YouTube link or Bunny video. Paste the YouTube URL, or bunny:<video-id>.");
+  return { title: b.title, youtubeId: id, bunnyId: bn, notes: clean(b.notes), notesUrl: clean(b.notesUrl), durationMin: b.durationMin === "" || b.durationMin == null ? null : b.durationMin, isPreview: !!b.isPreview };
 };
 admin.post("/subjects/:id/lessons", wrap(async (req, res) => {
   const s = await prisma.courseSubject.findUnique({ where: { id: req.params.id } }); if (!s) throw fail(404, "Subject not found.");
