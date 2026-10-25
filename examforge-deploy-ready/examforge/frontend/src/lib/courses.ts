@@ -1,6 +1,10 @@
 /** Helpers for the Courses feature (shared by the student pages and the admin editor). */
 export const rupees = (n: number) => (n > 0 ? `₹${n.toLocaleString("en-IN")}` : "Free");
 
+/** The page address of a course (works for anyone, no login) and the link to share (its HTML carries the title/poster for WhatsApp previews). */
+export const courseUrl = (slugOrId: string) => `${location.origin}/c/${slugOrId}`;
+export const shareUrl = (slugOrId: string) => `${(import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "") || location.origin}/api/public/courses/${slugOrId}/share`;
+
 /** Privacy-friendly YouTube embed (no cookies until played, no related videos from other channels). */
 export const embedUrl = (id: string) => `https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1&playsinline=1`;
 export const thumbUrl = (id: string) => `https://i.ytimg.com/vi/${id}/mqdefault.jpg`;

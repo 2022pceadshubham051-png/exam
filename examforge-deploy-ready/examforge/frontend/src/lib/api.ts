@@ -23,7 +23,7 @@ async function request<T>(path: string, method: string, body?: unknown): Promise
     if (!r.ok) {
       // /me and /shop were added in v18. A plain "Not found" on them means the deployed backend is older than this frontend.
       const stale = r.status === 404 && j.error === "Not found" && /^\/(me|shop|coins|lecture-pace)(\/|$)/.test(path);
-      throw Object.assign(new Error(stale ? "Your backend is out of date (missing the Profile/Shop/Lecture Pace API). Redeploy the backend from this version, then refresh." : j.error ?? r.statusText ?? `Request failed (${r.status})`), { status: r.status, stale });
+      throw Object.assign(new Error(stale ? "Your backend is out of date (missing the Profile/Shop/Lecture Pace API). Redeploy the backend from this version, then refresh." : j.error ?? r.statusText ?? `Request failed (${r.status})`), { status: r.status, stale, code: j.code as string | undefined, data: j });
     }
     return j;
   } catch (e: any) {

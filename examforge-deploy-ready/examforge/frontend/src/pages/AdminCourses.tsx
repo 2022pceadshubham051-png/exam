@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from "react"; import { Link } from "react-router-dom";
-import { Plus, Trash2, Pencil, ArrowLeft, ArrowUp, ArrowDown, Save, ImagePlus, Eye, EyeOff, Users, PlayCircle, FileText, CircleCheck, CircleX, Check, X, ShieldCheck } from "lucide-react";
+import { Plus, Trash2, Pencil, ArrowLeft, ArrowUp, ArrowDown, Save, ImagePlus, Eye, EyeOff, Users, PlayCircle, FileText, CircleCheck, CircleX, Check, X, ShieldCheck, CheckCheck, Link2, Star } from "lucide-react";
 import Shell from "../components/Shell"; import Poster from "../components/Poster"; import { ConfirmDialog, Modal, SkeletonRows, toast } from "../components/ui";
-import { api } from "../lib/api"; import { readPoster, rupees, thumbUrl, youtubeId } from "../lib/courses";
+import { api } from "../lib/api"; import { readPoster, rupees, thumbUrl, youtubeId, courseUrl, shareUrl } from "../lib/courses"; import AdminCourseNav from "../components/AdminCourseNav"; import { Stars } from "../components/CourseReviews";
 
-const blank = { title: "", description: "", posterUrl: "", examName: "", priceInr: 0, paymentInfo: "", published: false, featured: true };
+const blank = { title: "", description: "", posterUrl: "", examName: "", priceInr: 0, paymentInfo: "", published: false, featured: true, slug: "", seoTitle: "", seoDescription: "" };
 const blankLesson = { title: "", video: "", notes: "", notesUrl: "", durationMin: "" as number | "", isPreview: false };
 
 /** Admin: build courses (poster, price, subjects, YouTube lessons with notes) and approve student payments. */
@@ -17,6 +17,7 @@ export default function AdminCourses() {
       <div><h1 style={{ fontSize: "1.7rem", fontWeight: 800 }}>Courses</h1><p className="sub">Create video courses, set the price and publish them. Students see the poster on their Home screen.</p></div>
       <div className="row">{openId ? <button className="btn" onClick={back}><ArrowLeft size={16} />All courses</button> : <><Link className="btn" to="/admin"><ShieldCheck size={16} />Tests</Link><button className="btn btn-primary" onClick={() => setOpenId("new")}><Plus size={16} />New course</button></>}</div>
     </div>
+    {!openId && <AdminCourseNav />}
     {msg && <div className={`alert ${msg.ok ? "alert-ok" : "alert-bad"}`} role="alert">{msg.ok ? <CircleCheck size={18} /> : <CircleX size={18} />}<span style={{ flex: 1 }}>{msg.m}</span></div>}
     {openId ? <Editor key={openId} id={openId} onSaved={(id) => setOpenId(id)} onDeleted={back} /> : !list ? <SkeletonRows rows={3} />
       : list.length ? <div className="course-grid">{list.map((c) => <article key={c.id} className="card course-card">
@@ -34,8 +35,8 @@ export default function AdminCourses() {
 
 function Editor({ id, onSaved, onDeleted }: { id: string; onSaved: (id: string) => void; onDeleted: () => void }) {
   const isNew = id === "new"; const [f, setF] = useState<any>(blank); const [course, setCourse] = useState<any>(null); const [busy, setBusy] = useState(false); const [err, setErr] = useState(""); const [delCourse, setDelCourse] = useState(false);
-  const [tab, setTab] = useState<"content" | "students">("content");
-  const reload = useCallback(async () => { const c = await api(`/admin/courses/${id}`); setCourse(c); setF({ title: c.title, description: c.description ?? "", posterUrl: c.posterUrl ?? "", examName: c.examName ?? "", priceInr: c.priceInr, paymentInfo: c.paymentInfo ?? "", published: c.published, featured: c.featured }); }, [id]);
+  const [tab, setTab] = useState<"content" | "students" | "reviews">("content");
+  const reload = useCallback(async () => { const c = await api(`/admin/courses/${id}`); setCourse(c); setF({ title: c.title, description: c.description ?? "", posterUrl: c.posterUrl ?? "", examName: c.examName ?? "", priceInr: c.priceInr, paymentInfo: c.paymentInfo ?? "", published: c.published, featured: c.featured, slug: c.slug ?? "", seoTitle: c.seoTitle ?? "", seoDescription: c.seoDescription ?? "" }); }, [id]);
   useEffect(() => { if (!isNew) reload().catch((e) => setErr(e.message)); }, [isNew, reload]);
   const set = (k: string, v: any) => setF((o: any) => ({ ...o, [k]: v }));
   const pick = async (file?: File | null) => { if (!file) return; try { set("posterUrl", await readPoster(file)); setErr(""); } catch (e: any) { setErr(e.message); } };
@@ -67,6 +68,14 @@ function Editor({ id, onSaved, onDeleted }: { id: string; onSaved: (id: string) 
           </div>
           <div><label className="label" htmlFor="c-desc">Description</label><textarea id="c-desc" className="textarea" rows={4} maxLength={4000} value={f.description} onChange={(e) => set("description", e.target.value)} placeholder="What will students learn? Who is it for?" /></div>
           <div><label className="label" htmlFor="c-pay">Payment instructions (shown to students for paid courses)</label><textarea id="c-pay" className="textarea" rows={2} maxLength={500} value={f.paymentInfo} onChange={(e) => set("paymentInfo", e.target.value)} placeholder="Pay ₹499 to UPI ID yourname@upi and paste the transaction ID below." /></div>
+          <details className="seo-box"><summary><b>Web address &amp; search / share preview</b><span className="sub"> — own page for this course</span></summary>
+            <div className="stack" style={{ gap: 10, paddingTop: 10 }}>
+              <div><label className="label" htmlFor="c-slug">Web address</label><div className="row" style={{ gap: 6, flexWrap: "wrap" }}><span className="sub mono">{location.origin}/c/</span><input id="c-slug" className="input mono" style={{ flex: 1, minWidth: 160 }} maxLength={60} value={f.slug} onChange={(e) => set("slug", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))} placeholder={isNew ? "made from the title if left empty" : "ssc-cgl-maths"} /></div>
+                {!isNew && f.slug && <div className="row" style={{ gap: 8, marginTop: 6, flexWrap: "wrap" }}><button type="button" className="btn btn-sm" onClick={() => { void navigator.clipboard?.writeText(courseUrl(f.slug)); toast("Course link copied.", "ok"); }}><Link2 size={14} />Copy course link</button><button type="button" className="btn btn-sm" onClick={() => { void navigator.clipboard?.writeText(shareUrl(f.slug)); toast("WhatsApp share link copied.", "ok"); }}><Link2 size={14} />Copy WhatsApp share link</button></div>}
+                <div className="hint">The share link shows the poster, title and description in WhatsApp / Facebook previews. Changing the address breaks old links.</div></div>
+              <div><label className="label" htmlFor="c-seot">Page title for Google (max 70 characters)</label><input id="c-seot" className="input" maxLength={70} value={f.seoTitle} onChange={(e) => set("seoTitle", e.target.value)} placeholder={f.title || "Same as course title"} /></div>
+              <div><label className="label" htmlFor="c-seod">Short description for Google and link previews (max 200)</label><textarea id="c-seod" className="textarea" rows={2} maxLength={200} value={f.seoDescription} onChange={(e) => set("seoDescription", e.target.value)} placeholder="Complete video course with notes, made for SSC CGL." /><div className="hint">{f.seoDescription.length}/200</div></div>
+            </div></details>
           <div className="stack" style={{ gap: 8 }}>
             <label className="switch"><input type="checkbox" checked={f.published} onChange={(e) => set("published", e.target.checked)} /><span>Published<small>Students can see and enroll only when this is on.</small></span></label>
             <label className="switch"><input type="checkbox" checked={f.featured} onChange={(e) => set("featured", e.target.checked)} /><span>Show poster on Home<small>Featured courses appear first, and on the student Home screen.</small></span></label>
@@ -80,8 +89,8 @@ function Editor({ id, onSaved, onDeleted }: { id: string; onSaved: (id: string) 
     </section>
 
     {!isNew && course && <>
-      <nav className="seg" aria-label="Course sections"><button type="button" className={tab === "content" ? "on" : ""} onClick={() => setTab("content")}>Subjects &amp; lessons ({lessonTotal})</button><button type="button" className={tab === "students" ? "on" : ""} onClick={() => setTab("students")}>Students</button></nav>
-      {tab === "content" ? <Content course={course} reload={reload} setErr={setErr} /> : <Students id={id} setErr={setErr} />}
+      <nav className="seg" aria-label="Course sections"><button type="button" className={tab === "content" ? "on" : ""} onClick={() => setTab("content")}>Subjects &amp; lessons ({lessonTotal})</button><button type="button" className={tab === "students" ? "on" : ""} onClick={() => setTab("students")}>Students</button><button type="button" className={tab === "reviews" ? "on" : ""} onClick={() => setTab("reviews")}>Reviews</button></nav>
+      {tab === "content" ? <Content course={course} reload={reload} setErr={setErr} /> : tab === "students" ? <Students id={id} setErr={setErr} /> : <Reviews id={id} setErr={setErr} />}
     </>}
     <ConfirmDialog open={delCourse} danger title={`Delete "${course?.title ?? ""}"?`} confirmLabel="Delete" onCancel={() => setDelCourse(false)} onConfirm={del}>All subjects, lessons, notes, enrollments and progress of this course will be removed permanently.</ConfirmDialog>
   </div>;
@@ -152,13 +161,26 @@ function Students({ id, setErr }: { id: string; setErr: (m: string) => void }) {
   const act = async (fn: () => Promise<unknown>) => { try { await fn(); await load(); } catch (e: any) { setErr(e.message); } };
   if (!rows) return <SkeletonRows rows={3} />;
   if (!rows.length) return <div className="card empty"><Users size={32} /><p>No students yet.</p></div>;
+  const pend = rows.filter((e) => e.status === "PENDING").length;
   return <div className="stack" style={{ gap: 8 }}>
-    <p className="sub">Paid courses: check the transaction ID in your bank/UPI app, then approve to unlock the course.</p>
+    <div className="row between" style={{ gap: 8, flexWrap: "wrap" }}><p className="sub" style={{ margin: 0 }}>Paid courses: check the transaction ID in your bank/UPI app, then approve to unlock the course.</p>
+      {pend > 1 && <button className="btn btn-primary btn-sm" onClick={() => { if (confirm(`Approve all ${pend} pending payments of this course?`)) void act(() => api("/admin/enrollments/bulk-approve", "POST", { courseId: id })); }}><CheckCheck size={14} />Approve all {pend}</button>}</div>
     {rows.map((e) => <div key={e.id} className="card card-pad row between" style={{ gap: 10, flexWrap: "wrap" }}>
       <div style={{ minWidth: 0 }}><b>{e.name}</b> <span className="sub">{e.email}</span>
-        <div className="row" style={{ gap: 8, flexWrap: "wrap" }}><span className={`pill ${e.status === "ACTIVE" ? "pill-ok" : "pill-warn"}`}>{e.status === "ACTIVE" ? "Enrolled" : "Waiting for approval"}</span>{e.amountInr > 0 && <span className="sub">{rupees(e.amountInr)}</span>}{e.paymentRef && <span className="sub">Txn: <b style={{ color: "var(--text)" }}>{e.paymentRef}</b></span>}</div></div>
+        <div className="row" style={{ gap: 8, flexWrap: "wrap" }}><span className={`pill ${e.status === "ACTIVE" ? "pill-ok" : "pill-warn"}`}>{e.status === "ACTIVE" ? "Enrolled" : "Waiting for approval"}</span>{e.amountInr > 0 && <span className="sub">{rupees(e.amountInr)}</span>}{e.paymentRef && <span className="sub">Txn: <b style={{ color: "var(--text)" }}>{e.paymentRef}</b></span>}{e.couponCode && <span className="pill pill-brand">{e.couponCode} (−{rupees(e.discountInr)})</span>}{e.source === "MANUAL" && <span className="pill">Added by admin</span>}</div></div>
       <div className="row">{e.status === "PENDING" && <button className="btn btn-primary btn-sm" onClick={() => act(() => api(`/admin/enrollments/${e.id}/approve`, "POST"))}><Eye size={14} />Approve</button>}
         <button className="btn btn-sm btn-danger" onClick={() => { if (confirm(e.status === "PENDING" ? "Reject this payment?" : "Remove this student from the course?")) void act(() => api(`/admin/enrollments/${e.id}`, "DELETE")); }}><EyeOff size={14} />{e.status === "PENDING" ? "Reject" : "Remove"}</button></div>
     </div>)}
   </div>;
+}
+
+function Reviews({ id, setErr }: { id: string; setErr: (m: string) => void }) {
+  const [rows, setRows] = useState<any[] | null>(null);
+  const load = useCallback(() => api(`/admin/courses/${id}/reviews`).then((d) => setRows(Array.isArray(d) ? d : [])).catch((e) => { setErr(e.message); setRows([]); }), [id, setErr]);
+  useEffect(() => { void load(); }, [load]);
+  if (!rows) return <SkeletonRows rows={3} />;
+  if (!rows.length) return <div className="card empty"><Star size={32} /><p>No reviews yet. Enrolled students can rate this course from its page.</p></div>;
+  return <div className="stack" style={{ gap: 8 }}>{rows.map((r) => <div key={r.userId} className="card card-pad row between" style={{ gap: 10, flexWrap: "wrap" }}>
+    <div style={{ minWidth: 0, flex: 1 }}><div className="row" style={{ gap: 8, flexWrap: "wrap" }}><Stars value={r.rating} size={14} /><b>{r.name}</b><span className="sub">{r.email}</span><span className="sub">{new Date(r.at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span></div>{r.text && <p style={{ margin: "4px 0 0", whiteSpace: "pre-wrap" }}>{r.text}</p>}</div>
+    <button className="btn btn-sm btn-danger" onClick={() => { if (confirm("Delete this review?")) void api(`/admin/reviews/${id}/${r.userId}`, "DELETE").then(load).catch((e) => setErr(e.message)); }}><Trash2 size={14} />Delete</button></div>)}</div>;
 }

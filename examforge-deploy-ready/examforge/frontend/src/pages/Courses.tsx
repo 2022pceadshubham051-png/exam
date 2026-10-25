@@ -1,7 +1,10 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react"; import { Link, useParams, useSearchParams } from "react-router-dom";
-import { GraduationCap, PlayCircle, Lock, CircleCheck, Circle, FileText, ExternalLink, ChevronLeft, ChevronRight, Clock, Hourglass, BookOpen } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"; import { Link, useParams, useSearchParams } from "react-router-dom";
+import { GraduationCap, PlayCircle, Lock, CircleCheck, Circle, FileText, ExternalLink, ChevronLeft, ChevronRight, Clock, Hourglass, BookOpen, CloudDownload, CloudOff, Share2, Link2, WifiOff } from "lucide-react";
 import Shell from "../components/Shell"; import Poster from "../components/Poster"; import { Empty, PageHeader, SkeletonRows, toast } from "../components/ui";
-import { api } from "../lib/api"; import { useT } from "../lib/i18n"; import { embedUrl, rupees } from "../lib/courses"; import { getMe } from "../lib/auth";
+import Notes from "../components/Notes"; import CoursePlayer, { type PlayerApi } from "../components/CoursePlayer"; import LessonNotes, { type LessonNote } from "../components/LessonNotes";
+import CourseReviews, { RatingLine } from "../components/CourseReviews"; import EnrollBox from "../components/EnrollBox"; import PushToggle from "../components/PushToggle";
+import { api } from "../lib/api"; import { useT } from "../lib/i18n"; import { rupees, shareUrl, courseUrl } from "../lib/courses"; import { getMe } from "../lib/auth"; import { useSeo } from "../lib/seo";
+import { getOffline, removeOffline, saveOffline, savedIds, listOffline } from "../lib/offline";
 
 const price = (t: (k: string) => string, n: number) => (n > 0 ? rupees(n) : t("Free"));
 
@@ -20,17 +23,18 @@ export default function Courses() {
   const mine = useMemo(() => (list ?? []).filter((c) => c.enrollment), [list]);
   const shown = tab === "mine" ? mine : list ?? [];
   return <Shell><div className="stack stagger" style={{ gap: 20 }}>
-    <PageHeader title={t("Courses")} sub={t("Video lessons with notes, made for your exam.")} />
+    <PageHeader title={t("Courses")} sub={t("Video lessons with notes, made for your exam.")} actions={<div className="row" style={{ gap: 8, flexWrap: "wrap" }}><PushToggle /><Link className="btn btn-sm" to="/offline-notes"><CloudDownload size={15} aria-hidden="true" />{t("Offline notes")}</Link></div>} />
     <nav className="seg" aria-label={t("Courses")}>
       <button type="button" className={tab === "all" ? "on" : ""} onClick={() => setTab("all")}>{t("All courses")}</button>
       <button type="button" className={tab === "mine" ? "on" : ""} onClick={() => setTab("mine")}>{t("My courses")}{mine.length ? ` (${mine.length})` : ""}</button>
     </nav>
     {err && <div className="alert alert-bad" role="alert">{err}</div>}
-    {!list ? <SkeletonRows rows={3} /> : shown.length ? <div className="course-grid">{shown.map((c) => <Link key={c.id} to={`/courses/${c.id}`} className="card course-card tap-card">
+    {!list ? <SkeletonRows rows={3} /> : shown.length ? <div className="course-grid">{shown.map((c) => <Link key={c.id} to={`/courses/${c.slug ?? c.id}`} className="card course-card tap-card">
       <Poster src={c.posterUrl} title={c.title} />
       <div className="course-body">
         <div className="row between" style={{ gap: 8 }}>{c.examName ? <span className="pill pill-brand">{c.examName}</span> : <span />}<Badge s={c.enrollment} /></div>
         <b className="course-title">{c.title}</b>
+        <RatingLine rating={c.rating ?? 0} count={c.ratingCount ?? 0} />
         {c.description && <p className="sub course-desc">{c.description}</p>}
         <div className="course-meta"><span><PlayCircle size={14} aria-hidden="true" />{c.lessonCount} {t("lessons")}</span><span><BookOpen size={14} aria-hidden="true" />{c.subjectCount} {t("subjects")}</span></div>
         {c.enrollment === "ACTIVE" ? <div><div className="bar" role="progressbar" aria-valuenow={c.progress} aria-valuemin={0} aria-valuemax={100} aria-label={t("Progress")}><i style={{ width: `${c.progress}%` }} /></div><span className="sub">{c.progress}% {t("complete")}</span></div>
@@ -40,45 +44,59 @@ export default function Courses() {
   </div></Shell>;
 }
 
-/** Tiny, safe notes renderer: "# heading", "- bullet", blank-line separated paragraphs, and clickable links. Never renders HTML. */
-function Notes({ text }: { text: string }) {
-  const linkify = (s: string): ReactNode[] => s.split(/(https?:\/\/[^\s)]+)/g).map((p, i) => /^https?:\/\//.test(p) ? <a key={i} href={p} target="_blank" rel="noopener noreferrer">{p}</a> : p);
-  const out: ReactNode[] = []; let bullets: string[] = [];
-  const flush = () => { if (bullets.length) { out.push(<ul key={`u${out.length}`}>{bullets.map((b, i) => <li key={i}>{linkify(b)}</li>)}</ul>); bullets = []; } };
-  text.split("\n").forEach((raw, i) => {
-    const l = raw.trimEnd();
-    if (/^\s*[-*•]\s+/.test(l)) { bullets.push(l.replace(/^\s*[-*•]\s+/, "")); return; }
-    flush();
-    if (/^#{1,3}\s+/.test(l)) out.push(<h4 key={i}>{l.replace(/^#{1,3}\s+/, "")}</h4>);
-    else if (l.trim()) out.push(<p key={i}>{linkify(l)}</p>);
-  });
-  flush(); return <div className="notes">{out}</div>;
-}
-
 /** One course: poster, enroll / payment, curriculum, and the player with lecture notes. */
 export function CourseDetail() {
   const t = useT(); const { id } = useParams(); const [qs, setQs] = useSearchParams(); const isAdmin = getMe()?.role === "ADMIN";
-  const [c, setC] = useState<any>(null); const [err, setErr] = useState(""); const [lesson, setLesson] = useState<any>(null); const [lerr, setLerr] = useState(""); const [busy, setBusy] = useState(false); const [ref, setRef] = useState("");
-  const load = () => api(`/courses/${id}`).then(setC).catch((e) => setErr(e.message));
-  useEffect(() => { setC(null); void load(); }, [id]); // eslint-disable-line
+  const [c, setC] = useState<any>(null); const [err, setErr] = useState(""); const [lesson, setLesson] = useState<any>(null); const [lerr, setLerr] = useState("");
+  const [saved, setSaved] = useState<Set<string>>(new Set()); const [offBusy, setOffBusy] = useState(false); const [hasOffline, setHasOffline] = useState(false);
+  const apiRef = useRef<PlayerApi | null>(null); const bookmarkRef = useRef<(() => void) | null>(null); const myNotes = useRef<LessonNote[]>([]);
+  const load = useCallback(() => api(`/courses/${id}`).then(setC).catch((e) => setErr(e.message)), [id]);
+  useEffect(() => { setC(null); setErr(""); void load(); }, [id]); // eslint-disable-line
+  useEffect(() => { void listOffline().then((r) => setHasOffline(r.length > 0)).catch(() => {}); }, []);
+  useEffect(() => { if (c) void savedIds(c.id).then(setSaved).catch(() => {}); }, [c?.id]); // eslint-disable-line
+  useSeo(c ? { title: `${c.seoTitle || c.title} | ExamForge`, description: c.seoDescription || c.description?.slice(0, 160) || null } : null);
   const flat = useMemo(() => (c?.subjects ?? []).flatMap((s: any) => s.lessons.map((l: any) => ({ ...l, subject: s.name }))), [c]);
   const lid = qs.get("lesson"); const cur = flat.find((l: any) => l.id === lid);
   useEffect(() => {
     setLesson(null); setLerr(""); if (!lid || !cur || cur.locked) return;
-    let live = true; api(`/courses/${id}/lessons/${lid}`).then((d) => live && setLesson(d)).catch((e) => live && setLerr(e.message)); return () => { live = false; };
+    let live = true;
+    api(`/courses/${id}/lessons/${lid}`).then((d) => live && setLesson(d)).catch(async (e) => {
+      if (!live) return; const o = await getOffline(lid).catch(() => null); // no internet: show the saved notes instead of an error
+      if (o) setLesson({ id: o.lessonId, title: o.title, youtubeId: null, notes: o.notes, notesUrl: o.notesUrl, done: false, offlineCopy: true }); else setLerr(e.message);
+    });
+    return () => { live = false; };
   }, [lid, id, cur?.locked]); // eslint-disable-line
   const open = (l: any) => { if (l.locked) { toast(t("Enroll to unlock this lesson."), "info"); return; } setQs({ lesson: l.id }, { replace: false }); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const idx = flat.findIndex((l: any) => l.id === lid), prev = idx > 0 ? flat[idx - 1] : null, next = idx >= 0 ? flat.slice(idx + 1).find((l: any) => !l.locked) : null;
-  const enroll = async () => {
-    setBusy(true); setErr("");
-    try { const r = await api(`/courses/${id}/enroll`, "POST", c.priceInr > 0 ? { paymentRef: ref } : {}); toast(r.status === "ACTIVE" ? t("You are enrolled. Happy learning!") : t("Payment sent. You get access as soon as it is approved."), "ok"); await load(); }
-    catch (e: any) { setErr(e.message); } finally { setBusy(false); }
-  };
-  const mark = async (done: boolean) => { if (!lesson) return; setLesson({ ...lesson, done }); try { await api(`/courses/lessons/${lesson.id}/done`, "POST", { done }); await load(); } catch (e: any) { setLesson({ ...lesson, done: !done }); toast(e.message, "bad"); } };
+  const mark = async (done: boolean) => { if (!lesson || lesson.offlineCopy) return; setLesson({ ...lesson, done }); try { await api(`/courses/lessons/${lesson.id}/done`, "POST", { done }); await load(); } catch (e: any) { setLesson({ ...lesson, done: !done }); toast(e.message, "bad"); } };
 
-  if (err && !c) return <Shell narrow><div className="stack"><Link className="sub" to="/courses"><ChevronLeft size={14} aria-hidden="true" />{t("All courses")}</Link><div className="alert alert-bad" role="alert">{err}</div></div></Shell>;
+  // ---- offline notes (text only; the video always needs internet) ----
+  const record = (l: any, notes: LessonNote[]) => ({ lessonId: l.id, courseId: c.id, courseTitle: c.title, subject: flat.find((x: any) => x.id === l.id)?.subject ?? "", title: l.title, notes: l.notes ?? null, notesUrl: l.notesUrl ?? null, myNotes: notes.map((n) => ({ id: n.id, atSec: n.atSec, kind: n.kind, text: n.text })) });
+  const toggleSaved = async () => {
+    if (!lesson || lesson.offlineCopy) return; setOffBusy(true);
+    try { if (saved.has(lesson.id)) { await removeOffline(lesson.id); setSaved((s) => { const n = new Set(s); n.delete(lesson.id); return n; }); toast(t("Removed from offline notes."), "ok"); }
+      else { await saveOffline(record(lesson, myNotes.current)); void import("./OfflineNotes"); setSaved((s) => new Set(s).add(lesson.id)); setHasOffline(true); toast(t("Saved. You can read these notes without internet."), "ok"); } }
+    catch (e: any) { toast(e.message, "bad"); } finally { setOffBusy(false); }
+  };
+  const onNotesChange = (n: LessonNote[]) => { myNotes.current = n; if (lesson && saved.has(lesson.id) && !lesson.offlineCopy) void saveOffline(record(lesson, n)).catch(() => {}); };
+  const saveAll = async () => {
+    setOffBusy(true); let n = 0;
+    try {
+      const all: LessonNote[] = await api(`/courses/${id}/my-notes`).catch(() => []), by = new Map<string, LessonNote[]>(); for (const x of all as any[]) by.set(x.lessonId, [...(by.get(x.lessonId) ?? []), x]);
+      for (const l of flat.filter((x: any) => x.hasNotes && !x.locked)) { const d = await api(`/courses/${id}/lessons/${l.id}`); if (d.notes || d.notesUrl) { await saveOffline({ ...record(d, by.get(l.id) ?? []), subject: l.subject }); n++; } }
+      void import("./OfflineNotes"); setSaved(await savedIds(c.id)); setHasOffline(true); toast(t("Saved notes of {n} lessons for offline reading.", { n }), "ok");
+    } catch (e: any) { toast(e.message, "bad"); } finally { setOffBusy(false); }
+  };
+  const share = async (how: "copy" | "wa") => {
+    const page = courseUrl(c.slug ?? c.id);
+    if (how === "wa") { window.open(`https://wa.me/?text=${encodeURIComponent(`${c.title}\n${shareUrl(c.slug ?? c.id)}`)}`, "_blank", "noopener"); return; }
+    try { if (navigator.share) await navigator.share({ title: c.title, url: page }); else { await navigator.clipboard.writeText(page); toast(t("Link copied."), "ok"); } } catch { /* cancelled */ }
+  };
+
+  if (err && !c) return <Shell narrow><div className="stack"><Link className="sub" to="/courses"><ChevronLeft size={14} aria-hidden="true" />{t("All courses")}</Link><div className="alert alert-bad" role="alert">{err}</div>
+    {hasOffline && <Link className="btn" style={{ justifySelf: "start" }} to="/offline-notes"><WifiOff size={16} aria-hidden="true" />{t("Open saved offline notes")}</Link>}</div></Shell>;
   if (!c) return <Shell narrow><SkeletonRows rows={4} /></Shell>;
-  const active = c.enrollment === "ACTIVE" || isAdmin;
+  const active = c.enrollment === "ACTIVE" || isAdmin; const isSaved = !!lesson && saved.has(lesson.id); const hasNotes = !!lesson && (lesson.notes || lesson.notesUrl);
 
   return <Shell><div className="stack" style={{ gap: 18 }}>
     <Link className="sub row" style={{ gap: 4 }} to="/courses"><ChevronLeft size={14} aria-hidden="true" />{t("All courses")}</Link>
@@ -87,21 +105,25 @@ export function CourseDetail() {
       <section className="stack" style={{ gap: 12, minWidth: 0 }} aria-label={cur.title}>
         {lerr ? <div className="alert alert-bad" role="alert">{lerr}</div>
           : !lesson ? <div className="player player-wait"><div className="spinner" aria-hidden="true" /></div>
-          : lesson.youtubeId ? <div className="player"><iframe src={embedUrl(lesson.youtubeId)} title={lesson.title} loading="lazy" allow="accelerometer; encrypted-media; picture-in-picture; fullscreen" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" /></div>
+          : lesson.offlineCopy ? <div className="player player-wait"><span className="sub row" style={{ gap: 6 }}><WifiOff size={16} aria-hidden="true" />{t("You are offline. Your saved notes are below.")}</span></div>
+          : lesson.youtubeId ? <CoursePlayer key={lesson.id} videoId={lesson.youtubeId} title={lesson.title} watermark={lesson.watermark || "ExamForge"} apiRef={apiRef} onBookmark={() => bookmarkRef.current?.()} onEnded={() => { if (!lesson.done) void mark(true); }} />
           : <div className="player player-wait"><span className="sub">{t("No video for this lesson yet.")}</span></div>}
         <div className="row between" style={{ gap: 10, flexWrap: "wrap" }}>
           <div style={{ minWidth: 0 }}><span className="sub">{cur.subject}</span><h2 className="card-title" style={{ margin: 0 }}>{cur.title}</h2></div>
-          {lesson && <button className={`btn ${lesson.done ? "" : "btn-primary"}`} onClick={() => mark(!lesson.done)}>{lesson.done ? <CircleCheck size={16} aria-hidden="true" /> : <Circle size={16} aria-hidden="true" />}{lesson.done ? t("Completed") : t("Mark as complete")}</button>}
+          {lesson && !lesson.offlineCopy && <button className={`btn ${lesson.done ? "" : "btn-primary"}`} onClick={() => mark(!lesson.done)}>{lesson.done ? <CircleCheck size={16} aria-hidden="true" /> : <Circle size={16} aria-hidden="true" />}{lesson.done ? t("Completed") : t("Mark as complete")}</button>}
         </div>
         <div className="row" style={{ gap: 8 }}>
           <button className="btn btn-sm" disabled={!prev || prev.locked} onClick={() => prev && open(prev)}><ChevronLeft size={15} aria-hidden="true" />{t("Previous")}</button>
           <button className="btn btn-sm" disabled={!next} onClick={() => next && open(next)}>{t("Next lesson")}<ChevronRight size={15} aria-hidden="true" /></button>
         </div>
-        {lesson && (lesson.notes || lesson.notesUrl) && <div className="card card-pad stack" style={{ gap: 10 }}>
-          <h3 className="card-title row" style={{ gap: 8, margin: 0 }}><FileText size={18} aria-hidden="true" />{t("Lecture notes")}</h3>
+        {hasNotes && <div className="card card-pad stack" style={{ gap: 10 }}>
+          <div className="row between" style={{ gap: 8, flexWrap: "wrap" }}><h3 className="card-title row" style={{ gap: 8, margin: 0 }}><FileText size={18} aria-hidden="true" />{t("Lecture notes")}</h3>
+            {!lesson.offlineCopy && <div className="row" style={{ gap: 6, flexWrap: "wrap" }}><button type="button" className="btn btn-sm" disabled={offBusy} onClick={toggleSaved}>{isSaved ? <CloudOff size={15} aria-hidden="true" /> : <CloudDownload size={15} aria-hidden="true" />}{isSaved ? t("Remove offline copy") : t("Save notes offline")}</button>
+              {flat.filter((x: any) => x.hasNotes).length > 1 && <button type="button" className="btn btn-sm" disabled={offBusy} onClick={saveAll}>{t("Save all notes of this course")}</button>}</div>}</div>
           {lesson.notes && <Notes text={lesson.notes} />}
           {lesson.notesUrl && <a className="btn btn-sm" style={{ justifySelf: "start" }} href={lesson.notesUrl} target="_blank" rel="noopener noreferrer"><ExternalLink size={15} aria-hidden="true" />{t("Open notes (PDF / link)")}</a>}
         </div>}
+        {lesson && <LessonNotes lessonId={lesson.id} apiRef={apiRef} onChange={onNotesChange} addBookmarkRef={bookmarkRef} />}
       </section>
       <Curriculum c={c} lid={lid} open={open} t={t} />
     </div> : <>
@@ -110,25 +132,19 @@ export function CourseDetail() {
         <div className="stack" style={{ gap: 10, padding: "var(--s-5)" }}>
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>{c.examName && <span className="pill pill-brand">{c.examName}</span>}<Badge s={c.enrollment} /></div>
           <h1 className="h1" style={{ margin: 0 }}>{c.title}</h1>
+          <RatingLine rating={c.rating ?? 0} count={c.ratingCount ?? 0} />
           {c.description && <p style={{ whiteSpace: "pre-wrap", margin: 0 }}>{c.description}</p>}
           <div className="course-meta"><span><PlayCircle size={14} aria-hidden="true" />{c.lessonCount} {t("lessons")}</span><span><BookOpen size={14} aria-hidden="true" />{c.subjects.length} {t("subjects")}</span></div>
           {active ? <>{c.enrollment === "ACTIVE" && <div><div className="bar"><i style={{ width: `${c.progress}%` }} /></div><span className="sub">{c.progress}% {t("complete")}</span></div>}
               {flat.length > 0 && <button className="btn btn-primary btn-lg" style={{ justifySelf: "start" }} onClick={() => open(flat.find((l: any) => !l.done) ?? flat[0])}><PlayCircle size={18} aria-hidden="true" />{c.progress > 0 ? t("Continue learning") : t("Start learning")}</button>}</>
             : c.enrollment === "PENDING" ? <div className="alert alert-warn" role="status"><Hourglass size={18} aria-hidden="true" /><span>{t("Payment under review")}: {c.paymentRef}. {t("You get access as soon as it is approved.")}</span></div>
-            : <div className="stack" style={{ gap: 10 }}>
-              <div className="course-price big">{price(t, c.priceInr)}</div>
-              {c.priceInr > 0 && <>
-                {c.paymentInfo && <div className="card card-pad" style={{ background: "var(--surface-2)" }}><b>{t("How to pay")}</b><p style={{ whiteSpace: "pre-wrap", margin: "4px 0 0" }}>{c.paymentInfo}</p></div>}
-                <label className="label" htmlFor="payref">{t("Payment / UPI transaction ID")}</label>
-                <input id="payref" className="input" value={ref} maxLength={80} onChange={(e) => setRef(e.target.value)} placeholder={t("Paste the transaction ID after paying")} style={{ maxWidth: 380 }} />
-              </>}
-              {err && <div className="alert alert-bad" role="alert">{err}</div>}
-              <button className="btn btn-primary btn-lg" style={{ justifySelf: "start" }} disabled={busy || (c.priceInr > 0 && ref.trim().length < 4)} onClick={enroll}><GraduationCap size={18} aria-hidden="true" />{c.priceInr > 0 ? t("Submit payment & enroll") : t("Enroll for free")}</button>
-            </div>}
+            : <EnrollBox c={c} reload={load} />}
+          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}><button type="button" className="btn btn-sm" onClick={() => share("copy")}><Link2 size={15} aria-hidden="true" />{t("Share")}</button><button type="button" className="btn btn-sm" onClick={() => share("wa")}><Share2 size={15} aria-hidden="true" />WhatsApp</button></div>
         </div>
       </div>
       <Curriculum c={c} lid={lid} open={open} t={t} wide />
     </>}
+    <CourseReviews course={c} reload={load} />
   </div></Shell>;
 }
 
