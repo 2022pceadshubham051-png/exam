@@ -15,3 +15,12 @@ export function bunnySrc(videoId: string, ttlSec = 4 * 3600, now = Date.now()): 
   const expires = Math.floor(now / 1000) + ttlSec, token = createHash("sha256").update(key + videoId + expires).digest("hex");
   return `${base}&token=${token}&expires=${expires}`;
 }
+
+/** Signed MP4 link for offline download (needs "MP4 Fallback" on in the Bunny library, the library's pull-zone host and its Token Authentication key).
+ *  Off unless BUNNY_ALLOW_DOWNLOAD=1 and BUNNY_CDN_HOST + BUNNY_CDN_KEY are set. Bunny token: base64url(sha256(key + path + expires)). */
+export function bunnyDownload(videoId: string, ttlSec = 2 * 3600, now = Date.now()): { url: string; expiresInDays: number } | null {
+  const host = process.env.BUNNY_CDN_HOST, key = process.env.BUNNY_CDN_KEY; if (process.env.BUNNY_ALLOW_DOWNLOAD !== "1" || !host || !key) return null;
+  const path = `/${videoId}/play_${process.env.BUNNY_DOWNLOAD_RES ?? "720p"}.mp4`, expires = Math.floor(now / 1000) + ttlSec;
+  const token = createHash("sha256").update(key + path + expires).digest("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return { url: `https://${host.replace(/^https?:\/\//, "").replace(/\/$/, "")}${path}?token=${token}&expires=${expires}`, expiresInDays: Math.max(1, Math.min(30, +(process.env.BUNNY_OFFLINE_DAYS ?? 7))) };
+}

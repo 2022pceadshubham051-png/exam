@@ -1,7 +1,7 @@
 import { Router } from "express"; import { z } from "zod";
 import { prisma } from "../lib/db"; import { requireAuth, requireAdmin, type AuthedReq } from "../middleware/auth";
 import { wrap, fail } from "./util";
-import { youtubeId } from "../services/youtube"; import { bunnyId, bunnySrc } from "../services/bunny"; import { playlistId, fetchPlaylist } from "../services/youtubePlaylist";
+import { youtubeId } from "../services/youtube"; import { bunnyId, bunnySrc, bunnyDownload } from "../services/bunny"; import { playlistId, fetchPlaylist } from "../services/youtubePlaylist";
 import { couponProblem, discountFor, normalizeCode } from "../services/courses/coupons"; import { slugify, uniqueSlug, SLUG_RE } from "../services/courses/slug"; import { notifyUsers } from "../services/push";
 
 /** Video courses: the admin builds a course (poster, price, subjects, YouTube lessons, notes); students enroll and watch.
@@ -86,7 +86,7 @@ courses.get("/courses/:id/lessons/:lid", wrap(async (req, res) => {
   // The watermark text comes from the server (never from the browser), so a student cannot change whose name is shown on the video.
   const me = await prisma.user.findUnique({ where: { id: req.user!.id }, select: { name: true, displayName: true, email: true, username: true } });
   const watermark = me ? `${me.displayName || me.name} · ${me.email.includes("@") ? me.email : me.username ?? ""}` : "";
-  res.json({ id: l.id, title: l.title, youtubeId: l.youtubeId, bunnySrc: l.bunnyId ? bunnySrc(l.bunnyId) : null, notes: l.notes, notesUrl: l.notesUrl, durationMin: l.durationMin, done, watermark, courseId: l.courseId });
+  res.json({ id: l.id, title: l.title, youtubeId: l.youtubeId, bunnySrc: l.bunnyId ? bunnySrc(l.bunnyId) : null, download: l.bunnyId ? bunnyDownload(l.bunnyId) : null, notes: l.notes, notesUrl: l.notesUrl, durationMin: l.durationMin, done, watermark, courseId: l.courseId });
 }));
 
 /** Price after an optional coupon. Throws a 400 with a student-friendly message when the code cannot be used. */
