@@ -106,7 +106,7 @@ export function CourseDetail() {
         {lerr ? <div className="alert alert-bad" role="alert">{lerr}</div>
           : !lesson ? <div className="player player-wait"><div className="spinner" aria-hidden="true" /></div>
           : lesson.offlineCopy ? <div className="player player-wait"><span className="sub row" style={{ gap: 6 }}><WifiOff size={16} aria-hidden="true" />{t("You are offline. Your saved notes are below.")}</span></div>
-          : lesson.youtubeId ? <CoursePlayer key={lesson.id} videoId={lesson.youtubeId} title={lesson.title} watermark={lesson.watermark || "ExamForge"} apiRef={apiRef} onBookmark={() => bookmarkRef.current?.()} onEnded={() => { if (!lesson.done) void mark(true); }} />
+          : lesson.youtubeId || lesson.bunnySrc ? <CoursePlayer key={lesson.id} videoId={lesson.youtubeId ?? undefined} bunnySrc={lesson.bunnySrc} title={lesson.title} watermark={lesson.watermark || "ExamForge"} apiRef={apiRef} onBookmark={() => bookmarkRef.current?.()} onEnded={() => { if (!lesson.done) void mark(true); }} />
           : <div className="player player-wait"><span className="sub">{t("No video for this lesson yet.")}</span></div>}
         <div className="row between" style={{ gap: 10, flexWrap: "wrap" }}>
           <div style={{ minWidth: 0 }}><span className="sub">{cur.subject}</span><h2 className="card-title" style={{ margin: 0 }}>{cur.title}</h2></div>

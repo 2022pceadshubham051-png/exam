@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react"; import { Link } from "react-router-dom";
-import { Plus, Trash2, Pencil, ArrowLeft, ArrowUp, ArrowDown, Save, ImagePlus, Eye, EyeOff, Users, PlayCircle, FileText, CircleCheck, CircleX, Check, X, ShieldCheck, CheckCheck, Link2, Star } from "lucide-react";
+import { Plus, Trash2, Pencil, ArrowLeft, ArrowUp, ArrowDown, Save, ImagePlus, Eye, EyeOff, Users, PlayCircle, FileText, CircleCheck, CircleX, Check, X, ShieldCheck, CheckCheck, Link2, Star, ListVideo } from "lucide-react";
 import Shell from "../components/Shell"; import Poster from "../components/Poster"; import { ConfirmDialog, Modal, SkeletonRows, toast } from "../components/ui";
 import { api } from "../lib/api"; import { readPoster, rupees, thumbUrl, youtubeId, courseUrl, shareUrl } from "../lib/courses"; import AdminCourseNav from "../components/AdminCourseNav"; import { Stars } from "../components/CourseReviews";
 
+const isBunny = (v: string) => /^(bunny:)?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v.trim().replace(/^bunny:/i, "")) || /mediadelivery\.net|bunnycdn\.com|b-cdn\.net/i.test(v);
 const blank = { title: "", description: "", posterUrl: "", examName: "", priceInr: 0, paymentInfo: "", published: false, featured: true, slug: "", seoTitle: "", seoDescription: "" };
 const blankLesson = { title: "", video: "", notes: "", notesUrl: "", durationMin: "" as number | "", isPreview: false };
 
@@ -103,16 +104,18 @@ function Content({ course, reload, setErr }: { course: any; reload: () => Promis
   const addSub = () => run(async () => { if (!subName.trim()) return; await api(`/admin/courses/${course.id}/subjects`, "POST", { name: subName.trim() }); setSubName(""); });
   const rename = (s: any) => { const n = prompt("Subject name", s.name)?.trim(); if (n && n !== s.name) void run(() => api(`/admin/subjects/${s.id}`, "PUT", { name: n })); };
   const move = (kind: string, id: string, dir: "up" | "down") => run(() => api(`/admin/${kind}/${id}/move`, "POST", { dir }));
-  const editLesson = (subjectId: string, l?: any) => setLesson({ subjectId, id: l?.id, v: l ? { title: l.title, video: l.youtubeId ? `https://youtu.be/${l.youtubeId}` : "", notes: l.notes ?? "", notesUrl: l.notesUrl ?? "", durationMin: l.durationMin ?? "", isPreview: l.isPreview } : blankLesson });
+  const editLesson = (subjectId: string, l?: any) => setLesson({ subjectId, id: l?.id, v: l ? { title: l.title, video: l.youtubeId ? `https://youtu.be/${l.youtubeId}` : l.bunnyId ? `bunny:${l.bunnyId}` : "", notes: l.notes ?? "", notesUrl: l.notesUrl ?? "", durationMin: l.durationMin ?? "", isPreview: l.isPreview } : blankLesson });
   const saveLesson = async () => {
     if (!lesson) return; const v = lesson.v;
     if (v.title.trim().length < 2) return setErr("Give the lesson a title.");
-    if (v.video.trim() && !youtubeId(v.video)) return setErr("That does not look like a YouTube link.");
+    if (v.video.trim() && !youtubeId(v.video) && !isBunny(v.video)) return setErr("That does not look like a YouTube link or Bunny video.");
     setSaving(true);
     try { setErr(""); if (lesson.id) await api(`/admin/lessons/${lesson.id}`, "PUT", v); else await api(`/admin/subjects/${lesson.subjectId}/lessons`, "POST", v); setLesson(null); await reload(); toast("Lesson saved.", "ok"); }
     catch (e: any) { setErr(e.message); } finally { setSaving(false); }
   };
-  const lv = lesson?.v, vid = lv?.video.trim() ? youtubeId(lv.video) : null;
+  const [pl, setPl] = useState({ url: "", subjectId: "", preview: 0 }); const [plBusy, setPlBusy] = useState(false);
+  const importPl = async () => { setPlBusy(true); try { setErr(""); const r = await api(`/admin/courses/${course.id}/import-playlist`, "POST", pl); toast(`${r.added} lessons added to “${r.subject}”${r.skipped ? `, ${r.skipped} already there` : ""}.`, "ok"); setPl({ ...pl, url: "" }); await reload(); } catch (e: any) { setErr(e.message); } finally { setPlBusy(false); } };
+  const lv = lesson?.v, vid = lv?.video.trim() ? youtubeId(lv.video) : null, bn = !!lv?.video.trim() && isBunny(lv.video);
   const setL = (k: string, val: any) => setLesson((o) => (o ? { ...o, v: { ...o.v, [k]: val } } : o));
   return <div className="stack" style={{ gap: 12 }}>
     {course.subjects.map((s: any, si: number) => <section key={s.id} className="adm-sub" aria-label={s.name}>
@@ -123,7 +126,7 @@ function Content({ course, reload, setErr }: { course: any; reload: () => Promis
         <button className="btn btn-sm btn-danger" onClick={() => setDel({ kind: "subjects", id: s.id, name: s.name })}><Trash2 size={14} /></button>
         <button className="btn btn-sm btn-primary" onClick={() => editLesson(s.id)}><Plus size={14} />Lesson</button></div>
       {s.lessons.map((l: any, li: number) => <div key={l.id} className="adm-lesson">
-        {l.youtubeId ? <img src={thumbUrl(l.youtubeId)} alt="" loading="lazy" /> : <span className="sub" style={{ width: 72, textAlign: "center" }}>No video</span>}
+        {l.youtubeId ? <img src={thumbUrl(l.youtubeId)} alt="" loading="lazy" /> : <span className="sub" style={{ width: 72, textAlign: "center" }}>{l.bunnyId ? "Bunny" : "No video"}</span>}
         <div style={{ flex: 1, minWidth: 160 }}><b>{l.title}</b><div className="row" style={{ gap: 6, flexWrap: "wrap" }}>{l.isPreview && <span className="pill pill-brand">Free preview</span>}{(l.notes || l.notesUrl) && <span className="pill"><FileText size={12} />Notes</span>}{l.durationMin ? <span className="sub">{l.durationMin} min</span> : null}</div></div>
         <button className="btn btn-sm icon-btn" aria-label="Move lesson up" disabled={li === 0} onClick={() => move("lessons", l.id, "up")}><ArrowUp size={14} /></button>
         <button className="btn btn-sm icon-btn" aria-label="Move lesson down" disabled={li === s.lessons.length - 1} onClick={() => move("lessons", l.id, "down")}><ArrowDown size={14} /></button>
@@ -132,6 +135,16 @@ function Content({ course, reload, setErr }: { course: any; reload: () => Promis
       </div>)}
       {!s.lessons.length && <p className="sub" style={{ padding: "10px 14px", margin: 0 }}>No lessons yet.</p>}
     </section>)}
+    <section className="card card-pad stack" style={{ gap: 10 }} aria-label="Import playlist">
+      <b className="row" style={{ gap: 8 }}><ListVideo size={18} />Import a YouTube playlist</b>
+      <p className="sub" style={{ margin: 0 }}>Paste the playlist link. Every video becomes a lesson (title and length filled in). Run it again later to add only the new videos.</p>
+      <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+        <label className="sr" htmlFor="pl-url">Playlist link</label><input id="pl-url" className="input" style={{ flex: 2, minWidth: 220 }} value={pl.url} onChange={(e) => setPl({ ...pl, url: e.target.value })} placeholder="https://www.youtube.com/playlist?list=PL…" />
+        <label className="sr" htmlFor="pl-sub">Add to</label><select id="pl-sub" className="select" style={{ flex: 1, minWidth: 180 }} value={pl.subjectId} onChange={(e) => setPl({ ...pl, subjectId: e.target.value })}><option value="">New subject (playlist name)</option>{course.subjects.map((s: any) => <option key={s.id} value={s.id}>Subject: {s.name}</option>)}</select>
+        <label className="sr" htmlFor="pl-pv">Free previews</label><input id="pl-pv" className="input" type="number" min={0} max={50} style={{ width: 130 }} value={pl.preview} onChange={(e) => setPl({ ...pl, preview: +e.target.value || 0 })} title="First N lessons are free previews" placeholder="Free previews" />
+        <button className="btn btn-primary" disabled={plBusy || pl.url.trim().length < 5} onClick={importPl}><ListVideo size={15} />{plBusy ? "Importing…" : "Import"}</button></div>
+      <div className="hint">“Free previews” = how many first lessons anyone can watch without enrolling (0 = none).</div>
+    </section>
     <form className="card card-pad row" style={{ gap: 10 }} onSubmit={(e) => { e.preventDefault(); void addSub(); }}>
       <label className="sr" htmlFor="new-sub">New subject</label><input id="new-sub" className="input" style={{ flex: 1, minWidth: 180 }} maxLength={80} value={subName} onChange={(e) => setSubName(e.target.value)} placeholder="New subject, e.g. Algebra" />
       <button className="btn btn-primary" disabled={!subName.trim()}><Plus size={16} />Add subject</button>
@@ -140,8 +153,8 @@ function Content({ course, reload, setErr }: { course: any; reload: () => Promis
     <Modal open={!!lesson} onClose={() => !saving && setLesson(null)} title={lesson?.id ? "Edit lesson" : "New lesson"} width={640} dismissible={!saving}>{lesson && lv && <div className="stack" style={{ gap: 10 }}>
       <div><label className="label" htmlFor="l-title">Lesson title</label><input id="l-title" className="input" maxLength={160} value={lv.title} onChange={(e) => setL("title", e.target.value)} placeholder="e.g. Percentage: basics and tricks" /></div>
       <div><label className="label" htmlFor="l-video">YouTube link</label><input id="l-video" className="input" value={lv.video} onChange={(e) => setL("video", e.target.value)} placeholder="https://www.youtube.com/watch?v=…  or  https://youtu.be/…" />
-        {lv.video.trim() && (vid ? <div className="row" style={{ gap: 10, marginTop: 8 }}><img src={thumbUrl(vid)} alt="" style={{ width: 120, borderRadius: 8 }} /><span className="pill pill-ok"><Check size={12} />Video found</span></div> : <div className="field-error" role="alert">Not a valid YouTube link.</div>)}
-        <div className="hint">Tip: use an Unlisted video so only your students can find it.</div></div>
+        {lv.video.trim() && (vid ? <div className="row" style={{ gap: 10, marginTop: 8 }}><img src={thumbUrl(vid)} alt="" style={{ width: 120, borderRadius: 8 }} /><span className="pill pill-ok"><Check size={12} />Video found</span></div> : bn ? <span className="pill pill-ok" style={{ marginTop: 8 }}><Check size={12} />Bunny video</span> : <div className="field-error" role="alert">Not a valid YouTube link or Bunny video.</div>)}
+        <div className="hint">YouTube: use an Unlisted video. Bunny Stream (safer): paste <b>bunny:VIDEO-ID</b> or the Bunny embed link.</div></div>
       <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
         <div style={{ width: 150 }}><label className="label" htmlFor="l-dur">Length (minutes)</label><input id="l-dur" className="input" type="number" min={0} max={1000} value={lv.durationMin} onChange={(e) => setL("durationMin", e.target.value === "" ? "" : +e.target.value)} /></div>
         <label className="switch" style={{ flex: 1, minWidth: 220 }}><input type="checkbox" checked={lv.isPreview} onChange={(e) => setL("isPreview", e.target.checked)} /><span>Free preview<small>Anyone can watch this lesson without enrolling.</small></span></label>
