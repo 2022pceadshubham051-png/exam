@@ -60,6 +60,13 @@ model User {
   reports QuestionReport[]
   enrollments Enrollment[]
   lessonProgress LessonProgress[]
+  // Auth upgrades: existing accounts count as verified (default true); new sign-ups are set to false when email is configured.
+  emailVerified Boolean @default(true)
+  googleId String? @unique
+  authTokens AuthToken[]
+  lessonNotes LessonNote[]
+  courseReviews CourseReview[]
+  pushSubs PushSubscription[]
 }
 
 model Test {
@@ -394,10 +401,16 @@ model Course {
   paymentInfo String?
   published Boolean @default(false)
   featured Boolean @default(true)
+  // Shareable URL (/c/<slug>) + SEO fields
+  slug String? @unique
+  seoTitle String?
+  seoDescription String?
   createdAt DateTime @default(now())
   subjects CourseSubject[]
   lessons Lesson[]
   enrollments Enrollment[]
+  reviews CourseReview[]
+  coupons Coupon[]
 }
 
 model CourseSubject {
@@ -425,6 +438,7 @@ model Lesson {
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
   subject CourseSubject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   progress LessonProgress[]
+  notesBy LessonNote[]
   @@index([courseId])
   @@index([subjectId])
 }
@@ -436,6 +450,10 @@ model Enrollment {
   status EnrollStatus @default(ACTIVE)
   amountInr Int @default(0)
   paymentRef String?
+  couponCode String?
+  discountInr Int @default(0)
+  source String @default("SELF") // SELF | MANUAL | BULK
+  approvedAt DateTime?
   createdAt DateTime @default(now())
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
@@ -450,4 +468,72 @@ model LessonProgress {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   @@id([userId, lessonId])
+}
+
+// ---- Courses v4: coupons, reviews, timestamped notes/bookmarks, auth tokens, web push ----
+model Coupon {
+  id String @id @default(cuid())
+  code String @unique
+  percentOff Int? // 1-100
+  flatOff Int? // rupees
+  courseId String? // null = valid on every course
+  startsAt DateTime?
+  expiresAt DateTime?
+  maxUses Int? // null = unlimited
+  used Int @default(0)
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  course Course? @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  @@index([courseId])
+}
+
+model CourseReview {
+  userId String
+  courseId String
+  rating Int
+  text String? @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  @@id([userId, courseId])
+  @@index([courseId, createdAt])
+}
+
+// A student's own note or bookmark pinned to a moment in a lecture (kind = NOTE | BOOKMARK).
+model LessonNote {
+  id String @id @default(cuid())
+  userId String
+  lessonId String
+  atSec Int @default(0)
+  kind String @default("NOTE")
+  text String @db.Text
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  @@index([userId, lessonId])
+}
+
+// One-time links for email verification and password reset. Only the SHA-256 of the token is stored.
+model AuthToken {
+  id String @id @default(cuid())
+  userId String
+  kind String // VERIFY | RESET
+  hash String @unique
+  expiresAt DateTime
+  usedAt DateTime?
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, kind])
+}
+
+model PushSubscription {
+  id String @id @default(cuid())
+  userId String
+  endpoint String @unique
+  p256dh String
+  auth String
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
 }
