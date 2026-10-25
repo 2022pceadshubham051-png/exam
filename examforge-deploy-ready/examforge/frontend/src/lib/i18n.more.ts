@@ -240,4 +240,13 @@ export const hiMore: Record<string, string> = {
   "All saved notes": "सभी सेव नोट्स",
   "Nothing saved yet": "अभी कुछ सेव नहीं",
   "Open a lesson and tap “Save notes offline”.": "कोई लेक्चर खोलें और “नोट्स ऑफ़लाइन सेव करें” दबाएँ।",
+  "Video saved. It plays offline for {n} days.": "वीडियो सेव हो गया। यह {n} दिन ऑफ़लाइन चलेगा।",
+  "Downloaded video removed.": "डाउनलोड किया वीडियो हटा दिया।",
+  "Downloading…": "डाउनलोड हो रहा है…",
+  "Saved on this device": "इस डिवाइस पर सेव है",
+  "until {date}": "{date} तक",
+  "Remove downloaded video": "डाउनलोड किया वीडियो हटाएँ",
+  "Watch without internet. Uses mobile storage.": "बिना इंटरनेट देखें। फ़ोन की स्टोरेज इस्तेमाल होगी।",
+  "Download video": "वीडियो डाउनलोड करें",
+  "Downloaded videos": "डाउनलोड किए वीडियो",
 };
