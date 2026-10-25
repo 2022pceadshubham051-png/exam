@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"; import { Link, useParams, useSearchParams } from "react-router-dom";
-import { GraduationCap, PlayCircle, Lock, CircleCheck, Circle, FileText, ExternalLink, ChevronLeft, ChevronRight, Clock, Hourglass, BookOpen, CloudDownload, CloudOff, Share2, Link2, WifiOff } from "lucide-react";
+import { GraduationCap, PlayCircle, Lock, CircleCheck, Circle, FileText, ExternalLink, ChevronLeft, ChevronRight, Clock, Hourglass, BookOpen, CloudDownload, CloudOff, Share2, Link2, WifiOff, Download, Trash2 } from "lucide-react";
 import Shell from "../components/Shell"; import Poster from "../components/Poster"; import { Empty, PageHeader, SkeletonRows, toast } from "../components/ui";
 import Notes from "../components/Notes"; import CoursePlayer, { type PlayerApi } from "../components/CoursePlayer"; import LessonNotes, { type LessonNote } from "../components/LessonNotes";
 import CourseReviews, { RatingLine } from "../components/CourseReviews"; import EnrollBox from "../components/EnrollBox"; import PushToggle from "../components/PushToggle";
 import { api } from "../lib/api"; import { useT } from "../lib/i18n"; import { rupees, shareUrl, courseUrl } from "../lib/courses"; import { getMe } from "../lib/auth"; import { useSeo } from "../lib/seo";
-import { getOffline, removeOffline, saveOffline, savedIds, listOffline } from "../lib/offline";
+import { getOffline, removeOffline, saveOffline, savedIds, listOffline } from "../lib/offline"; import { getVideo, removeVideo, downloadVideo, type SavedVideo } from "../lib/offlineVideo";
 
 const price = (t: (k: string) => string, n: number) => (n > 0 ? rupees(n) : t("Free"));
 
@@ -49,6 +49,7 @@ export function CourseDetail() {
   const t = useT(); const { id } = useParams(); const [qs, setQs] = useSearchParams(); const isAdmin = getMe()?.role === "ADMIN";
   const [c, setC] = useState<any>(null); const [err, setErr] = useState(""); const [lesson, setLesson] = useState<any>(null); const [lerr, setLerr] = useState("");
   const [saved, setSaved] = useState<Set<string>>(new Set()); const [offBusy, setOffBusy] = useState(false); const [hasOffline, setHasOffline] = useState(false);
+  const [video, setVideo] = useState<SavedVideo | null>(null); const [dl, setDl] = useState<{ pct: number; mb: number } | null>(null); const abort = useRef<AbortController | null>(null);
   const apiRef = useRef<PlayerApi | null>(null); const bookmarkRef = useRef<(() => void) | null>(null); const myNotes = useRef<LessonNote[]>([]);
   const load = useCallback(() => api(`/courses/${id}`).then(setC).catch((e) => setErr(e.message)), [id]);
   useEffect(() => { setC(null); setErr(""); void load(); }, [id]); // eslint-disable-line
@@ -58,11 +59,12 @@ export function CourseDetail() {
   const flat = useMemo(() => (c?.subjects ?? []).flatMap((s: any) => s.lessons.map((l: any) => ({ ...l, subject: s.name }))), [c]);
   const lid = qs.get("lesson"); const cur = flat.find((l: any) => l.id === lid);
   useEffect(() => {
-    setLesson(null); setLerr(""); if (!lid || !cur || cur.locked) return;
-    let live = true;
+    setLesson(null); setLerr(""); setVideo(null); setDl(null); if (!lid || !cur || cur.locked) return;
+    let live = true; void getVideo(lid).then((v) => live && setVideo(v)).catch(() => {});
     api(`/courses/${id}/lessons/${lid}`).then((d) => live && setLesson(d)).catch(async (e) => {
       if (!live) return; const o = await getOffline(lid).catch(() => null); // no internet: show the saved notes instead of an error
-      if (o) setLesson({ id: o.lessonId, title: o.title, youtubeId: null, notes: o.notes, notesUrl: o.notesUrl, done: false, offlineCopy: true }); else setLerr(e.message);
+      const v = await getVideo(lid).catch(() => null); if (!live) return;
+      if (o || v) setLesson({ id: lid, title: o?.title ?? v!.title, youtubeId: null, notes: o?.notes ?? null, notesUrl: o?.notesUrl ?? null, done: false, offlineCopy: true, watermark: v?.watermark }); else setLerr(e.message);
     });
     return () => { live = false; };
   }, [lid, id, cur?.locked]); // eslint-disable-line
@@ -87,6 +89,13 @@ export function CourseDetail() {
       void import("./OfflineNotes"); setSaved(await savedIds(c.id)); setHasOffline(true); toast(t("Saved notes of {n} lessons for offline reading.", { n }), "ok");
     } catch (e: any) { toast(e.message, "bad"); } finally { setOffBusy(false); }
   };
+  const startDownload = async () => {
+    if (!lesson?.download) return; const ctl = new AbortController(); abort.current = ctl; setDl({ pct: 0, mb: 0 });
+    try { await downloadVideo({ url: lesson.download.url, days: lesson.download.expiresInDays, lessonId: lesson.id, courseId: c.id, courseTitle: c.title, title: lesson.title, watermark: lesson.watermark || "ExamForge" }, (pct, mb) => setDl({ pct, mb }), ctl.signal);
+      setVideo(await getVideo(lesson.id)); toast(t("Video saved. It plays offline for {n} days.", { n: lesson.download.expiresInDays }), "ok"); }
+    catch (e: any) { if (e?.name !== "AbortError") toast(e.message, "bad"); } finally { setDl(null); abort.current = null; }
+  };
+  const deleteVideo = async () => { if (!lesson) return; await removeVideo(lesson.id); setVideo(null); toast(t("Downloaded video removed."), "ok"); };
   const share = async (how: "copy" | "wa") => {
     const page = courseUrl(c.slug ?? c.id);
     if (how === "wa") { window.open(`https://wa.me/?text=${encodeURIComponent(`${c.title}\n${shareUrl(c.slug ?? c.id)}`)}`, "_blank", "noopener"); return; }
@@ -105,6 +114,7 @@ export function CourseDetail() {
       <section className="stack" style={{ gap: 12, minWidth: 0 }} aria-label={cur.title}>
         {lerr ? <div className="alert alert-bad" role="alert">{lerr}</div>
           : !lesson ? <div className="player player-wait"><div className="spinner" aria-hidden="true" /></div>
+          : video ? <CoursePlayer key={`v${lesson.id}`} blob={video.blob} title={lesson.title} watermark={lesson.watermark || video.watermark || "ExamForge"} apiRef={apiRef} onBookmark={() => bookmarkRef.current?.()} onEnded={() => { if (!lesson.done && !lesson.offlineCopy) void mark(true); }} />
           : lesson.offlineCopy ? <div className="player player-wait"><span className="sub row" style={{ gap: 6 }}><WifiOff size={16} aria-hidden="true" />{t("You are offline. Your saved notes are below.")}</span></div>
           : lesson.youtubeId || lesson.bunnySrc ? <CoursePlayer key={lesson.id} videoId={lesson.youtubeId ?? undefined} bunnySrc={lesson.bunnySrc} title={lesson.title} watermark={lesson.watermark || "ExamForge"} apiRef={apiRef} onBookmark={() => bookmarkRef.current?.()} onEnded={() => { if (!lesson.done) void mark(true); }} />
           : <div className="player player-wait"><span className="sub">{t("No video for this lesson yet.")}</span></div>}
@@ -112,6 +122,11 @@ export function CourseDetail() {
           <div style={{ minWidth: 0 }}><span className="sub">{cur.subject}</span><h2 className="card-title" style={{ margin: 0 }}>{cur.title}</h2></div>
           {lesson && !lesson.offlineCopy && <button className={`btn ${lesson.done ? "" : "btn-primary"}`} onClick={() => mark(!lesson.done)}>{lesson.done ? <CircleCheck size={16} aria-hidden="true" /> : <Circle size={16} aria-hidden="true" />}{lesson.done ? t("Completed") : t("Mark as complete")}</button>}
         </div>
+        {lesson && !lesson.offlineCopy && (lesson.download || video) && <div className="card card-pad row between" style={{ gap: 10, flexWrap: "wrap" }}>
+          {dl ? <><div style={{ flex: 1, minWidth: 180 }}><div className="bar" role="progressbar" aria-valuenow={dl.pct} aria-valuemin={0} aria-valuemax={100}><i style={{ width: `${dl.pct}%` }} /></div><span className="sub">{t("Downloading…")} {dl.pct}% · {dl.mb.toFixed(0)} MB</span></div><button type="button" className="btn btn-sm" onClick={() => abort.current?.abort()}>{t("Cancel")}</button></>
+            : video ? <><span className="row" style={{ gap: 8 }}><Download size={16} aria-hidden="true" /><span>{t("Saved on this device")} · {(video.size / 1048576).toFixed(0)} MB · {t("until {date}", { date: new Date(video.expiresAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) })}</span></span><button type="button" className="btn btn-sm" onClick={deleteVideo}><Trash2 size={14} aria-hidden="true" />{t("Remove downloaded video")}</button></>
+            : <><span className="sub">{t("Watch without internet. Uses mobile storage.")}</span><button type="button" className="btn btn-sm btn-primary" onClick={startDownload}><Download size={15} aria-hidden="true" />{t("Download video")}</button></>}
+        </div>}
         <div className="row" style={{ gap: 8 }}>
           <button className="btn btn-sm" disabled={!prev || prev.locked} onClick={() => prev && open(prev)}><ChevronLeft size={15} aria-hidden="true" />{t("Previous")}</button>
           <button className="btn btn-sm" disabled={!next} onClick={() => next && open(next)}>{t("Next lesson")}<ChevronRight size={15} aria-hidden="true" /></button>

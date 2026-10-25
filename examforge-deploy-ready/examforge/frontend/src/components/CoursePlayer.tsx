@@ -17,12 +17,22 @@ const savedRate = () => { try { const r = Number(localStorage.getItem("ef_rate")
 
 /** YouTube lecture player with: speed control (remembered), ±10 s, one-tap bookmark, and a moving watermark with the student's name.
  *  Fullscreen is done on OUR wrapper (YouTube's own button is hidden) so the watermark stays on top of the video, also in fullscreen. */
-export default function CoursePlayer({ videoId, bunnySrc, title, watermark, apiRef, onBookmark, onEnded }: { videoId?: string; bunnySrc?: string | null; title: string; watermark: string; apiRef: MutableRefObject<PlayerApi | null>; onBookmark?: () => void; onEnded?: () => void }) {
+export default function CoursePlayer({ videoId, bunnySrc, blob, title, watermark, apiRef, onBookmark, onEnded }: { videoId?: string; bunnySrc?: string | null; blob?: Blob | null; title: string; watermark: string; apiRef: MutableRefObject<PlayerApi | null>; onBookmark?: () => void; onEnded?: () => void }) {
   const t = useT(); const wrap = useRef<HTMLDivElement>(null), mount = useRef<HTMLDivElement>(null), wm = useRef<HTMLDivElement>(null), player = useRef<any>(null);
   const [rate, setRate] = useState(savedRate), [err, setErr] = useState(""), [full, setFull] = useState(false), [pseudo, setPseudo] = useState(false), [pos, setPos] = useState({ x: 8, y: 12 }), [rateOpen, setRateOpen] = useState(false);
   const endedRef = useRef(onEnded); endedRef.current = onEnded; const rateRef = useRef(rate); rateRef.current = rate;
 
-  const bunny = !!bunnySrc;
+  const bunny = !!bunnySrc, local = !!blob, vid = useRef<HTMLVideoElement | null>(null);
+  // Downloaded video: a plain <video> playing the saved file (works with no internet). Same speed, +-10 s, bookmarks and watermark.
+  useEffect(() => {
+    if (!blob) return; setErr(""); const url = URL.createObjectURL(blob), v = document.createElement("video"); vid.current = v;
+    v.src = url; v.controls = true; v.playsInline = true; v.setAttribute("controlsList", "nodownload noremoteplayback nofullscreen"); v.disablePictureInPicture = true; v.style.cssText = "position:absolute;inset:0;width:100%;height:100%;background:#000"; v.addEventListener("contextmenu", (e) => e.preventDefault());
+    v.addEventListener("loadedmetadata", () => { v.playbackRate = rateRef.current; }); v.addEventListener("ended", () => endedRef.current?.()); v.addEventListener("error", () => setErr(t("This video is not available.")));
+    mount.current?.appendChild(v);
+    apiRef.current = { time: () => Math.floor(v.currentTime || 0), seek: (sec) => { v.currentTime = Math.max(0, sec); void v.play().catch(() => {}); } };
+    return () => { apiRef.current = null; v.pause(); v.removeAttribute("src"); v.load(); vid.current = null; URL.revokeObjectURL(url); if (mount.current) mount.current.innerHTML = ""; };
+  }, [blob]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Bunny Stream: a signed iframe controlled through the player.js postMessage protocol (time, seek, ended).
   useEffect(() => {
     if (!bunnySrc) return; setErr(""); const frame = document.createElement("iframe"); frame.src = bunnySrc; frame.title = title; frame.allow = "accelerometer; encrypted-media; picture-in-picture"; frame.referrerPolicy = "strict-origin-when-cross-origin"; mount.current?.appendChild(frame);
@@ -46,8 +56,8 @@ export default function CoursePlayer({ videoId, bunnySrc, title, watermark, apiR
     return () => { dead = true; apiRef.current = null; try { player.current?.destroy?.(); } catch { /* ignore */ } player.current = null; if (mount.current) mount.current.innerHTML = ""; };
   }, [videoId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const pick = (r: number) => { setRate(r); setRateOpen(false); try { localStorage.setItem("ef_rate", String(r)); } catch { /* ignore */ } try { player.current?.setPlaybackRate?.(r); } catch { /* ignore */ } };
-  const jump = (d: number) => { if (bunny) { apiRef.current?.seek(apiRef.current.time() + d); return; } const p = player.current; try { p?.seekTo?.(Math.max(0, (p.getCurrentTime?.() ?? 0) + d), true); } catch { /* ignore */ } };
+  const pick = (r: number) => { setRate(r); setRateOpen(false); try { localStorage.setItem("ef_rate", String(r)); } catch { /* ignore */ } try { player.current?.setPlaybackRate?.(r); } catch { /* ignore */ } if (vid.current) vid.current.playbackRate = r; };
+  const jump = (d: number) => { if (bunny || local) { apiRef.current?.seek(apiRef.current.time() + d); return; } const p = player.current; try { p?.seekTo?.(Math.max(0, (p.getCurrentTime?.() ?? 0) + d), true); } catch { /* ignore */ } };
 
   // The watermark drifts to a new random spot every few seconds, so it cannot be cropped out of a screen recording.
   useEffect(() => { const id = setInterval(() => setPos({ x: 4 + Math.random() * 56, y: 8 + Math.random() * 74 }), 6500); return () => clearInterval(id); }, []);
