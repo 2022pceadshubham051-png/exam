@@ -17,7 +17,7 @@ const savedRate = () => { try { const r = Number(localStorage.getItem("ef_rate")
 
 /** YouTube lecture player with: speed control (remembered), ±10 s, one-tap bookmark, and a moving watermark with the student's name.
  *  Fullscreen is done on OUR wrapper (YouTube's own button is hidden) so the watermark stays on top of the video, also in fullscreen. */
-export default function CoursePlayer({ videoId, bunnySrc, blob, title, watermark, apiRef, onBookmark, onEnded }: { videoId?: string; bunnySrc?: string | null; blob?: Blob | null; title: string; watermark: string; apiRef: MutableRefObject<PlayerApi | null>; onBookmark?: () => void; onEnded?: () => void }) {
+export default function CoursePlayer({ videoId, bunnySrc, blob, startAt = 0, title, watermark, apiRef, onBookmark, onEnded }: { videoId?: string; bunnySrc?: string | null; blob?: Blob | null; startAt?: number; title: string; watermark: string; apiRef: MutableRefObject<PlayerApi | null>; onBookmark?: () => void; onEnded?: () => void }) {
   const t = useT(); const wrap = useRef<HTMLDivElement>(null), mount = useRef<HTMLDivElement>(null), wm = useRef<HTMLDivElement>(null), player = useRef<any>(null);
   const [rate, setRate] = useState(savedRate), [err, setErr] = useState(""), [full, setFull] = useState(false), [pseudo, setPseudo] = useState(false), [pos, setPos] = useState({ x: 8, y: 12 }), [rateOpen, setRateOpen] = useState(false);
   const endedRef = useRef(onEnded); endedRef.current = onEnded; const rateRef = useRef(rate); rateRef.current = rate;
@@ -27,7 +27,7 @@ export default function CoursePlayer({ videoId, bunnySrc, blob, title, watermark
   useEffect(() => {
     if (!blob) return; setErr(""); const url = URL.createObjectURL(blob), v = document.createElement("video"); vid.current = v;
     v.src = url; v.controls = true; v.playsInline = true; v.setAttribute("controlsList", "nodownload noremoteplayback nofullscreen"); v.disablePictureInPicture = true; v.style.cssText = "position:absolute;inset:0;width:100%;height:100%;background:#000"; v.addEventListener("contextmenu", (e) => e.preventDefault());
-    v.addEventListener("loadedmetadata", () => { v.playbackRate = rateRef.current; }); v.addEventListener("ended", () => endedRef.current?.()); v.addEventListener("error", () => setErr(t("This video is not available.")));
+    v.addEventListener("loadedmetadata", () => { v.playbackRate = rateRef.current; if (startAt > 0 && startAt < (v.duration || 1e9) - 10) v.currentTime = startAt; }); v.addEventListener("ended", () => endedRef.current?.()); v.addEventListener("error", () => setErr(t("This video is not available.")));
     mount.current?.appendChild(v);
     apiRef.current = { time: () => Math.floor(v.currentTime || 0), seek: (sec) => { v.currentTime = Math.max(0, sec); void v.play().catch(() => {}); } };
     return () => { apiRef.current = null; v.pause(); v.removeAttribute("src"); v.load(); vid.current = null; URL.revokeObjectURL(url); if (mount.current) mount.current.innerHTML = ""; };
@@ -38,7 +38,7 @@ export default function CoursePlayer({ videoId, bunnySrc, blob, title, watermark
     if (!bunnySrc) return; setErr(""); const frame = document.createElement("iframe"); frame.src = bunnySrc; frame.title = title; frame.allow = "accelerometer; encrypted-media; picture-in-picture"; frame.referrerPolicy = "strict-origin-when-cross-origin"; mount.current?.appendChild(frame);
     let last = 0; const send = (o: object) => frame.contentWindow?.postMessage(JSON.stringify({ context: "player.js", version: "0.0.11", ...o }), "*");
     const on = (e: MessageEvent) => { if (e.source !== frame.contentWindow) return; let d: any = e.data; try { if (typeof d === "string") d = JSON.parse(d); } catch { return; } if (d?.context !== "player.js") return;
-      if (d.event === "ready") { send({ method: "addEventListener", value: "timeupdate" }); send({ method: "addEventListener", value: "ended" }); } else if (d.event === "timeupdate") last = Math.floor(d.value?.seconds ?? 0); else if (d.event === "ended") endedRef.current?.(); };
+      if (d.event === "ready") { if (startAt > 0) send({ method: "setCurrentTime", value: startAt }); send({ method: "addEventListener", value: "timeupdate" }); send({ method: "addEventListener", value: "ended" }); } else if (d.event === "timeupdate") last = Math.floor(d.value?.seconds ?? 0); else if (d.event === "ended") endedRef.current?.(); };
     window.addEventListener("message", on); frame.addEventListener("load", () => { send({ method: "addEventListener", value: "ready" }); send({ method: "addEventListener", value: "timeupdate" }); send({ method: "addEventListener", value: "ended" }); });
     apiRef.current = { time: () => last, seek: (sec) => { send({ method: "setCurrentTime", value: Math.max(0, sec) }); send({ method: "play" }); } };
     return () => { window.removeEventListener("message", on); apiRef.current = null; if (mount.current) mount.current.innerHTML = ""; };
@@ -49,7 +49,7 @@ export default function CoursePlayer({ videoId, bunnySrc, blob, title, watermark
     let dead = false; const host = document.createElement("div"); mount.current?.appendChild(host); setErr("");
     loadYT().then((YT) => { if (dead) return;
       player.current = new YT.Player(host, { videoId, host: "https://www.youtube-nocookie.com", width: "100%", height: "100%",
-        playerVars: { rel: 0, modestbranding: 1, playsinline: 1, fs: 0, iv_load_policy: 3, origin: location.origin },
+        playerVars: { start: Math.max(0, Math.floor(startAt)), rel: 0, modestbranding: 1, playsinline: 1, fs: 0, iv_load_policy: 3, origin: location.origin },
         events: { onReady: () => { try { player.current.setPlaybackRate(rateRef.current); } catch { /* ignore */ } }, onStateChange: (e: any) => { if (e.data === 1) { try { player.current.setPlaybackRate(rateRef.current); } catch { /* ignore */ } } if (e.data === 0) endedRef.current?.(); }, onError: () => setErr(t("This video is not available.")) } });
     }).catch((e) => !dead && setErr(e.message));
     apiRef.current = { time: () => { try { return Math.floor(player.current?.getCurrentTime?.() ?? 0); } catch { return 0; } }, seek: (s) => { try { player.current?.seekTo?.(Math.max(0, s), true); player.current?.playVideo?.(); } catch { /* ignore */ } } };

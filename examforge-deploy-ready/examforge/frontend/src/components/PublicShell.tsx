@@ -3,7 +3,7 @@ import { BrandLockup } from "./LogoMark"; import { getMe } from "../lib/auth"; i
 
 export const SiteFooter = () => <footer className="site-foot"><div className="site-foot-in">
   <span>© {new Date().getFullYear()} {SITE}</span>
-  <nav aria-label="Footer"><Link to="/about">About</Link><Link to="/tips">Exam tips</Link><Link to="/privacy">Privacy policy</Link><Link to="/contact">Contact</Link></nav>
+  <nav aria-label="Footer"><Link to="/about">About</Link><Link to="/tips">Exam tips</Link><Link to="/privacy">Privacy policy</Link><Link to="/terms">Terms</Link><Link to="/refund">Refunds</Link><Link to="/contact">Contact</Link></nav>
 </div></footer>;
 
 export default function PublicShell({ children, narrow }: { children: ReactNode; narrow?: boolean }) {
