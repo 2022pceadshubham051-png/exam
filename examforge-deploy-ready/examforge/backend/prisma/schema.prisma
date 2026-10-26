@@ -67,6 +67,10 @@ model User {
   lessonNotes LessonNote[]
   courseReviews CourseReview[]
   pushSubs PushSubscription[]
+  sessions Session[]
+  lessonPositions LessonPosition[]
+  doubts Doubt[]
+  doubtReplies DoubtReply[]
 }
 
 model Test {
@@ -418,6 +422,7 @@ model CourseSubject {
   courseId String
   name String
   position Int @default(0)
+  testId String? // optional test for the whole subject
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
   lessons Lesson[]
   @@index([courseId])
@@ -430,6 +435,7 @@ model Lesson {
   title String
   youtubeId String?
   bunnyId String?
+  testId String? // optional practice test shown after this lesson
   notes String? @db.Text
   notesUrl String?
   durationMin Int?
@@ -440,6 +446,8 @@ model Lesson {
   subject CourseSubject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   progress LessonProgress[]
   notesBy LessonNote[]
+  positions LessonPosition[]
+  doubts Doubt[]
   @@index([courseId])
   @@index([subjectId])
 }
@@ -537,4 +545,56 @@ model PushSubscription {
   createdAt DateTime @default(now())
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@index([userId])
+}
+
+// ---- v5: resume position, device limit, doubts ----
+model LessonPosition {
+  userId String
+  lessonId String
+  sec Int
+  updatedAt DateTime @updatedAt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  @@id([userId, lessonId])
+}
+
+// One row per logged-in device. At most MAX_DEVICES (default 2) per student: logging in on another device signs the least recently used one out.
+model Session {
+  id String @id @default(cuid())
+  userId String
+  deviceId String
+  label String?
+  createdAt DateTime @default(now())
+  lastSeen DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, deviceId])
+  @@index([userId, lastSeen])
+}
+
+model Doubt {
+  id String @id @default(cuid())
+  courseId String
+  lessonId String
+  userId String
+  text String @db.Text
+  atSec Int @default(0)
+  resolved Boolean @default(false)
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  replies DoubtReply[]
+  @@index([lessonId, createdAt])
+  @@index([courseId, resolved])
+}
+
+model DoubtReply {
+  id String @id @default(cuid())
+  doubtId String
+  userId String? // null for the AI tutor
+  kind String // STUDENT | TEACHER | AI
+  text String @db.Text
+  createdAt DateTime @default(now())
+  doubt Doubt @relation(fields: [doubtId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  @@index([doubtId])
 }

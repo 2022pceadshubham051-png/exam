@@ -137,3 +137,12 @@ courseAdmin.post("/admin/push", wrap(async (req, res) => {
   const ids: string[] = b.courseId ? (await prisma.enrollment.findMany({ where: { courseId: b.courseId, status: "ACTIVE" }, select: { userId: true } })).map((e: any) => e.userId) : (await prisma.pushSubscription.groupBy({ by: ["userId"], _count: { _all: true } })).map((r: any) => r.userId);
   res.json({ audience: ids.length, ...(await notifyUsers(ids, { title: b.title, body: b.body, url: b.url || "/courses", tag: "admin-msg" })) });
 }));
+
+// ------------------------------------------------------------ doubts inbox
+courseAdmin.get("/admin/doubts", wrap(async (req, res) => {
+  const status = String(req.query.status ?? "open"), courseId = String(req.query.courseId ?? "");
+  const rows = await prisma.doubt.findMany({ where: { ...(status === "open" ? { resolved: false } : {}), ...(courseId ? { courseId } : {}) }, orderBy: { createdAt: "desc" }, take: 100,
+    include: { user: { select: { name: true, email: true } }, lesson: { select: { title: true, course: { select: { title: true } } } }, replies: { orderBy: { createdAt: "asc" }, include: { user: { select: { name: true } } } } } });
+  res.json(rows.map((d: any) => ({ id: d.id, text: d.text, atSec: d.atSec, resolved: d.resolved, at: d.createdAt, name: d.user.name, email: d.user.email, lessonId: d.lessonId, courseId: d.courseId, lesson: d.lesson.title, course: d.lesson.course.title,
+    replies: d.replies.map((r: any) => ({ id: r.id, kind: r.kind, text: r.text, at: r.createdAt, by: r.kind === "AI" ? "AI tutor" : r.kind === "TEACHER" ? "You" : r.user?.name ?? "Student" })) })));
+}));
