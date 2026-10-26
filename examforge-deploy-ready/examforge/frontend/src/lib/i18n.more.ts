@@ -2,6 +2,15 @@
 // A test (i18n.coverage.test.ts) fails if a t("...") string in these screens has no Hindi, or if Hindi is not written in Devanagari.
 export const hiMore: Record<string, string> = {
   // Courses
+  // Course route (railway)
+  "Open lecture": "लेक्चर खोलें", "Not started": "शुरू नहीं हुआ", "Locked": "लॉक", "{n} min": "{n} मिनट", "Close": "बंद करें", "Tap a station to see its lecture.": "किसी स्टेशन पर टैप करके उसका लेक्चर देखें।",
+  "Course route": "कोर्स रूट", "Station {n}": "स्टेशन {n}", "You are here": "आप यहाँ हैं", "Quiz signal": "क्विज़ सिग्नल", "Final quiz": "फ़ाइनल क्विज़", "Train on hold": "ट्रेन होल्ड पर है", "HOLD": "होल्ड",
+  "Quiz cleared": "क्विज़ पूरा हुआ", "Retake quiz": "क्विज़ फिर दें", "Start quiz": "क्विज़ शुरू करें", "Upcoming": "आगे", "Running": "चल रही है", "Route complete": "रूट पूरा", "{done} of {total} stations": "{total} में से {done} स्टेशन",
+  "Train departing for Station {n}": "ट्रेन स्टेशन {n} की ओर रवाना हो गई", "Quiz signal ahead. Train is on hold.": "आगे क्विज़ सिग्नल है। ट्रेन होल्ड पर है।", "Route complete! You reached the last station. 🎉": "रूट पूरा! आप आख़िरी स्टेशन पहुँच गए। 🎉",
+  "Enroll to take this quiz.": "यह क्विज़ देने के लिए एनरोल करें।", "Train on hold at the quiz signal": "ट्रेन क्विज़ सिग्नल पर रुकी है", "Take the quiz to clear the signal and move on to the next station.": "सिग्नल हटाने और अगले स्टेशन जाने के लिए क्विज़ दें।",
+  "Search courses": "कोर्स खोजें", "All exams": "सभी परीक्षाएँ", "No course matches your search.": "आपकी खोज से कोई कोर्स नहीं मिला।", "Continue": "आगे बढ़ें", "Next stop": "अगला स्टॉप", "stations": "स्टेशन", "quizzes": "क्विज़", "Station {n} of {total}": "{total} में से स्टेशन {n}",
+  "Next: Station {n}": "अगला: स्टेशन {n}", "Next: Quiz": "अगला: क्विज़", "Journey complete": "सफ़र पूरा",
+  "Subjects": "विषय", "Choose a subject to see its lectures.": "लेक्चर देखने के लिए कोई विषय चुनें।", "Back to subjects": "विषयों पर वापस", "Map": "नक्शा", "List": "सूची", "Lectures": "लेक्चर", "Continue where you stopped": "जहाँ रुके थे वहीं से जारी रखें",
   "Courses": "कोर्स", "Courses for you": "आपके लिए कोर्स", "See all": "सभी देखें", "Free": "मुफ़्त", "Video lessons with notes, made for your exam.": "आपकी परीक्षा के लिए नोट्स के साथ वीडियो लेक्चर।",
   "All courses": "सभी कोर्स", "My courses": "मेरे कोर्स", "Enrolled": "एनरोल्ड", "Payment under review": "पेमेंट की जाँच चल रही है", "lessons": "लेक्चर", "subjects": "विषय", "complete": "पूरा",
   "You have not enrolled in any course yet": "आपने अभी तक कोई कोर्स नहीं लिया है", "No courses yet": "अभी कोई कोर्स नहीं", "Open All courses and pick one to start learning.": "सभी कोर्स खोलकर एक चुनें और पढ़ाई शुरू करें।",
@@ -249,4 +258,20 @@ export const hiMore: Record<string, string> = {
   "Watch without internet. Uses mobile storage.": "बिना इंटरनेट देखें। फ़ोन की स्टोरेज इस्तेमाल होगी।",
   "Download video": "वीडियो डाउनलोड करें",
   "Downloaded videos": "डाउनलोड किए वीडियो",
+  "Resumed from {time}": "{time} से जारी",
+  "Practice test for this lesson": "इस लेक्चर का प्रैक्टिस टेस्ट",
+  "Doubt posted.": "डाउट पोस्ट हो गया।",
+  "Delete this doubt?": "यह डाउट हटाएँ?",
+  "Doubts": "डाउट",
+  "Ask your doubt": "अपना डाउट पूछें",
+  "Ask your doubt about this lesson…": "इस लेक्चर के बारे में अपना डाउट पूछें…",
+  "Post doubt": "डाउट पोस्ट करें",
+  "Solved": "हल हो गया",
+  "Teacher": "टीचर",
+  "Your answer": "आपका जवाब",
+  "Reply": "जवाब दें",
+  "Ask AI tutor": "AI ट्यूटर से पूछें",
+  "Reopen": "फिर खोलें",
+  "Mark solved": "हल हुआ चिह्नित करें",
+  "No doubts yet. Be the first to ask.": "अभी कोई डाउट नहीं। सबसे पहले पूछें।",
 };

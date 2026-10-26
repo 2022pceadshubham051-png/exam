@@ -1,4 +1,6 @@
 const tok = () => localStorage.getItem("token") ?? "";
+/** A random id for this browser, sent with every request so the server can count devices (max 2 per student). */
+export const deviceId = () => { try { let d = localStorage.getItem("ef_device"); if (!d) { d = (crypto.randomUUID?.() ?? Math.random().toString(36).slice(2) + Date.now().toString(36)); localStorage.setItem("ef_device", d); } return d; } catch { return "nostorage"; } };
 const apiBase = () => (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
 
 // Identical GETs made within 3 s share one request (e.g. data prefetched at startup, then asked for again by the screen). Any write clears this.
@@ -14,12 +16,12 @@ async function request<T>(path: string, method: string, body?: unknown): Promise
   try {
     const r = await fetch(apiBase() + "/api" + path, {
       method,
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok()}` },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok()}`, "X-Device-Id": deviceId() },
       body: body ? JSON.stringify(body) : undefined,
       signal: controller.signal,
     });
     const j = await r.json().catch(() => ({}));
-    if (r.status === 401 && !location.pathname.startsWith("/login") && !path.startsWith("/auth")) { localStorage.removeItem("token"); location.href = "/login"; }
+    if (r.status === 401 && !location.pathname.startsWith("/login") && !path.startsWith("/auth")) { localStorage.removeItem("token"); location.href = j.code === "SESSION_REVOKED" ? "/login?kicked=1" : "/login"; }
     if (!r.ok) {
       // /me and /shop were added in v18. A plain "Not found" on them means the deployed backend is older than this frontend.
       const stale = r.status === 404 && j.error === "Not found" && /^\/(me|shop|coins|lecture-pace)(\/|$)/.test(path);

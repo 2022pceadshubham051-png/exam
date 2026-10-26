@@ -60,6 +60,7 @@ export default function Login() {
           <p className="sub" style={{ marginTop: 4 }}>{reg ? "It takes less than a minute." : "Log in to continue practising."}</p></div>
         <div className="seg" role="group" aria-label="Log in or register" style={{ width: "100%" }}><button type="button" aria-pressed={!reg} className={!reg ? "on" : ""} style={{ flex: 1, justifyContent: "center" }} onClick={() => { setReg(false); setErr(""); }}>Log in</button>
           <button type="button" aria-pressed={reg} className={reg ? "on" : ""} style={{ flex: 1, justifyContent: "center" }} onClick={() => { setReg(true); setErr(""); }}>Register</button></div>
+        {qs.get("kicked") === "1" && !me && <div className="alert alert-warn" role="alert"><TriangleAlert size={17} />You were signed out because your account was opened on another device. An account works on 2 devices at a time.</div>}
         {me && <div className="alert alert-info">You are already logged in. <a href={me.role === "ADMIN" ? "/admin" : "/dashboard"}>Continue</a></div>}
         {reg && <Field label="Full name"><input className="input" required value={f.name} onChange={set("name")} placeholder="Your name" autoComplete="name" /></Field>}
         <Field label={reg ? "Email" : "Email or username"}><input className="input" required value={f.email} onChange={set("email")} placeholder="you@example.com" autoComplete="username" /></Field>
@@ -70,7 +71,7 @@ export default function Login() {
         {err && <div className="alert alert-bad" role="alert"><TriangleAlert size={17} /><span style={{ flex: 1 }}>{err}{unverified && <> <button type="button" className="linkbtn" onClick={() => resend(unverified)}>Send the link again</button></>}</span></div>}
         <button className="btn btn-primary btn-lg btn-block" disabled={busy}>{busy ? <><Loader size={18} className="animate-spin" />Please wait</> : <>{reg ? "Create account" : "Log in"}<ArrowRight size={18} /></>}</button>
         {cfg?.google && <><div className="or-line" aria-hidden="true"><span>or</span></div><GoogleButton clientId={cfg.google} onCredential={google} /></>}
-        <nav className="row" style={{ justifyContent: "center", gap: 16, fontSize: ".85rem" }} aria-label="Site links"><Link to="/">Home</Link><Link to="/privacy">Privacy policy</Link><Link to="/about">About</Link><Link to="/contact">Contact</Link></nav>
+        <nav className="row" style={{ justifyContent: "center", gap: 16, fontSize: ".85rem" }} aria-label="Site links"><Link to="/">Home</Link><Link to="/privacy">Privacy policy</Link><Link to="/terms">Terms</Link><Link to="/refund">Refunds</Link><Link to="/about">About</Link><Link to="/contact">Contact</Link></nav>
       </form>}
     </section>
   </div>;

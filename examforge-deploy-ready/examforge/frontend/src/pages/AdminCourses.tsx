@@ -5,7 +5,7 @@ import { api } from "../lib/api"; import { readPoster, rupees, thumbUrl, youtube
 
 const isBunny = (v: string) => /^(bunny:)?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v.trim().replace(/^bunny:/i, "")) || /mediadelivery\.net|bunnycdn\.com|b-cdn\.net/i.test(v);
 const blank = { title: "", description: "", posterUrl: "", examName: "", priceInr: 0, paymentInfo: "", published: false, featured: true, slug: "", seoTitle: "", seoDescription: "" };
-const blankLesson = { title: "", video: "", notes: "", notesUrl: "", durationMin: "" as number | "", isPreview: false };
+const blankLesson = { testId: "", title: "", video: "", notes: "", notesUrl: "", durationMin: "" as number | "", isPreview: false };
 
 /** Admin: build courses (poster, price, subjects, YouTube lessons with notes) and approve student payments. */
 export default function AdminCourses() {
@@ -104,7 +104,7 @@ function Content({ course, reload, setErr }: { course: any; reload: () => Promis
   const addSub = () => run(async () => { if (!subName.trim()) return; await api(`/admin/courses/${course.id}/subjects`, "POST", { name: subName.trim() }); setSubName(""); });
   const rename = (s: any) => { const n = prompt("Subject name", s.name)?.trim(); if (n && n !== s.name) void run(() => api(`/admin/subjects/${s.id}`, "PUT", { name: n })); };
   const move = (kind: string, id: string, dir: "up" | "down") => run(() => api(`/admin/${kind}/${id}/move`, "POST", { dir }));
-  const editLesson = (subjectId: string, l?: any) => setLesson({ subjectId, id: l?.id, v: l ? { title: l.title, video: l.youtubeId ? `https://youtu.be/${l.youtubeId}` : l.bunnyId ? `bunny:${l.bunnyId}` : "", notes: l.notes ?? "", notesUrl: l.notesUrl ?? "", durationMin: l.durationMin ?? "", isPreview: l.isPreview } : blankLesson });
+  const editLesson = (subjectId: string, l?: any) => setLesson({ subjectId, id: l?.id, v: l ? { testId: l.testId ?? "", title: l.title, video: l.youtubeId ? `https://youtu.be/${l.youtubeId}` : l.bunnyId ? `bunny:${l.bunnyId}` : "", notes: l.notes ?? "", notesUrl: l.notesUrl ?? "", durationMin: l.durationMin ?? "", isPreview: l.isPreview } : blankLesson });
   const saveLesson = async () => {
     if (!lesson) return; const v = lesson.v;
     if (v.title.trim().length < 2) return setErr("Give the lesson a title.");
@@ -113,6 +113,8 @@ function Content({ course, reload, setErr }: { course: any; reload: () => Promis
     try { setErr(""); if (lesson.id) await api(`/admin/lessons/${lesson.id}`, "PUT", v); else await api(`/admin/subjects/${lesson.subjectId}/lessons`, "POST", v); setLesson(null); await reload(); toast("Lesson saved.", "ok"); }
     catch (e: any) { setErr(e.message); } finally { setSaving(false); }
   };
+  const [tests, setTests] = useState<any[]>([]); useEffect(() => { api("/tests?limit=100").then((d) => setTests(Array.isArray(d) ? d : [])).catch(() => {}); }, []);
+  const setSubTest = (s: any, testId: string) => void run(() => api(`/admin/subjects/${s.id}`, "PUT", { testId: testId || null }));
   const [pl, setPl] = useState({ url: "", subjectId: "", preview: 0 }); const [plBusy, setPlBusy] = useState(false);
   const importPl = async () => { setPlBusy(true); try { setErr(""); const r = await api(`/admin/courses/${course.id}/import-playlist`, "POST", pl); toast(`${r.added} lessons added to “${r.subject}”${r.skipped ? `, ${r.skipped} already there` : ""}.`, "ok"); setPl({ ...pl, url: "" }); await reload(); } catch (e: any) { setErr(e.message); } finally { setPlBusy(false); } };
   const lv = lesson?.v, vid = lv?.video.trim() ? youtubeId(lv.video) : null, bn = !!lv?.video.trim() && isBunny(lv.video);
@@ -122,6 +124,7 @@ function Content({ course, reload, setErr }: { course: any; reload: () => Promis
       <div className="adm-sub-h"><b style={{ flex: 1 }}>{s.name}</b>
         <button className="btn btn-sm icon-btn" aria-label="Move subject up" disabled={si === 0} onClick={() => move("subjects", s.id, "up")}><ArrowUp size={14} /></button>
         <button className="btn btn-sm icon-btn" aria-label="Move subject down" disabled={si === course.subjects.length - 1} onClick={() => move("subjects", s.id, "down")}><ArrowDown size={14} /></button>
+        <select className="select" style={{ width: 170, minHeight: 34 }} aria-label={`Test for subject ${s.name}`} value={s.testId ?? ""} onChange={(e) => setSubTest(s, e.target.value)} title="Practice test shown after every lesson of this subject"><option value="">No subject test</option>{tests.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select>
         <button className="btn btn-sm" onClick={() => rename(s)}><Pencil size={14} />Rename</button>
         <button className="btn btn-sm btn-danger" onClick={() => setDel({ kind: "subjects", id: s.id, name: s.name })}><Trash2 size={14} /></button>
         <button className="btn btn-sm btn-primary" onClick={() => editLesson(s.id)}><Plus size={14} />Lesson</button></div>
@@ -159,6 +162,7 @@ function Content({ course, reload, setErr }: { course: any; reload: () => Promis
         <div style={{ width: 150 }}><label className="label" htmlFor="l-dur">Length (minutes)</label><input id="l-dur" className="input" type="number" min={0} max={1000} value={lv.durationMin} onChange={(e) => setL("durationMin", e.target.value === "" ? "" : +e.target.value)} /></div>
         <label className="switch" style={{ flex: 1, minWidth: 220 }}><input type="checkbox" checked={lv.isPreview} onChange={(e) => setL("isPreview", e.target.checked)} /><span>Free preview<small>Anyone can watch this lesson without enrolling.</small></span></label>
       </div>
+      <div><label className="label" htmlFor="l-test">Practice test after this lesson (optional)</label><select id="l-test" className="select" value={lv.testId} onChange={(e) => setL("testId", e.target.value)}><option value="">None (use the subject test, if any)</option>{tests.map((t) => <option key={t.id} value={t.id}>{t.name}{t.published ? "" : " (draft)"}</option>)}</select><div className="hint">Students see a “Practice test” card under the video. Only published tests are shown to them.</div></div>
       <div><label className="label" htmlFor="l-notes">Lecture notes</label><textarea id="l-notes" className="textarea" rows={9} maxLength={30000} value={lv.notes} onChange={(e) => setL("notes", e.target.value)} placeholder={"# Key formulas\n- Percentage = (part / whole) × 100\n- Increase 20% then decrease 20% = 4% loss\n\nWrite plain text. Lines starting with # are headings, - are bullets."} /></div>
       <div><label className="label" htmlFor="l-url">Notes PDF / Drive link (optional)</label><input id="l-url" className="input" value={lv.notesUrl} onChange={(e) => setL("notesUrl", e.target.value)} placeholder="https://drive.google.com/…" /></div>
       <div className="row" style={{ justifyContent: "flex-end" }}><button className="btn" disabled={saving} onClick={() => setLesson(null)}>Cancel</button><button className="btn btn-primary" disabled={saving} onClick={saveLesson}><Save size={15} />Save lesson</button></div>

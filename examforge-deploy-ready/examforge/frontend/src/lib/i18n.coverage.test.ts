@@ -3,7 +3,7 @@ import { tr } from "./i18n";
 
 // Every user-facing string in these screens goes through t("...") / tr("...") and must have a Hindi translation.
 const FILES = ["components/DoubtButton.tsx", "components/QuizPlayer.tsx", "components/StreakBar.tsx", "components/GoalRing.tsx", "components/InstallPrompt.tsx", "components/ReportQuestion.tsx",
-  "pages/Daily.tsx", "pages/Duels.tsx", "pages/Revise.tsx", "pages/Notebook.tsx", "pages/Home.tsx", "pages/League.tsx", "pages/Shop.tsx", "pages/Result.tsx", "pages/Review.tsx", "pages/Courses.tsx", "components/CoursePlayer.tsx", "components/LessonNotes.tsx", "components/CourseReviews.tsx", "components/EnrollBox.tsx", "components/PushToggle.tsx", "pages/OfflineNotes.tsx"];
+  "pages/Daily.tsx", "pages/Duels.tsx", "pages/Revise.tsx", "pages/Notebook.tsx", "pages/Home.tsx", "pages/League.tsx", "pages/Shop.tsx", "pages/Result.tsx", "pages/Review.tsx", "pages/Courses.tsx", "components/CoursePlayer.tsx", "components/CourseRoute.tsx", "components/LessonNotes.tsx", "components/CourseReviews.tsx", "components/EnrollBox.tsx", "components/PushToggle.tsx", "components/Doubts.tsx", "pages/OfflineNotes.tsx"];
 const RE = /\b(?:t|tr)\(\s*"((?:[^"\\]|\\.)*)"/g;
 const SRC = import.meta.glob("../{components,pages}/*.tsx", { query: "?raw", import: "default", eager: true }) as Record<string, string>;
 const keysOf = (file: string) => [...(SRC[`../${file}`] ?? "").matchAll(RE)].map((m) => m[1].replace(/\\(.)/g, "$1"));

@@ -1,5 +1,5 @@
 export const SITE = "ExamForge";
-export const CONTACT_EMAIL = (import.meta.env.VITE_CONTACT_EMAIL as string | undefined) || "your-email@example.com";
+export const CONTACT_EMAIL = (import.meta.env.VITE_CONTACT_EMAIL as string | undefined) || "shubhamgupta090903@gmail.com";
 
 export type Tip = { slug: string; title: string; summary: string; body: string[] };
 export const TIPS: Tip[] = [

@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"; import { Link, useParams, useSearchParams } from "react-router-dom";
-import { GraduationCap, PlayCircle, Lock, CircleCheck, Circle, FileText, ExternalLink, ChevronLeft, ChevronRight, Clock, Hourglass, BookOpen, CloudDownload, CloudOff, Share2, Link2, WifiOff, Download, Trash2 } from "lucide-react";
+import { GraduationCap, PlayCircle, CircleCheck, Circle, FileText, ExternalLink, ChevronLeft, ChevronRight, Hourglass, Search, Hand, TrainFront, BookOpen, CloudDownload, CloudOff, Share2, Link2, WifiOff, Download, Trash2, ClipboardCheck, History } from "lucide-react";
 import Shell from "../components/Shell"; import Poster from "../components/Poster"; import { Empty, PageHeader, SkeletonRows, toast } from "../components/ui";
 import Notes from "../components/Notes"; import CoursePlayer, { type PlayerApi } from "../components/CoursePlayer"; import LessonNotes, { type LessonNote } from "../components/LessonNotes";
-import CourseReviews, { RatingLine } from "../components/CourseReviews"; import EnrollBox from "../components/EnrollBox"; import PushToggle from "../components/PushToggle";
-import { api } from "../lib/api"; import { useT } from "../lib/i18n"; import { rupees, shareUrl, courseUrl } from "../lib/courses"; import { getMe } from "../lib/auth"; import { useSeo } from "../lib/seo";
+import CourseRoute, { trainSpot, buildStops } from "../components/CourseRoute"; import Doubts from "../components/Doubts"; import CourseReviews, { RatingLine } from "../components/CourseReviews"; import EnrollBox from "../components/EnrollBox"; import PushToggle from "../components/PushToggle";
+import { api } from "../lib/api"; import { clock } from "../components/CoursePlayer"; import { useT } from "../lib/i18n"; import { rupees, shareUrl, courseUrl } from "../lib/courses"; import { getMe } from "../lib/auth"; import { useSeo } from "../lib/seo";
 import { getOffline, removeOffline, saveOffline, savedIds, listOffline } from "../lib/offline"; import { getVideo, removeVideo, downloadVideo, type SavedVideo } from "../lib/offlineVideo";
 
 const price = (t: (k: string) => string, n: number) => (n > 0 ? rupees(n) : t("Free"));
@@ -18,16 +18,21 @@ function Badge({ s }: { s: string | null }) {
 
 /** Course catalogue: every published course, with my enrolled courses first. */
 export default function Courses() {
-  const t = useT(); const [list, setList] = useState<any[] | null>(null); const [tab, setTab] = useState<"all" | "mine">("all"); const [err, setErr] = useState("");
+  const t = useT(); const [list, setList] = useState<any[] | null>(null); const [tab, setTab] = useState<"all" | "mine">("all"); const [err, setErr] = useState(""); const [q, setQ] = useState(""); const [exam, setExam] = useState("");
   useEffect(() => { api("/courses").then((d) => setList(Array.isArray(d) ? d : [])).catch((e) => { setErr(e.message); setList([]); }); }, []);
   const mine = useMemo(() => (list ?? []).filter((c) => c.enrollment), [list]);
-  const shown = tab === "mine" ? mine : list ?? [];
+  const exams = useMemo(() => [...new Set((list ?? []).map((c) => c.examName).filter(Boolean))] as string[], [list]);
+  const shown = useMemo(() => { const n = q.trim().toLowerCase(); return (tab === "mine" ? mine : list ?? []).filter((c) => (!exam || c.examName === exam) && (!n || `${c.title} ${c.examName ?? ""} ${c.description ?? ""}`.toLowerCase().includes(n))); }, [tab, mine, list, q, exam]);
   return <Shell><div className="stack stagger" style={{ gap: 20 }}>
     <PageHeader title={t("Courses")} sub={t("Video lessons with notes, made for your exam.")} actions={<div className="row" style={{ gap: 8, flexWrap: "wrap" }}><PushToggle /><Link className="btn btn-sm" to="/offline-notes"><CloudDownload size={15} aria-hidden="true" />{t("Offline notes")}</Link></div>} />
     <nav className="seg" aria-label={t("Courses")}>
       <button type="button" className={tab === "all" ? "on" : ""} onClick={() => setTab("all")}>{t("All courses")}</button>
       <button type="button" className={tab === "mine" ? "on" : ""} onClick={() => setTab("mine")}>{t("My courses")}{mine.length ? ` (${mine.length})` : ""}</button>
     </nav>
+    <div className="course-filter">
+      <label className="course-search"><Search size={16} aria-hidden="true" /><input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("Search courses")} aria-label={t("Search courses")} /></label>
+      {exams.length > 1 && <div className="chip-row" role="group" aria-label={t("All exams")}><button type="button" className={`cf-chip ${exam === "" ? "on" : ""}`} onClick={() => setExam("")}>{t("All exams")}</button>{exams.map((x) => <button key={x} type="button" className={`cf-chip ${exam === x ? "on" : ""}`} onClick={() => setExam(exam === x ? "" : x)}>{x}</button>)}</div>}
+    </div>
     {err && <div className="alert alert-bad" role="alert">{err}</div>}
     {!list ? <SkeletonRows rows={3} /> : shown.length ? <div className="course-grid">{shown.map((c) => <Link key={c.id} to={`/courses/${c.slug ?? c.id}`} className="card course-card tap-card">
       <Poster src={c.posterUrl} title={c.title} />
@@ -37,10 +42,10 @@ export default function Courses() {
         <RatingLine rating={c.rating ?? 0} count={c.ratingCount ?? 0} />
         {c.description && <p className="sub course-desc">{c.description}</p>}
         <div className="course-meta"><span><PlayCircle size={14} aria-hidden="true" />{c.lessonCount} {t("lessons")}</span><span><BookOpen size={14} aria-hidden="true" />{c.subjectCount} {t("subjects")}</span></div>
-        {c.enrollment === "ACTIVE" ? <div><div className="bar" role="progressbar" aria-valuenow={c.progress} aria-valuemin={0} aria-valuemax={100} aria-label={t("Progress")}><i style={{ width: `${c.progress}%` }} /></div><span className="sub">{c.progress}% {t("complete")}</span></div>
+        {c.enrollment === "ACTIVE" ? <div className="course-prog"><div className="bar" role="progressbar" aria-valuenow={c.progress} aria-valuemin={0} aria-valuemax={100} aria-label={t("Progress")}><i style={{ width: `${c.progress}%` }} /></div><span className="sub row between"><span>{c.progress}% {t("complete")}</span><span className="course-go"><TrainFront size={14} aria-hidden="true" />{c.progress >= 100 ? t("Journey complete") : t("Continue")}</span></span></div>
           : <div className="course-price">{price(t, c.priceInr)}</div>}
       </div></Link>)}</div>
-      : <Empty icon={<GraduationCap size={32} />} title={tab === "mine" ? t("You have not enrolled in any course yet") : t("No courses yet")}>{tab === "mine" ? t("Open All courses and pick one to start learning.") : t("New courses will appear here soon.")}</Empty>}
+      : <Empty icon={<GraduationCap size={32} />} title={q || exam ? t("No course matches your search.") : tab === "mine" ? t("You have not enrolled in any course yet") : t("No courses yet")}>{q || exam ? "" : tab === "mine" ? t("Open All courses and pick one to start learning.") : t("New courses will appear here soon.")}</Empty>}
   </div></Shell>;
 }
 
@@ -72,6 +77,13 @@ export function CourseDetail() {
   const idx = flat.findIndex((l: any) => l.id === lid), prev = idx > 0 ? flat[idx - 1] : null, next = idx >= 0 ? flat.slice(idx + 1).find((l: any) => !l.locked) : null;
   const mark = async (done: boolean) => { if (!lesson || lesson.offlineCopy) return; setLesson({ ...lesson, done }); try { await api(`/courses/lessons/${lesson.id}/done`, "POST", { done }); await load(); } catch (e: any) { setLesson({ ...lesson, done: !done }); toast(e.message, "bad"); } };
 
+  // ---- resume: save the playing position every 15 s (and when leaving the lesson), restore it next time ----
+  useEffect(() => {
+    if (!lesson || lesson.offlineCopy) return; const id = lesson.id; let sent = lesson.resumeSec ?? 0;
+    const push = () => { const t = apiRef.current?.time() ?? 0; if (t > 5 && Math.abs(t - sent) >= 5) { sent = t; void api(`/lessons/${id}/position`, "PUT", { sec: t }).catch(() => {}); } };
+    const iv = setInterval(push, 15000); const leave = () => push(); window.addEventListener("pagehide", leave);
+    return () => { clearInterval(iv); window.removeEventListener("pagehide", leave); push(); };
+  }, [lesson?.id]); // eslint-disable-line
   // ---- offline notes (text only; the video always needs internet) ----
   const record = (l: any, notes: LessonNote[]) => ({ lessonId: l.id, courseId: c.id, courseTitle: c.title, subject: flat.find((x: any) => x.id === l.id)?.subject ?? "", title: l.title, notes: l.notes ?? null, notesUrl: l.notesUrl ?? null, myNotes: notes.map((n) => ({ id: n.id, atSec: n.atSec, kind: n.kind, text: n.text })) });
   const toggleSaved = async () => {
@@ -105,7 +117,7 @@ export function CourseDetail() {
   if (err && !c) return <Shell narrow><div className="stack"><Link className="sub" to="/courses"><ChevronLeft size={14} aria-hidden="true" />{t("All courses")}</Link><div className="alert alert-bad" role="alert">{err}</div>
     {hasOffline && <Link className="btn" style={{ justifySelf: "start" }} to="/offline-notes"><WifiOff size={16} aria-hidden="true" />{t("Open saved offline notes")}</Link>}</div></Shell>;
   if (!c) return <Shell narrow><SkeletonRows rows={4} /></Shell>;
-  const active = c.enrollment === "ACTIVE" || isAdmin; const isSaved = !!lesson && saved.has(lesson.id); const hasNotes = !!lesson && (lesson.notes || lesson.notesUrl);
+  const active = c.enrollment === "ACTIVE" || isAdmin; const spot = active ? trainSpot(c.subjects) : null; const quizCount = c.subjects.reduce((n: number, x: any) => n + buildStops(x).filter((y) => y.kind === "quiz").length, 0); const isSaved = !!lesson && saved.has(lesson.id); const hasNotes = !!lesson && (lesson.notes || lesson.notesUrl);
 
   return <Shell><div className="stack" style={{ gap: 18 }}>
     <Link className="sub row" style={{ gap: 4 }} to="/courses"><ChevronLeft size={14} aria-hidden="true" />{t("All courses")}</Link>
@@ -114,10 +126,11 @@ export function CourseDetail() {
       <section className="stack" style={{ gap: 12, minWidth: 0 }} aria-label={cur.title}>
         {lerr ? <div className="alert alert-bad" role="alert">{lerr}</div>
           : !lesson ? <div className="player player-wait"><div className="spinner" aria-hidden="true" /></div>
-          : video ? <CoursePlayer key={`v${lesson.id}`} blob={video.blob} title={lesson.title} watermark={lesson.watermark || video.watermark || "ExamForge"} apiRef={apiRef} onBookmark={() => bookmarkRef.current?.()} onEnded={() => { if (!lesson.done && !lesson.offlineCopy) void mark(true); }} />
+          : video ? <CoursePlayer key={`v${lesson.id}`} blob={video.blob} startAt={lesson.resumeSec ?? 0} title={lesson.title} watermark={lesson.watermark || video.watermark || "ExamForge"} apiRef={apiRef} onBookmark={() => bookmarkRef.current?.()} onEnded={() => { if (!lesson.done && !lesson.offlineCopy) void mark(true); }} />
           : lesson.offlineCopy ? <div className="player player-wait"><span className="sub row" style={{ gap: 6 }}><WifiOff size={16} aria-hidden="true" />{t("You are offline. Your saved notes are below.")}</span></div>
-          : lesson.youtubeId || lesson.bunnySrc ? <CoursePlayer key={lesson.id} videoId={lesson.youtubeId ?? undefined} bunnySrc={lesson.bunnySrc} title={lesson.title} watermark={lesson.watermark || "ExamForge"} apiRef={apiRef} onBookmark={() => bookmarkRef.current?.()} onEnded={() => { if (!lesson.done) void mark(true); }} />
+          : lesson.youtubeId || lesson.bunnySrc ? <CoursePlayer key={lesson.id} videoId={lesson.youtubeId ?? undefined} bunnySrc={lesson.bunnySrc} startAt={lesson.resumeSec ?? 0} title={lesson.title} watermark={lesson.watermark || "ExamForge"} apiRef={apiRef} onBookmark={() => bookmarkRef.current?.()} onEnded={() => { if (!lesson.done) void mark(true); }} />
           : <div className="player player-wait"><span className="sub">{t("No video for this lesson yet.")}</span></div>}
+        {lesson && !lesson.offlineCopy && lesson.resumeSec > 0 && <p className="sub row" style={{ gap: 6, margin: 0 }}><History size={14} aria-hidden="true" />{t("Resumed from {time}", { time: clock(lesson.resumeSec) })}</p>}
         <div className="row between" style={{ gap: 10, flexWrap: "wrap" }}>
           <div style={{ minWidth: 0 }}><span className="sub">{cur.subject}</span><h2 className="card-title" style={{ margin: 0 }}>{cur.title}</h2></div>
           {lesson && !lesson.offlineCopy && <button className={`btn ${lesson.done ? "" : "btn-primary"}`} onClick={() => mark(!lesson.done)}>{lesson.done ? <CircleCheck size={16} aria-hidden="true" /> : <Circle size={16} aria-hidden="true" />}{lesson.done ? t("Completed") : t("Mark as complete")}</button>}
@@ -138,9 +151,13 @@ export function CourseDetail() {
           {lesson.notes && <Notes text={lesson.notes} />}
           {lesson.notesUrl && <a className="btn btn-sm" style={{ justifySelf: "start" }} href={lesson.notesUrl} target="_blank" rel="noopener noreferrer"><ExternalLink size={15} aria-hidden="true" />{t("Open notes (PDF / link)")}</a>}
         </div>}
+        {lesson?.quiz && !lesson.offlineCopy && (cur.quiz && lesson.done && !cur.quiz.taken
+          ? <div className="card card-pad hold-card" role="status"><span className="hold-lamp" aria-hidden="true" /><div style={{ flex: 1, minWidth: 0 }}><b>{t("Train on hold at the quiz signal")}</b><p className="sub" style={{ margin: 0 }}>{lesson.quiz.name} · {t("Take the quiz to clear the signal and move on to the next station.")}</p></div><Link className="btn btn-primary" to={`/exam/${lesson.quiz.id}`}>{t("Start quiz")}</Link></div>
+          : <Link className="card card-pad row tap-card" style={{ gap: 12 }} to={`/exam/${lesson.quiz.id}`}><ClipboardCheck size={24} aria-hidden="true" /><div style={{ flex: 1, minWidth: 0 }}><b>{t("Practice test for this lesson")}</b><p className="sub" style={{ margin: 0 }}>{lesson.quiz.name}</p></div><ChevronRight size={18} aria-hidden="true" /></Link>)}
         {lesson && <LessonNotes lessonId={lesson.id} apiRef={apiRef} onChange={onNotesChange} addBookmarkRef={bookmarkRef} />}
+        {lesson && !lesson.offlineCopy && <Doubts lessonId={lesson.id} apiRef={apiRef} />}
       </section>
-      <Curriculum c={c} lid={lid} open={open} t={t} />
+      <CourseRoute c={c} lid={lid} open={open} t={t} active={active} />
     </div> : <>
       <div className="course-hero card">
         <Poster src={c.posterUrl} title={c.title} />
@@ -149,30 +166,17 @@ export function CourseDetail() {
           <h1 className="h1" style={{ margin: 0 }}>{c.title}</h1>
           <RatingLine rating={c.rating ?? 0} count={c.ratingCount ?? 0} />
           {c.description && <p style={{ whiteSpace: "pre-wrap", margin: 0 }}>{c.description}</p>}
-          <div className="course-meta"><span><PlayCircle size={14} aria-hidden="true" />{c.lessonCount} {t("lessons")}</span><span><BookOpen size={14} aria-hidden="true" />{c.subjects.length} {t("subjects")}</span></div>
+          <div className="course-meta"><span><PlayCircle size={14} aria-hidden="true" />{c.lessonCount} {t("lessons")}</span><span><BookOpen size={14} aria-hidden="true" />{c.subjects.length} {t("subjects")}</span>{quizCount > 0 && <span><Hand size={14} aria-hidden="true" />{quizCount} {t("quizzes")}</span>}</div>
           {active ? <>{c.enrollment === "ACTIVE" && <div><div className="bar"><i style={{ width: `${c.progress}%` }} /></div><span className="sub">{c.progress}% {t("complete")}</span></div>}
-              {flat.length > 0 && <button className="btn btn-primary btn-lg" style={{ justifySelf: "start" }} onClick={() => open(flat.find((l: any) => !l.done) ?? flat[0])}><PlayCircle size={18} aria-hidden="true" />{c.progress > 0 ? t("Continue learning") : t("Start learning")}</button>}</>
+              {flat.length > 0 && (spot?.held && spot.stop.quiz ? <Link className="btn btn-primary btn-lg" style={{ justifySelf: "start" }} to={`/exam/${spot.stop.quiz.id}`}><Hand size={18} aria-hidden="true" />{t("Start quiz")}</Link>
+                : <button className="btn btn-primary btn-lg" style={{ justifySelf: "start" }} onClick={() => open(flat.find((l: any) => !l.done) ?? flat[0])}><PlayCircle size={18} aria-hidden="true" />{c.progress > 0 ? t("Continue learning") : t("Start learning")}</button>)}</>
             : c.enrollment === "PENDING" ? <div className="alert alert-warn" role="status"><Hourglass size={18} aria-hidden="true" /><span>{t("Payment under review")}: {c.paymentRef}. {t("You get access as soon as it is approved.")}</span></div>
             : <EnrollBox c={c} reload={load} />}
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}><button type="button" className="btn btn-sm" onClick={() => share("copy")}><Link2 size={15} aria-hidden="true" />{t("Share")}</button><button type="button" className="btn btn-sm" onClick={() => share("wa")}><Share2 size={15} aria-hidden="true" />WhatsApp</button></div>
         </div>
       </div>
-      <Curriculum c={c} lid={lid} open={open} t={t} wide />
+      <CourseRoute c={c} lid={lid} open={open} t={t} active={active} wide />
     </>}
     <CourseReviews course={c} reload={load} />
   </div></Shell>;
-}
-
-function Curriculum({ c, lid, open, t, wide }: { c: any; lid: string | null; open: (l: any) => void; t: (k: string) => string; wide?: boolean }) {
-  return <aside className={`card curriculum ${wide ? "wide" : ""}`} aria-label={t("Course content")}>
-    <div className="curr-head"><b>{t("Course content")}</b><span className="sub">{c.lessonCount} {t("lessons")}{c.enrollment === "ACTIVE" ? ` · ${c.progress}%` : ""}</span></div>
-    {c.subjects.length ? c.subjects.map((s: any) => <details key={s.id} className="curr-sub" open={wide || s.lessons.some((l: any) => l.id === lid) || undefined}>
-      <summary><b>{s.name}</b><span className="sub">{s.lessons.length}</span></summary>
-      <ul>{s.lessons.map((l: any) => <li key={l.id}><button type="button" className={`curr-lesson ${l.id === lid ? "on" : ""} ${l.locked ? "locked" : ""}`} onClick={() => open(l)} aria-current={l.id === lid ? "true" : undefined}>
-        <span className="curr-ico" aria-hidden="true">{l.locked ? <Lock size={15} /> : l.done ? <CircleCheck size={15} /> : <PlayCircle size={15} />}</span>
-        <span className="curr-t">{l.title}</span>
-        {l.isPreview && c.enrollment !== "ACTIVE" && <span className="pill pill-brand">{t("Free preview")}</span>}
-        {l.durationMin ? <span className="sub curr-d"><Clock size={12} aria-hidden="true" />{l.durationMin}m</span> : null}
-      </button></li>)}</ul></details>) : <p className="sub" style={{ padding: 14 }}>{t("Lessons are coming soon.")}</p>}
-  </aside>;
 }
