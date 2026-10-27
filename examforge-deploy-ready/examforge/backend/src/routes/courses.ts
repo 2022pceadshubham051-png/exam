@@ -2,7 +2,7 @@ import { Router } from "express"; import { z } from "zod";
 import { prisma } from "../lib/db"; import { requireAuth, requireAdmin, type AuthedReq } from "../middleware/auth";
 import { wrap, fail } from "./util";
 import { youtubeId } from "../services/youtube"; import { bunnyId, bunnySrc, bunnyDownload } from "../services/bunny"; import { playlistId, fetchPlaylist } from "../services/youtubePlaylist";
-import { couponProblem, discountFor, normalizeCode } from "../services/courses/coupons"; import { slugify, uniqueSlug, SLUG_RE } from "../services/courses/slug"; import { notifyUsers } from "../services/push";
+import { couponProblem, discountFor, normalizeCode } from "../services/courses/coupons"; import { slugify, uniqueSlug, SLUG_RE } from "../services/courses/slug"; import { placeAt, sameSet } from "../services/courses/order"; import { notifyUsers } from "../services/push";
 
 /** Video courses: the admin builds a course (poster, price, subjects, YouTube lessons, notes); students enroll and watch.
  *  Lesson video + notes are only ever sent to enrolled students (or free-preview lessons, or the admin). */
@@ -73,7 +73,7 @@ courses.get("/courses/:id", wrap(async (req, res) => {
   const [dn, wn] = await Promise.all([prisma.lessonProgress.findMany({ where: { userId: req.user!.id, lesson: { courseId: c.id } }, select: { lessonId: true } }), prisma.lesson.findMany({ where: { courseId: c.id, notes: { not: null } }, select: { id: true } })]);
   const done = new Set(dn.map((d) => d.lessonId)), withNotes = new Set(wn.map((d) => d.id));
   let total = 0, got = 0;
-  const subjects = c.subjects.map((s) => ({ id: s.id, name: s.name, quiz: quizOf(s.testId), lessons: s.lessons.map((l) => { total++; if (done.has(l.id)) got++; return {
+  const subjects = c.subjects.map((s) => ({ id: s.id, name: s.name, theme: s.theme ?? null, quiz: quizOf(s.testId), lessons: s.lessons.map((l) => { total++; if (done.has(l.id)) got++; return {
     id: l.id, title: l.title, durationMin: l.durationMin, isPreview: l.isPreview, hasVideo: !!(l.youtubeId || l.bunnyId), hasNotes: withNotes.has(l.id) || !!l.notesUrl, done: done.has(l.id), locked: !a.full && !l.isPreview, quiz: quizOf(l.testId) }; }) }));
   const [rt, revs, mine] = await Promise.all([ratingsFor([c.id]),
     prisma.courseReview.findMany({ where: { courseId: c.id }, orderBy: { createdAt: "desc" }, take: 30, include: { user: { select: { name: true, displayName: true } } } }),
@@ -198,9 +198,9 @@ admin.post("/courses/:id/subjects", wrap(async (req, res) => {
   res.json(await prisma.courseSubject.create({ data: { courseId: req.params.id, name, position: await nextPos({ courseId: req.params.id }, "courseSubject") } }));
 }));
 admin.put("/subjects/:id", wrap(async (req, res) => {
-  const b = z.object({ name: z.string().trim().min(1).max(80).optional(), testId: z.string().trim().max(40).nullish().or(z.literal("")) }).parse(req.body ?? {});
+  const b = z.object({ name: z.string().trim().min(1).max(80).optional(), testId: z.string().trim().max(40).nullish().or(z.literal("")), theme: z.enum(["farm", "desert", "mountain", "snow"]).nullish().or(z.literal("")) }).parse(req.body ?? {});
   if (b.testId && !(await prisma.test.findUnique({ where: { id: b.testId }, select: { id: true } }))) throw fail(404, "That test was not found.");
-  res.json(await prisma.courseSubject.update({ where: { id: req.params.id }, data: { ...(b.name ? { name: b.name } : {}), ...(b.testId !== undefined ? { testId: clean(b.testId) } : {}) } }));
+  res.json(await prisma.courseSubject.update({ where: { id: req.params.id }, data: { ...(b.name ? { name: b.name } : {}), ...(b.testId !== undefined ? { testId: clean(b.testId) } : {}), ...(b.theme !== undefined ? { theme: clean(b.theme) } : {}) } }));
 }));
 admin.delete("/subjects/:id", wrap(async (req, res) => { await prisma.courseSubject.delete({ where: { id: req.params.id } }); res.json({ ok: true }); }));
 
@@ -242,6 +242,37 @@ admin.post("/:kind(subjects|lessons)/:id/move", wrap(async (req, res) => {
   [sibs[i], sibs[j]] = [sibs[j], sibs[i]];
   await prisma.$transaction(sibs.map((s, p) => m.update({ where: { id: s.id }, data: { position: p } })));
   res.json({ ok: true });
+}));
+
+/** Drag and drop: save a whole new order of a course's subjects in one go. */
+admin.post("/courses/:id/reorder-subjects", wrap(async (req, res) => {
+  const ids = z.array(z.string().min(1)).min(1).max(200).parse(req.body?.ids);
+  const cur = await prisma.courseSubject.findMany({ where: { courseId: req.params.id }, select: { id: true } });
+  if (!sameSet(cur.map((x: any) => x.id), ids)) throw fail(409, "The subjects changed while you were dragging. Reload and try again.");
+  await prisma.$transaction(ids.map((id, position) => prisma.courseSubject.update({ where: { id }, data: { position } })));
+  res.json({ ok: true });
+}));
+/** Drag and drop: put a lecture at `index` of a subject (the same subject, or another subject of the same course). */
+admin.post("/lessons/:id/place", wrap(async (req, res) => {
+  const b = z.object({ subjectId: z.string().min(1), index: z.coerce.number().int().min(0).max(10_000) }).parse(req.body);
+  const l = await prisma.lesson.findUnique({ where: { id: req.params.id }, select: { id: true, courseId: true, subjectId: true } }); if (!l) throw fail(404, "Lesson not found.");
+  const target = await prisma.courseSubject.findUnique({ where: { id: b.subjectId }, select: { id: true, courseId: true } });
+  if (!target || target.courseId !== l.courseId) throw fail(400, "A lecture can only move inside its own course.");
+  const inTarget = (await prisma.lesson.findMany({ where: { subjectId: target.id }, orderBy: [{ position: "asc" }, { id: "asc" }], select: { id: true } })).map((x: any) => x.id as string);
+  const order = placeAt(inTarget, l.id, b.index), ops: any[] = order.map((id, position) => prisma.lesson.update({ where: { id }, data: id === l.id ? { position, subjectId: target.id } : { position } }));
+  if (l.subjectId !== target.id) { const left = (await prisma.lesson.findMany({ where: { subjectId: l.subjectId, id: { not: l.id } }, orderBy: [{ position: "asc" }, { id: "asc" }], select: { id: true } })).map((x: any) => x.id as string); left.forEach((id, position) => ops.push(prisma.lesson.update({ where: { id }, data: { position } }))); }
+  await prisma.$transaction(ops); res.json({ ok: true });
+}));
+/** Drag and drop: move a quiz from one place to another. A quiz sits after a lecture or at the end of a subject; if the target already has a quiz the two swap. */
+admin.post("/quiz/move", wrap(async (req, res) => {
+  const spot = z.object({ kind: z.enum(["lesson", "subject"]), id: z.string().min(1) }), b = z.object({ from: spot, to: spot }).parse(req.body);
+  type Spot = z.infer<typeof spot>;
+  const load = async (x: Spot) => (x.kind === "lesson" ? prisma.lesson.findUnique({ where: { id: x.id }, select: { id: true, courseId: true, testId: true } }) : prisma.courseSubject.findUnique({ where: { id: x.id }, select: { id: true, courseId: true, testId: true } }));
+  const [from, to] = await Promise.all([load(b.from), load(b.to)]); if (!from || !to) throw fail(404, "Not found.");
+  if (from.courseId !== to.courseId) throw fail(400, "A quiz can only move inside its own course.");
+  if (b.from.kind === b.to.kind && from.id === to.id) return res.json({ ok: true });
+  const put = (x: Spot, testId: string | null) => (x.kind === "lesson" ? prisma.lesson.update({ where: { id: x.id }, data: { testId } }) : prisma.courseSubject.update({ where: { id: x.id }, data: { testId } }));
+  await prisma.$transaction([put(b.from, to.testId), put(b.to, from.testId)]); res.json({ ok: true });
 }));
 
 admin.get("/courses/:id/enrollments", wrap(async (req, res) => {

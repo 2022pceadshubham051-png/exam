@@ -1,7 +1,7 @@
 import { Router } from "express"; import { z } from "zod";
 import { prisma } from "../lib/db"; import { requireAuth, type AuthedReq } from "../middleware/auth";
 import { wrap, fail } from "./util"; import { access, reviewerName, isAdmin } from "./courses"; import { pushPublicKey, notifyUsers } from "../services/push";
-import { aiConfigured, callModel, takeQuota, AI_DAILY_CAP } from "../services/ai"; import { QUOTA_NOTE, BUSY_NOTE } from "../services/aiLogic"; import { dayKey } from "../services/coins";
+import { aiConfigured, callModel, takeQuota, AI_DAILY_CAP } from "../services/ai"; import { QUOTA_NOTE, BUSY_NOTE } from "../services/aiLogic"; import { dayKey } from "../services/coins"; import { revisitStations, type Station, type Anchor } from "../services/courses/weakTopics";
 
 /** Student extras for the course player: timestamped notes + bookmarks, and web-push subscriptions. */
 export const courseStudent = Router(); courseStudent.use(requireAuth);
@@ -99,4 +99,21 @@ courseStudent.post("/doubts/:id/ai", wrap(async (req, res) => {
   if (!text) throw fail(502, BUSY_NOTE[lang]);
   await prisma.doubtReply.create({ data: { doubtId: d.id, userId: null, kind: "AI", text } });
   res.json(doubtOut(await prisma.doubt.findUniqueOrThrow({ where: { id: d.id }, include: doubtInclude }), req.user!.id));
+}));
+
+// ---- weak topics: after a course quiz, which station to watch again ----
+/** For a finished attempt of a quiz that belongs to a course (after a lecture, or at the end of a subject): the lectures that cover the topics the student got wrong, each with its station number. */
+courseStudent.get("/attempts/:id/revisit", wrap(async (req, res) => {
+  const a = await prisma.testAttempt.findFirst({ where: { id: req.params.id, userId: req.user!.id }, select: { testId: true, mode: true, status: true, test: { select: { showResult: true } }, responses: { select: { isCorrect: true, selectedKey: true, topic: true, subject: true } } } });
+  if (!a) throw fail(404, "Attempt not found."); if (a.status === "IN_PROGRESS") throw fail(403, "Available after you submit.");
+  const none = { course: null, items: [], unmatched: 0 };
+  if (a.mode === "EXAM" && !a.test.showResult) return res.json(none); // the teacher hid answers for this test, so topics stay hidden too
+  const lesson = await prisma.lesson.findFirst({ where: { testId: a.testId, course: { published: true } }, select: { id: true, courseId: true } });
+  const subject = lesson ? null : await prisma.courseSubject.findFirst({ where: { testId: a.testId, course: { published: true } }, select: { id: true, courseId: true } });
+  const courseId = lesson?.courseId ?? subject?.courseId; if (!courseId || !(await access(req, courseId)).full) return res.json(none);
+  const c = await prisma.course.findUnique({ where: { id: courseId }, select: { id: true, slug: true, title: true, subjects: { orderBy: { position: "asc" }, select: { id: true, name: true, lessons: { orderBy: { position: "asc" }, select: { id: true, title: true } } } } } }); if (!c) return res.json(none);
+  const stations: Station[] = c.subjects.flatMap((s: any) => s.lessons.map((l: any, i: number) => ({ lessonId: l.id, title: l.title, n: i + 1, subjectId: s.id, subjectName: s.name })));
+  const anchor: Anchor = lesson ? { kind: "lesson", lessonId: lesson.id } : { kind: "subject", subjectId: subject!.id };
+  const wrong = a.responses.filter((r: any) => r.isCorrect === false && r.selectedKey).map((r: any) => ({ topic: r.topic as string | null, subject: r.subject as string | null }));
+  res.json({ course: { id: c.id, slug: c.slug, title: c.title }, ...revisitStations(wrong, stations, anchor) });
 }));

@@ -59,7 +59,7 @@ courseAdmin.get("/admin/courses/:id/dropoff", wrap(async (req, res) => {
   const cnt = new Map<string, number>(), users = new Set<string>(); for (const p of prog as any[]) { cnt.set(p.lessonId, (cnt.get(p.lessonId) ?? 0) + 1); users.add(p.userId); }
   let prev: number | null = null, worst = -1, worstDrop = 0; const out: any[] = [];
   for (const s of c.subjects as any[]) for (const l of s.lessons) { const n = cnt.get(l.id) ?? 0, drop = prev != null && prev > 0 ? Math.round(((prev - n) / prev) * 100) : 0;
-    if (prev != null && prev >= 3 && drop > worstDrop) { worstDrop = drop; worst = out.length; } out.push({ id: l.id, title: l.title, subject: s.name, done: n, pct: pct(n, students), dropPct: Math.max(0, drop) }); prev = n; }
+    if (prev != null && prev >= 3 && drop > worstDrop) { worstDrop = drop; worst = out.length; } out.push({ id: l.id, title: l.title, subject: s.name, subjectId: s.id, theme: s.theme ?? null, done: n, pct: pct(n, students), dropPct: Math.max(0, drop) }); prev = n; }
   res.json({ students, started: users.size, neverStarted: Math.max(0, students - users.size), worst: worst >= 0 ? { index: worst, dropPct: worstDrop } : null, lessons: out });
 }));
 

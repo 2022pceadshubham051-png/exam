@@ -423,6 +423,7 @@ model CourseSubject {
   name String
   position Int @default(0)
   testId String? // optional test for the whole subject
+  theme String? // map look: farm | desert | mountain | snow (null = picked from the subject name)
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
   lessons Lesson[]
   @@index([courseId])
@@ -597,4 +598,23 @@ model DoubtReply {
   doubt Doubt @relation(fields: [doubtId], references: [id], onDelete: Cascade)
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
   @@index([doubtId])
+}
+
+/// Full-screen promo popup (photo or short video) shown when someone opens the site. Only admins create / edit these.
+model Promo {
+  id String @id @default(cuid())
+  title String // admin-only label
+  mediaType String @default("IMAGE") // IMAGE | VIDEO
+  mediaUrl String @db.Text // image: https URL or uploaded data URL; video: https URL to an .mp4/.webm
+  linkUrl String @db.Text // where a click goes
+  newTab Boolean @default(true)
+  showAlways Boolean @default(false) // false = once per browser session, true = every time the site is opened
+  priority Int @default(0) // higher shows first when several are live
+  active Boolean @default(true)
+  startsAt DateTime?
+  expiresAt DateTime?
+  views Int @default(0)
+  clicks Int @default(0)
+  createdAt DateTime @default(now())
+  @@index([active, priority])
 }
