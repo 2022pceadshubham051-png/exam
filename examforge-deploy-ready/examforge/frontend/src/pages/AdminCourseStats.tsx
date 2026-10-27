@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"; import { Link } from "react-router-dom";
+import DropMap from "../components/DropMap"; import { useEffect, useMemo, useState } from "react"; import { Link } from "react-router-dom";
 import { IndianRupee, UserPlus, GraduationCap, Hourglass, TrendingDown, TrendingUp, Send, Star, BellRing } from "lucide-react";
 import Shell from "../components/Shell"; import AdminCourseNav from "../components/AdminCourseNav"; import { SkeletonRows, toast } from "../components/ui"; import { api } from "../lib/api"; import { rupees } from "../lib/courses";
 
@@ -60,7 +60,7 @@ export default function AdminCourseStats() {
 }
 
 function DropOff({ id, courses, onPick }: { id: string; courses: any[]; onPick: (id: string) => void }) {
-  const [r, setR] = useState<any>(null); const [err, setErr] = useState("");
+  const [r, setR] = useState<any>(null); const [err, setErr] = useState(""); const [mode, setMode] = useState<"map" | "list">("map");
   useEffect(() => { api(`/admin/courses/${id}/dropoff`).then(setR).catch((e) => setErr(e.message)); }, [id]);
   const worst = r?.worst ? r.lessons[r.worst.index] : null, before = r?.worst ? r.lessons[r.worst.index - 1] : null;
   return <section className="card card-pad stack" style={{ gap: 12 }} aria-label="Drop-off">
@@ -70,10 +70,11 @@ function DropOff({ id, courses, onPick }: { id: string; courses: any[]; onPick: 
     {!r ? <SkeletonRows rows={3} /> : r.students === 0 ? <p className="sub">No enrolled students yet.</p> : <>
       <div className="row" style={{ gap: 8, flexWrap: "wrap" }}><span className="pill">{r.students} students</span><span className="pill">{r.started} started</span><span className={`pill ${r.neverStarted ? "pill-warn" : ""}`}>{r.neverStarted} never started</span></div>
       {worst && <div className="alert alert-warn" role="status"><TrendingDown size={17} aria-hidden="true" /><span>Biggest drop: <b>{r.worst.dropPct}%</b> fewer students finish “{worst.title}” than the lesson before{before ? ` (“${before.title}”)` : ""}. Check that video, its length or the notes.</span></div>}
-      <ol className="funnel">{r.lessons.map((l: any, i: number) => <li key={l.id} className={worst && r.worst.index === i ? "worst" : ""}>
+      <nav className="seg" aria-label="View"><button type="button" className={mode === "map" ? "on" : ""} onClick={() => setMode("map")}>Map</button><button type="button" className={mode === "list" ? "on" : ""} onClick={() => setMode("list")}>List</button></nav>
+      {mode === "map" ? <DropMap lessons={r.lessons} students={r.students} worstId={worst?.id ?? null} /> : <ol className="funnel">{r.lessons.map((l: any, i: number) => <li key={l.id} className={worst && r.worst.index === i ? "worst" : ""}>
         <div className="funnel-t"><span className="sub">{l.subject}</span><b>{l.title}</b></div>
         <div className="funnel-bar" title={`${l.done} of ${r.students} students`}><i style={{ width: `${l.pct}%` }} /></div><span className="funnel-n">{l.pct}%<small>{l.done}</small></span>
-        <span className={`funnel-d ${l.dropPct >= 25 ? "bad" : ""}`}>{i > 0 && l.dropPct > 0 ? `−${l.dropPct}%` : ""}</span></li>)}</ol></>}
+        <span className={`funnel-d ${l.dropPct >= 25 ? "bad" : ""}`}>{i > 0 && l.dropPct > 0 ? `−${l.dropPct}%` : ""}</span></li>)}</ol>}</>}
   </section>;
 }
 

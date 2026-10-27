@@ -34,7 +34,17 @@ const tone = (f: number, t0: number, dur: number, type: OscillatorType = "sine",
   g.gain.setValueAtTime(0, ctx.currentTime + t0); g.gain.linearRampToValueAtTime(vol, ctx.currentTime + t0 + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + t0 + dur);
   o.connect(g).connect(ctx.destination); o.start(ctx.currentTime + t0); o.stop(ctx.currentTime + t0 + dur + 0.05);
 };
-export type Sfx = "pop" | "right" | "wrong" | "win" | "level";
+/** A soft steam-train whistle: two close notes that swell up with a little wobble. `base` is the lower note in Hz. */
+const whistle = (t0: number, dur: number, base: number, vol = 0.045) => {
+  if (!ctx) return; const t = ctx.currentTime + t0;
+  for (const f of [base, base * 1.26]) {
+    const o = ctx.createOscillator(), lfo = ctx.createOscillator(), depth = ctx.createGain(), g = ctx.createGain(); o.type = "triangle";
+    o.frequency.setValueAtTime(f * 0.93, t); o.frequency.linearRampToValueAtTime(f, t + 0.09); lfo.frequency.value = 24; depth.gain.value = f * 0.011; lfo.connect(depth).connect(o.frequency);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + 0.07); g.gain.setValueAtTime(vol, t + dur * 0.55); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(ctx.destination); o.start(t); lfo.start(t); o.stop(t + dur + 0.05); lfo.stop(t + dur + 0.05);
+  }
+};
+export type Sfx = "pop" | "right" | "wrong" | "win" | "level" | "whistle" | "master";
 export function sfx(kind: Sfx) {
   if (!soundOn()) return;
   try {
@@ -44,5 +54,7 @@ export function sfx(kind: Sfx) {
     if (kind === "wrong") { tone(220, 0, 0.18, "sawtooth", 0.04); tone(165, 0.12, 0.25, "sawtooth", 0.04); }
     if (kind === "win") [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.11, 0.25, "triangle"));
     if (kind === "level") [392, 523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.09, 0.22, "square", 0.04));
+    if (kind === "whistle") whistle(0, 0.6, 700);
+    if (kind === "master") { whistle(0, 0.45, 640); whistle(0.55, 0.8, 760); [784, 988, 1175].forEach((f, i) => tone(f, 1.0 + i * 0.1, 0.3, "triangle", 0.05)); }
   } catch { /* audio is optional */ }
 }

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"; import { Link, useParams, useSearchParams } from "react-router-dom";
 import { GraduationCap, PlayCircle, CircleCheck, Circle, FileText, ExternalLink, ChevronLeft, ChevronRight, Hourglass, Search, Hand, TrainFront, BookOpen, CloudDownload, CloudOff, Share2, Link2, WifiOff, Download, Trash2, ClipboardCheck, History } from "lucide-react";
 import Shell from "../components/Shell"; import Poster from "../components/Poster"; import { Empty, PageHeader, SkeletonRows, toast } from "../components/ui";
+import Certificate from "../components/Certificate"; import { confetti } from "../components/Confetti"; import { sfx } from "../lib/game";
 import Notes from "../components/Notes"; import CoursePlayer, { type PlayerApi } from "../components/CoursePlayer"; import LessonNotes, { type LessonNote } from "../components/LessonNotes";
 import CourseRoute, { trainSpot, buildStops } from "../components/CourseRoute"; import Doubts from "../components/Doubts"; import CourseReviews, { RatingLine } from "../components/CourseReviews"; import EnrollBox from "../components/EnrollBox"; import PushToggle from "../components/PushToggle";
 import { api } from "../lib/api"; import { clock } from "../components/CoursePlayer"; import { useT } from "../lib/i18n"; import { rupees, shareUrl, courseUrl } from "../lib/courses"; import { getMe } from "../lib/auth"; import { useSeo } from "../lib/seo";
@@ -55,6 +56,7 @@ export function CourseDetail() {
   const [c, setC] = useState<any>(null); const [err, setErr] = useState(""); const [lesson, setLesson] = useState<any>(null); const [lerr, setLerr] = useState("");
   const [saved, setSaved] = useState<Set<string>>(new Set()); const [offBusy, setOffBusy] = useState(false); const [hasOffline, setHasOffline] = useState(false);
   const [video, setVideo] = useState<SavedVideo | null>(null); const [dl, setDl] = useState<{ pct: number; mb: number } | null>(null); const abort = useRef<AbortController | null>(null);
+  const [autoNext, setAutoNext] = useState(() => { try { return localStorage.getItem("ef_autonext") !== "off"; } catch { return true; } }); const [auto, setAuto] = useState<{ to: any; left: number } | null>(null);
   const apiRef = useRef<PlayerApi | null>(null); const bookmarkRef = useRef<(() => void) | null>(null); const myNotes = useRef<LessonNote[]>([]);
   const load = useCallback(() => api(`/courses/${id}`).then(setC).catch((e) => setErr(e.message)), [id]);
   useEffect(() => { setC(null); setErr(""); void load(); }, [id]); // eslint-disable-line
@@ -75,7 +77,19 @@ export function CourseDetail() {
   }, [lid, id, cur?.locked]); // eslint-disable-line
   const open = (l: any) => { if (l.locked) { toast(t("Enroll to unlock this lesson."), "info"); return; } setQs({ lesson: l.id }, { replace: false }); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const idx = flat.findIndex((l: any) => l.id === lid), prev = idx > 0 ? flat[idx - 1] : null, next = idx >= 0 ? flat.slice(idx + 1).find((l: any) => !l.locked) : null;
-  const mark = async (done: boolean) => { if (!lesson || lesson.offlineCopy) return; setLesson({ ...lesson, done }); try { await api(`/courses/lessons/${lesson.id}/done`, "POST", { done }); await load(); } catch (e: any) { setLesson({ ...lesson, done: !done }); toast(e.message, "bad"); } };
+  const mark = async (done: boolean) => { if (!lesson || lesson.offlineCopy) return; if (done && !lesson.done) { sfx("whistle"); confetti(26, { x: 0.5, y: 0.22 }); } setLesson({ ...lesson, done }); try { await api(`/courses/lessons/${lesson.id}/done`, "POST", { done }); await load(); } catch (e: any) { setLesson({ ...lesson, done: !done }); toast(e.message, "bad"); } };
+
+  // ---- after a lecture ends: 5-second countdown, then the next lecture starts (unless a quiz is holding the train, or the student cancels)
+  const startAuto = () => { if (autoNext && next && !(cur?.quiz && !cur.quiz.taken)) setAuto({ to: next, left: 5 }); };
+  useEffect(() => { setAuto(null); }, [lid]);
+  useEffect(() => {
+    if (!auto) return; if (auto.left <= 0) { const to = auto.to; setAuto(null); open(to); return; }
+    const id = setTimeout(() => setAuto((a) => (a ? { ...a, left: a.left - 1 } : a)), 1000); return () => clearTimeout(id);
+  }, [auto]); // eslint-disable-line
+  const toggleAuto = () => { const v = !autoNext; setAutoNext(v); if (!v) setAuto(null); try { localStorage.setItem("ef_autonext", v ? "on" : "off"); } catch { /* ignore */ } };
+  const countdown = auto ? <div className="vp-next" role="alertdialog" aria-label={t("Next lecture")}>
+    <div className="vp-next-n" aria-hidden="true">{auto.left}</div><small>{t("Next lecture starts in {n} seconds", { n: auto.left })}</small><b>{auto.to.title}</b>
+    <div className="row" style={{ gap: 8, justifyContent: "center" }}><button type="button" className="btn btn-primary btn-sm" onClick={() => { const to = auto.to; setAuto(null); open(to); }}>{t("Play now")}</button><button type="button" className="btn btn-sm" onClick={() => setAuto(null)}>{t("Cancel")}</button></div></div> : null;
 
   // ---- resume: save the playing position every 15 s (and when leaving the lesson), restore it next time ----
   useEffect(() => {
@@ -126,9 +140,9 @@ export function CourseDetail() {
       <section className="stack" style={{ gap: 12, minWidth: 0 }} aria-label={cur.title}>
         {lerr ? <div className="alert alert-bad" role="alert">{lerr}</div>
           : !lesson ? <div className="player player-wait"><div className="spinner" aria-hidden="true" /></div>
-          : video ? <CoursePlayer key={`v${lesson.id}`} blob={video.blob} startAt={lesson.resumeSec ?? 0} title={lesson.title} watermark={lesson.watermark || video.watermark || "ExamForge"} apiRef={apiRef} onBookmark={() => bookmarkRef.current?.()} onEnded={() => { if (!lesson.done && !lesson.offlineCopy) void mark(true); }} />
+          : video ? <CoursePlayer key={`v${lesson.id}`} blob={video.blob} startAt={lesson.resumeSec ?? 0} title={lesson.title} watermark={lesson.watermark || video.watermark || "ExamForge"} apiRef={apiRef} onBookmark={() => bookmarkRef.current?.()} onEnded={() => { if (!lesson.done && !lesson.offlineCopy) void mark(true); startAuto(); }}>{countdown}</CoursePlayer>
           : lesson.offlineCopy ? <div className="player player-wait"><span className="sub row" style={{ gap: 6 }}><WifiOff size={16} aria-hidden="true" />{t("You are offline. Your saved notes are below.")}</span></div>
-          : lesson.youtubeId || lesson.bunnySrc ? <CoursePlayer key={lesson.id} videoId={lesson.youtubeId ?? undefined} bunnySrc={lesson.bunnySrc} startAt={lesson.resumeSec ?? 0} title={lesson.title} watermark={lesson.watermark || "ExamForge"} apiRef={apiRef} onBookmark={() => bookmarkRef.current?.()} onEnded={() => { if (!lesson.done) void mark(true); }} />
+          : lesson.youtubeId || lesson.bunnySrc ? <CoursePlayer key={lesson.id} videoId={lesson.youtubeId ?? undefined} bunnySrc={lesson.bunnySrc} startAt={lesson.resumeSec ?? 0} title={lesson.title} watermark={lesson.watermark || "ExamForge"} apiRef={apiRef} onBookmark={() => bookmarkRef.current?.()} onEnded={() => { if (!lesson.done) void mark(true); startAuto(); }}>{countdown}</CoursePlayer>
           : <div className="player player-wait"><span className="sub">{t("No video for this lesson yet.")}</span></div>}
         {lesson && !lesson.offlineCopy && lesson.resumeSec > 0 && <p className="sub row" style={{ gap: 6, margin: 0 }}><History size={14} aria-hidden="true" />{t("Resumed from {time}", { time: clock(lesson.resumeSec) })}</p>}
         <div className="row between" style={{ gap: 10, flexWrap: "wrap" }}>
@@ -143,7 +157,9 @@ export function CourseDetail() {
         <div className="row" style={{ gap: 8 }}>
           <button className="btn btn-sm" disabled={!prev || prev.locked} onClick={() => prev && open(prev)}><ChevronLeft size={15} aria-hidden="true" />{t("Previous")}</button>
           <button className="btn btn-sm" disabled={!next} onClick={() => next && open(next)}>{t("Next lesson")}<ChevronRight size={15} aria-hidden="true" /></button>
+          <button type="button" className={`btn btn-sm ${autoNext ? "btn-primary" : ""}`} aria-pressed={autoNext} onClick={toggleAuto}>{autoNext ? t("Autoplay next: On") : t("Autoplay next: Off")}</button>
         </div>
+        {c.enrollment === "ACTIVE" && c.progress >= 100 && <Certificate course={c} />}
         {hasNotes && <div className="card card-pad stack" style={{ gap: 10 }}>
           <div className="row between" style={{ gap: 8, flexWrap: "wrap" }}><h3 className="card-title row" style={{ gap: 8, margin: 0 }}><FileText size={18} aria-hidden="true" />{t("Lecture notes")}</h3>
             {!lesson.offlineCopy && <div className="row" style={{ gap: 6, flexWrap: "wrap" }}><button type="button" className="btn btn-sm" disabled={offBusy} onClick={toggleSaved}>{isSaved ? <CloudOff size={15} aria-hidden="true" /> : <CloudDownload size={15} aria-hidden="true" />}{isSaved ? t("Remove offline copy") : t("Save notes offline")}</button>
@@ -175,6 +191,7 @@ export function CourseDetail() {
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}><button type="button" className="btn btn-sm" onClick={() => share("copy")}><Link2 size={15} aria-hidden="true" />{t("Share")}</button><button type="button" className="btn btn-sm" onClick={() => share("wa")}><Share2 size={15} aria-hidden="true" />WhatsApp</button></div>
         </div>
       </div>
+      {c.enrollment === "ACTIVE" && c.progress >= 100 && <Certificate course={c} />}
       <CourseRoute c={c} lid={lid} open={open} t={t} active={active} wide />
     </>}
     <CourseReviews course={c} reload={load} />

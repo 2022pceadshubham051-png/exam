@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react"; import { Link } from "react-router-dom";
-import { Plus, Trash2, Pencil, ArrowLeft, ArrowUp, ArrowDown, Save, ImagePlus, Eye, EyeOff, Users, PlayCircle, FileText, CircleCheck, CircleX, Check, X, ShieldCheck, CheckCheck, Link2, Star, ListVideo } from "lucide-react";
+import { Plus, Trash2, Pencil, ArrowLeft, ArrowUp, ArrowDown, Save, ImagePlus, Eye, EyeOff, Users, PlayCircle, FileText, CircleCheck, CircleX, Check, X, ShieldCheck, CheckCheck, Link2, Star, ListVideo, GripVertical, ClipboardCheck } from "lucide-react";
 import Shell from "../components/Shell"; import Poster from "../components/Poster"; import { ConfirmDialog, Modal, SkeletonRows, toast } from "../components/ui";
-import { api } from "../lib/api"; import { readPoster, rupees, thumbUrl, youtubeId, courseUrl, shareUrl } from "../lib/courses"; import AdminCourseNav from "../components/AdminCourseNav"; import { Stars } from "../components/CourseReviews";
+import { api } from "../lib/api"; import { readPoster, rupees, thumbUrl, youtubeId, courseUrl, shareUrl } from "../lib/courses"; import { useDnd, dropIndex, type DragItem, type DropSpot } from "../lib/dnd"; import { THEMES, THEME_IDS } from "../lib/themes"; import AdminCourseNav from "../components/AdminCourseNav"; import { Stars } from "../components/CourseReviews";
 
 const isBunny = (v: string) => /^(bunny:)?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v.trim().replace(/^bunny:/i, "")) || /mediadelivery\.net|bunnycdn\.com|b-cdn\.net/i.test(v);
 const blank = { title: "", description: "", posterUrl: "", examName: "", priceInr: 0, paymentInfo: "", published: false, featured: true, slug: "", seoTitle: "", seoDescription: "" };
@@ -114,29 +114,44 @@ function Content({ course, reload, setErr }: { course: any; reload: () => Promis
     catch (e: any) { setErr(e.message); } finally { setSaving(false); }
   };
   const [tests, setTests] = useState<any[]>([]); useEffect(() => { api("/tests?limit=100").then((d) => setTests(Array.isArray(d) ? d : [])).catch(() => {}); }, []);
+  const testName = (id: string) => tests.find((x) => x.id === id)?.name ?? "Quiz";
+  /** Drag and drop: subjects reorder, lectures move (also to another subject), quizzes move to another lecture / subject end (two quizzes swap). */
+  const onDrop = (d: DragItem, to: DropSpot) => void run(async () => {
+    if (d.kind === "subject") { const ids = course.subjects.map((x: any) => x.id); if (to.id === d.id) return; const at = dropIndex(ids, d.id, to.id, to.after), next = ids.filter((x: string) => x !== d.id); next.splice(at, 0, d.id); await api(`/admin/courses/${course.id}/reorder-subjects`, "POST", { ids: next }); return; }
+    if (d.kind === "lesson") { const sub = to.zone === "subject-end" ? to.id : to.subject!; const ids = (course.subjects.find((x: any) => x.id === sub)?.lessons ?? []).map((x: any) => x.id);
+      if (to.zone === "lesson" && to.id === d.id) return; await api(`/admin/lessons/${d.id}/place`, "POST", { subjectId: sub, index: dropIndex(ids, d.id, to.zone === "subject-end" ? null : to.id, to.after) }); return; }
+    const dest = to.zone === "subject-quiz" ? { kind: "subject", id: to.id } : { kind: "lesson", id: to.id }; if (dest.kind === d.from && dest.id === d.id) return;
+    await api("/admin/quiz/move", "POST", { from: { kind: d.from, id: d.id }, to: dest }); toast("Quiz moved.", "ok");
+  });
+  const dnd = useDnd(onDrop); const hot = (zone: string, id: string) => (dnd.over && dnd.over.zone === zone && dnd.over.id === id ? (zone === "lesson" && dnd.drag?.kind === "quiz" ? " dnd-over-on" : dnd.over.after ? " dnd-over-after" : " dnd-over-before") : "");
+  const setTheme = (s: any, theme: string) => void run(() => api(`/admin/subjects/${s.id}`, "PUT", { theme }));
   const setSubTest = (s: any, testId: string) => void run(() => api(`/admin/subjects/${s.id}`, "PUT", { testId: testId || null }));
   const [pl, setPl] = useState({ url: "", subjectId: "", preview: 0 }); const [plBusy, setPlBusy] = useState(false);
   const importPl = async () => { setPlBusy(true); try { setErr(""); const r = await api(`/admin/courses/${course.id}/import-playlist`, "POST", pl); toast(`${r.added} lessons added to “${r.subject}”${r.skipped ? `, ${r.skipped} already there` : ""}.`, "ok"); setPl({ ...pl, url: "" }); await reload(); } catch (e: any) { setErr(e.message); } finally { setPlBusy(false); } };
   const lv = lesson?.v, vid = lv?.video.trim() ? youtubeId(lv.video) : null, bn = !!lv?.video.trim() && isBunny(lv.video);
   const setL = (k: string, val: any) => setLesson((o) => (o ? { ...o, v: { ...o.v, [k]: val } } : o));
   return <div className="stack" style={{ gap: 12 }}>
-    {course.subjects.map((s: any, si: number) => <section key={s.id} className="adm-sub" aria-label={s.name}>
-      <div className="adm-sub-h"><b style={{ flex: 1 }}>{s.name}</b>
+    {course.subjects.map((s: any, si: number) => <section key={s.id} className={`adm-sub${dnd.drag?.id === s.id && dnd.drag?.kind === "subject" ? " dnd-src" : ""}${hot("subject", s.id)}`} aria-label={s.name} data-zone="subject" data-id={s.id}>
+      <div className="adm-sub-h"><button type="button" className="dnd-grip" aria-label={`Drag subject ${s.name}`} title="Drag to reorder subjects" onPointerDown={dnd.start({ kind: "subject", id: s.id, label: s.name })}><GripVertical size={16} /></button><b style={{ flex: 1 }}>{s.name}</b>
+        <select className="select" style={{ width: 130, minHeight: 34 }} aria-label={`Map look for ${s.name}`} value={s.theme ?? ""} onChange={(e) => setTheme(s, e.target.value)} title="Look of this subject's railway map for students"><option value="">Map: auto</option>{THEME_IDS.map((id) => <option key={id} value={id}>{THEMES[id].emoji} {THEMES[id].label}</option>)}</select>
+        <span className={`dnd-qslot${hot("subject-quiz", s.id)}`} data-zone="subject-quiz" data-id={s.id} title="Final quiz of this subject. Drag a quiz here.">{s.testId ? <button type="button" className="dnd-chip" onPointerDown={dnd.start({ kind: "quiz", id: s.id, from: "subject", label: testName(s.testId) })}><ClipboardCheck size={13} />{testName(s.testId)}</button> : <span className="sub">no final quiz</span>}</span>
         <button className="btn btn-sm icon-btn" aria-label="Move subject up" disabled={si === 0} onClick={() => move("subjects", s.id, "up")}><ArrowUp size={14} /></button>
         <button className="btn btn-sm icon-btn" aria-label="Move subject down" disabled={si === course.subjects.length - 1} onClick={() => move("subjects", s.id, "down")}><ArrowDown size={14} /></button>
         <select className="select" style={{ width: 170, minHeight: 34 }} aria-label={`Test for subject ${s.name}`} value={s.testId ?? ""} onChange={(e) => setSubTest(s, e.target.value)} title="Practice test shown after every lesson of this subject"><option value="">No subject test</option>{tests.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select>
         <button className="btn btn-sm" onClick={() => rename(s)}><Pencil size={14} />Rename</button>
         <button className="btn btn-sm btn-danger" onClick={() => setDel({ kind: "subjects", id: s.id, name: s.name })}><Trash2 size={14} /></button>
         <button className="btn btn-sm btn-primary" onClick={() => editLesson(s.id)}><Plus size={14} />Lesson</button></div>
-      {s.lessons.map((l: any, li: number) => <div key={l.id} className="adm-lesson">
+      {s.lessons.map((l: any, li: number) => <div key={l.id} className={`adm-lesson${dnd.drag?.id === l.id && dnd.drag?.kind === "lesson" ? " dnd-src" : ""}${hot("lesson", l.id)}`} data-zone="lesson" data-id={l.id} data-subject={s.id}>
+        <button type="button" className="dnd-grip" aria-label={`Drag lecture ${l.title}`} title="Drag to reorder" onPointerDown={dnd.start({ kind: "lesson", id: l.id, label: l.title })}><GripVertical size={16} /></button>
         {l.youtubeId ? <img src={thumbUrl(l.youtubeId)} alt="" loading="lazy" /> : <span className="sub" style={{ width: 72, textAlign: "center" }}>{l.bunnyId ? "Bunny" : "No video"}</span>}
-        <div style={{ flex: 1, minWidth: 160 }}><b>{l.title}</b><div className="row" style={{ gap: 6, flexWrap: "wrap" }}>{l.isPreview && <span className="pill pill-brand">Free preview</span>}{(l.notes || l.notesUrl) && <span className="pill"><FileText size={12} />Notes</span>}{l.durationMin ? <span className="sub">{l.durationMin} min</span> : null}</div></div>
+        <div style={{ flex: 1, minWidth: 160 }}><b>{l.title}</b><div className="row" style={{ gap: 6, flexWrap: "wrap" }}>{l.isPreview && <span className="pill pill-brand">Free preview</span>}{(l.notes || l.notesUrl) && <span className="pill"><FileText size={12} />Notes</span>}{l.durationMin ? <span className="sub">{l.durationMin} min</span> : null}{l.testId && <button type="button" className="dnd-chip" title="Quiz after this lecture. Drag it to another lecture." onPointerDown={dnd.start({ kind: "quiz", id: l.id, from: "lesson", label: testName(l.testId) })}><ClipboardCheck size={13} />{testName(l.testId)}</button>}</div></div>
         <button className="btn btn-sm icon-btn" aria-label="Move lesson up" disabled={li === 0} onClick={() => move("lessons", l.id, "up")}><ArrowUp size={14} /></button>
         <button className="btn btn-sm icon-btn" aria-label="Move lesson down" disabled={li === s.lessons.length - 1} onClick={() => move("lessons", l.id, "down")}><ArrowDown size={14} /></button>
         <button className="btn btn-sm" onClick={() => editLesson(s.id, l)}><Pencil size={14} />Edit</button>
         <button className="btn btn-sm btn-danger" aria-label="Delete lesson" onClick={() => setDel({ kind: "lessons", id: l.id, name: l.title })}><Trash2 size={14} /></button>
       </div>)}
-      {!s.lessons.length && <p className="sub" style={{ padding: "10px 14px", margin: 0 }}>No lessons yet.</p>}
+      {!s.lessons.length && !dnd.drag && <p className="sub" style={{ padding: "10px 14px", margin: 0 }}>No lessons yet.</p>}
+      {dnd.drag?.kind === "lesson" && <div className={`dnd-end${hot("subject-end", s.id)}`} data-zone="subject-end" data-id={s.id}>Drop here to put it at the end of {s.name}</div>}
     </section>)}
     <section className="card card-pad stack" style={{ gap: 10 }} aria-label="Import playlist">
       <b className="row" style={{ gap: 8 }}><ListVideo size={18} />Import a YouTube playlist</b>
@@ -153,6 +168,7 @@ function Content({ course, reload, setErr }: { course: any; reload: () => Promis
       <button className="btn btn-primary" disabled={!subName.trim()}><Plus size={16} />Add subject</button>
     </form>
 
+    {dnd.drag && <div className="dnd-ghost" style={{ left: dnd.pos.x, top: dnd.pos.y }} aria-hidden="true">{dnd.drag.kind === "quiz" ? "📝 " : ""}{dnd.drag.label}</div>}
     <Modal open={!!lesson} onClose={() => !saving && setLesson(null)} title={lesson?.id ? "Edit lesson" : "New lesson"} width={640} dismissible={!saving}>{lesson && lv && <div className="stack" style={{ gap: 10 }}>
       <div><label className="label" htmlFor="l-title">Lesson title</label><input id="l-title" className="input" maxLength={160} value={lv.title} onChange={(e) => setL("title", e.target.value)} placeholder="e.g. Percentage: basics and tricks" /></div>
       <div><label className="label" htmlFor="l-video">YouTube link</label><input id="l-video" className="input" value={lv.video} onChange={(e) => setL("video", e.target.value)} placeholder="https://www.youtube.com/watch?v=…  or  https://youtu.be/…" />

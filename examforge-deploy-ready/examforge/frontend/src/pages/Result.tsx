@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"; import { useParams, Link, useNaviga
 import { Eye, Target, Clock, CircleCheck, CircleX, MinusCircle, TrendingUp, TrendingDown, ArrowRight, Sparkles, LayoutDashboard, Trash2, Compass, Trophy, Share2, Swords } from "lucide-react"; import { tr } from "../lib/i18n"; import { shareCard } from "../lib/shareCard"; import { shareText, myInviteCode, inviteLink, getStreak } from "../lib/engage"; import { ingestReview } from "../lib/notebook";
 import { BarChartLite } from "../components/Charts";
 import { api, fmt } from "../lib/api"; import Shell from "../components/Shell"; import AdSlot from "../components/AdSlot";
-import { ResultTicket } from "../components/ResultTicket"; import { Sparkline } from "../components/Achievement"; import { JourneyStrip } from "../components/Journey"; import { cachedProfile } from "../lib/profile"; import { ConfirmDialog, PageHeader, SkeletonResult, useCountUp, toast } from "../components/ui";
+import { ResultTicket } from "../components/ResultTicket"; import { Sparkline } from "../components/Achievement"; import RevisitCard from "../components/RevisitCard"; import { JourneyStrip } from "../components/Journey"; import { cachedProfile } from "../lib/profile"; import { ConfirmDialog, PageHeader, SkeletonResult, useCountUp, toast } from "../components/ui";
 const MarksCount = ({ n }: { n: number }) => <>{useCountUp(n)}</>; import { stars, sfx } from "../lib/game";
 
 
@@ -43,6 +43,7 @@ export default function Result() {
         <div className="row"><button type="button" className="btn btn-wa" onClick={() => void shareText(`Maine ExamForge pe "${d.testName}" me ${Math.round(r.percentage)}% score kiya! 🎯 Kya tum mujhe beat kar sakte ho? ${inviteLink(ref, d.testId)}`)}><Share2 size={16} />WhatsApp</button><button type="button" className="btn" onClick={share}><Share2 size={16} />{tr("Share result")}</button><Link className="btn" to="/duel"><Swords size={16} />Duel</Link><Link className="btn" to="/home"><LayoutDashboard size={16} />Home</Link><Link className="btn" to={`/exam/${d.testId}`}><ArrowRight size={16} />Retake</Link><Link className="btn btn-primary" to={`/review/${attemptId}`}><Eye size={16} />Review answers</Link><button className="btn btn-danger" onClick={() => setAskDel(true)}><Trash2 size={16} />Delete</button></div></div>
 <ResultTicket attemptId={String(attemptId)} testName={d.testName ?? ""} attemptNo={d.attemptNo} score={r.score} total={r.totalMarks} pct={r.percentage} passed={passed} date={d.endedAt}><JourneyStrip value={r.percentage} goal={cachedProfile()?.targetScore ?? null} label="This attempt" arrived="You reached your goal" /></ResultTicket>
       <Sparkline testId={d.testId} />
+      <RevisitCard attemptId={String(attemptId)} />
       <section className="card card-pad row" style={{ gap: 30 }}>
         <Ring value={r.percentage} label="score" pass={passed} />
         <div style={{ flex: 1, minWidth: 220 }}><div className="stat-l">Marks obtained</div><div className="marks-big num"><MarksCount n={Math.round(r.score)} /><small>/ {r.totalMarks}</small></div>

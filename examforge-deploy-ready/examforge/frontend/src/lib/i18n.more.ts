@@ -274,4 +274,12 @@ export const hiMore: Record<string, string> = {
   "Reopen": "फिर खोलें",
   "Mark solved": "हल हुआ चिह्नित करें",
   "No doubts yet. Be the first to ask.": "अभी कोई डाउट नहीं। सबसे पहले पूछें।",
+  // v9: certificate, weak topics, player, full journey, Station Master
+  "Could not make the certificate.": "सर्टिफ़िकेट नहीं बन सका।", "Certificate saved. Attach it in WhatsApp.": "सर्टिफ़िकेट सेव हो गया। इसे WhatsApp में भेजें।", "Your certificate": "आपका सर्टिफ़िकेट",
+  "Course complete! Your certificate is ready.": "कोर्स पूरा! आपका सर्टिफ़िकेट तैयार है।", "It has your name. Share it with friends and family.": "इस पर आपका नाम है। दोस्तों और घरवालों के साथ शेयर करें।", "Image": "इमेज",
+  "Watch these stations again": "ये स्टेशन दोबारा देखें", "Based on the questions you got wrong in this quiz.": "इस क्विज़ में जो सवाल गलत हुए, उनके आधार पर।", "{n} wrong": "{n} गलत", "closest lecture": "सबसे मिलता-जुलता लेक्चर",
+  "Double-tap the left or right side to skip 10 seconds": "10 सेकंड आगे-पीछे जाने के लिए बाएँ या दाएँ हिस्से पर दो बार टैप करें", "Next lecture": "अगला लेक्चर", "Next lecture starts in {n} seconds": "अगला लेक्चर {n} सेकंड में शुरू होगा", "Play now": "अभी चलाएँ",
+  "Autoplay next: On": "अगला अपने-आप: चालू", "Autoplay next: Off": "अगला अपने-आप: बंद",
+  "Every subject on one map. It opens at your station.": "सारे subject एक ही नक्शे पर। यह आपके स्टेशन पर खुलता है।", "Full journey": "पूरा सफ़र", "Where am I": "मैं कहाँ हूँ", "Go to the end": "आख़िर में जाएँ", "View": "व्यू",
+  "Station Master": "स्टेशन मास्टर", "Station Master badge earned: {name}": "स्टेशन मास्टर बैज मिला: {name}",
 };
