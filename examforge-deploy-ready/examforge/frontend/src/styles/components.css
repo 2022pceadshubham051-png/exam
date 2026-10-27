@@ -168,3 +168,15 @@
   .ad-wrap { margin: 8px 0; text-align: center; min-height: 20px; }
   .ad-wrap small { display: block; color: var(--muted); font-size: .7rem; margin-bottom: 4px; }
 }
+
+/* Promo popup: full-screen photo / short video ad with an X. */
+.promo-back { position: fixed; inset: 0; z-index: 9000; background: rgba(0,0,0,.72); display: grid; place-items: center; padding: 16px; animation: promo-in .25s ease-out; }
+.promo-box { position: relative; max-width: min(92vw, 560px); max-height: 88vh; display: flex; flex-direction: column; align-items: center; }
+.promo-media { display: block; padding: 0; border: 0; background: #000; border-radius: 16px; overflow: hidden; cursor: pointer; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+.promo-media img, .promo-media video { display: block; max-width: 100%; max-height: 82vh; width: auto; height: auto; object-fit: contain; }
+.promo-x { position: absolute; top: -14px; right: -14px; z-index: 2; width: 38px; height: 38px; border-radius: 999px; border: 2px solid #fff; background: #111; color: #fff; display: grid; place-items: center; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.45); }
+.promo-x:focus-visible, .promo-media:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.promo-tag { color: rgba(255,255,255,.7); font-size: .68rem; letter-spacing: .06em; text-transform: uppercase; margin-top: 8px; }
+@keyframes promo-in { from { opacity: 0; } to { opacity: 1; } }
+@media (max-width: 480px) { .promo-x { top: 8px; right: 8px; } }
+@media (prefers-reduced-motion: reduce) { .promo-back { animation: none; } }

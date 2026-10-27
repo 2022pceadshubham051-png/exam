@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MutableRefObject } from "react";
+import { useEffect, useRef, useState, type MutableRefObject, type ReactNode } from "react";
 import { Maximize, Minimize, RotateCcw, RotateCw, Bookmark, Gauge } from "lucide-react";
 import { useT } from "../lib/i18n";
 
@@ -17,12 +17,12 @@ const savedRate = () => { try { const r = Number(localStorage.getItem("ef_rate")
 
 /** YouTube lecture player with: speed control (remembered), ±10 s, one-tap bookmark, and a moving watermark with the student's name.
  *  Fullscreen is done on OUR wrapper (YouTube's own button is hidden) so the watermark stays on top of the video, also in fullscreen. */
-export default function CoursePlayer({ videoId, bunnySrc, blob, startAt = 0, title, watermark, apiRef, onBookmark, onEnded }: { videoId?: string; bunnySrc?: string | null; blob?: Blob | null; startAt?: number; title: string; watermark: string; apiRef: MutableRefObject<PlayerApi | null>; onBookmark?: () => void; onEnded?: () => void }) {
+export default function CoursePlayer({ videoId, bunnySrc, blob, startAt = 0, title, watermark, apiRef, onBookmark, onEnded, children }: { children?: ReactNode; videoId?: string; bunnySrc?: string | null; blob?: Blob | null; startAt?: number; title: string; watermark: string; apiRef: MutableRefObject<PlayerApi | null>; onBookmark?: () => void; onEnded?: () => void }) {
   const t = useT(); const wrap = useRef<HTMLDivElement>(null), mount = useRef<HTMLDivElement>(null), wm = useRef<HTMLDivElement>(null), player = useRef<any>(null);
   const [rate, setRate] = useState(savedRate), [err, setErr] = useState(""), [full, setFull] = useState(false), [pseudo, setPseudo] = useState(false), [pos, setPos] = useState({ x: 8, y: 12 }), [rateOpen, setRateOpen] = useState(false);
   const endedRef = useRef(onEnded); endedRef.current = onEnded; const rateRef = useRef(rate); rateRef.current = rate;
 
-  const bunny = !!bunnySrc, local = !!blob, vid = useRef<HTMLVideoElement | null>(null);
+  const bunny = !!bunnySrc, local = !!blob, vid = useRef<HTMLVideoElement | null>(null), bunnyPlaying = useRef(false), bunnyApi = useRef<((o: object) => void) | null>(null);
   // Downloaded video: a plain <video> playing the saved file (works with no internet). Same speed, +-10 s, bookmarks and watermark.
   useEffect(() => {
     if (!blob) return; setErr(""); const url = URL.createObjectURL(blob), v = document.createElement("video"); vid.current = v;
@@ -37,8 +37,8 @@ export default function CoursePlayer({ videoId, bunnySrc, blob, startAt = 0, tit
   useEffect(() => {
     if (!bunnySrc) return; setErr(""); const frame = document.createElement("iframe"); frame.src = bunnySrc; frame.title = title; frame.allow = "accelerometer; encrypted-media; picture-in-picture"; frame.referrerPolicy = "strict-origin-when-cross-origin"; mount.current?.appendChild(frame);
     let last = 0; const send = (o: object) => frame.contentWindow?.postMessage(JSON.stringify({ context: "player.js", version: "0.0.11", ...o }), "*");
-    const on = (e: MessageEvent) => { if (e.source !== frame.contentWindow) return; let d: any = e.data; try { if (typeof d === "string") d = JSON.parse(d); } catch { return; } if (d?.context !== "player.js") return;
-      if (d.event === "ready") { if (startAt > 0) send({ method: "setCurrentTime", value: startAt }); send({ method: "addEventListener", value: "timeupdate" }); send({ method: "addEventListener", value: "ended" }); } else if (d.event === "timeupdate") last = Math.floor(d.value?.seconds ?? 0); else if (d.event === "ended") endedRef.current?.(); };
+    bunnyApi.current = send; const on = (e: MessageEvent) => { if (e.source !== frame.contentWindow) return; let d: any = e.data; try { if (typeof d === "string") d = JSON.parse(d); } catch { return; } if (d?.context !== "player.js") return;
+      if (d.event === "ready") { if (startAt > 0) send({ method: "setCurrentTime", value: startAt }); send({ method: "addEventListener", value: "timeupdate" }); send({ method: "addEventListener", value: "ended" }); send({ method: "addEventListener", value: "play" }); send({ method: "addEventListener", value: "pause" }); } else if (d.event === "play") bunnyPlaying.current = true; else if (d.event === "pause") bunnyPlaying.current = false; else if (d.event === "timeupdate") last = Math.floor(d.value?.seconds ?? 0); else if (d.event === "ended") endedRef.current?.(); };
     window.addEventListener("message", on); frame.addEventListener("load", () => { send({ method: "addEventListener", value: "ready" }); send({ method: "addEventListener", value: "timeupdate" }); send({ method: "addEventListener", value: "ended" }); });
     apiRef.current = { time: () => last, seek: (sec) => { send({ method: "setCurrentTime", value: Math.max(0, sec) }); send({ method: "play" }); } };
     return () => { window.removeEventListener("message", on); apiRef.current = null; if (mount.current) mount.current.innerHTML = ""; };
@@ -56,6 +56,21 @@ export default function CoursePlayer({ videoId, bunnySrc, blob, startAt = 0, tit
     return () => { dead = true; apiRef.current = null; try { player.current?.destroy?.(); } catch { /* ignore */ } player.current = null; if (mount.current) mount.current.innerHTML = ""; };
   }, [videoId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Double-tap the left / right side of the video: 10 seconds back / forward. A single tap there plays or pauses. (The middle and the bottom strip stay free for the player's own controls.)
+  const [flash, setFlash] = useState<{ side: -1 | 1; n: number } | null>(null); const lastTap = useRef<{ side: number; at: number }>({ side: 0, at: 0 }), single = useRef(0), hint = useRef(false);
+  const [showHint, setShowHint] = useState(() => { try { return !localStorage.getItem("ef_tap_hint"); } catch { return false; } });
+  useEffect(() => { if (!showHint) return; const id = setTimeout(() => { setShowHint(false); try { localStorage.setItem("ef_tap_hint", "1"); } catch { /* ignore */ } }, 5000); return () => clearTimeout(id); }, [showHint]);
+  const toggle = () => {
+    try { if (vid.current) { if (vid.current.paused) void vid.current.play().catch(() => {}); else vid.current.pause(); return; }
+      if (bunny) { bunnyApi.current?.({ method: bunnyPlaying.current ? "pause" : "play" }); return; }
+      const p = player.current; if (!p) return; if (p.getPlayerState?.() === 1) p.pauseVideo?.(); else p.playVideo?.(); } catch { /* ignore */ }
+  };
+  const onTap = (side: -1 | 1) => () => {
+    const now = performance.now(), prev = lastTap.current; clearTimeout(single.current); hint.current = true;
+    if (prev.side === side && now - prev.at < 320) { lastTap.current = { side: 0, at: 0 }; jump(side * 10); setFlash((f) => ({ side, n: (f?.n ?? 0) + 1 })); window.setTimeout(() => setFlash((f) => (f && f.side === side ? null : f)), 650); return; }
+    lastTap.current = { side, at: now }; single.current = window.setTimeout(toggle, 330);
+  };
+  useEffect(() => () => clearTimeout(single.current), []);
   const pick = (r: number) => { setRate(r); setRateOpen(false); try { localStorage.setItem("ef_rate", String(r)); } catch { /* ignore */ } try { player.current?.setPlaybackRate?.(r); } catch { /* ignore */ } if (vid.current) vid.current.playbackRate = r; };
   const jump = (d: number) => { if (bunny || local) { apiRef.current?.seek(apiRef.current.time() + d); return; } const p = player.current; try { p?.seekTo?.(Math.max(0, (p.getCurrentTime?.() ?? 0) + d), true); } catch { /* ignore */ } };
 
@@ -83,6 +98,10 @@ export default function CoursePlayer({ videoId, bunnySrc, blob, startAt = 0, tit
       {err && <div className="vp-err" role="alert">{err}</div>}
       <div ref={wm} className="vp-wm" aria-hidden="true" style={{ left: `${pos.x}%`, top: `${pos.y}%` }}>{watermark}</div>
       <div className="vp-wm vp-wm-fixed" aria-hidden="true">{watermark}</div>
+      <div className="vp-tap left" onPointerUp={onTap(-1)} aria-hidden="true">{flash?.side === -1 && <span key={flash.n} className="vp-flash"><RotateCcw size={22} />10s</span>}</div>
+      <div className="vp-tap right" onPointerUp={onTap(1)} aria-hidden="true">{flash?.side === 1 && <span key={flash.n} className="vp-flash">10s<RotateCw size={22} /></span>}</div>
+      {showHint && !err && <div className="vp-hint" aria-hidden="true">{t("Double-tap the left or right side to skip 10 seconds")}</div>}
+      {children}
     </div>
     <div className="vp-bar">
       {!bunny && <div className="vp-rate">
