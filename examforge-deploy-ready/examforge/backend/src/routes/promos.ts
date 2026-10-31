@@ -1,5 +1,5 @@
 import { Router } from "express"; import { z } from "zod";
-import { prisma } from "../lib/db"; import { requireAuth, requireAdmin } from "../middleware/auth"; import { wrap, fail } from "./util";
+import { youtubeId } from "../services/youtube"; import { prisma } from "../lib/db"; import { requireAuth, requireAdmin } from "../middleware/auth"; import { wrap, fail } from "./util";
 
 /** Promo popup (photo / short video ad). Public: read the live promo + count views/clicks. Admin only: create, edit, delete. */
 export const promos = Router();
@@ -7,11 +7,13 @@ export const promos = Router();
 const url = z.string().trim().max(700_000).refine((v) => /^https?:\/\//i.test(v) || /^data:image\/(png|jpe?g|webp|gif);base64,/i.test(v), "Media must be an https link or an uploaded image.");
 const link = z.string().trim().max(2000).refine((v) => /^https?:\/\//i.test(v) || /^\/[^/]/.test(v), "Link must start with https:// (or / for a page on this site).");
 const body = z.object({
-  title: z.string().trim().min(1).max(120), mediaType: z.enum(["IMAGE", "VIDEO"]), mediaUrl: url, linkUrl: link,
+  title: z.string().trim().min(1).max(120), mediaType: z.enum(["IMAGE", "VIDEO", "YOUTUBE"]), mediaUrl: url, linkUrl: link,
   newTab: z.boolean().default(true), showAlways: z.boolean().default(false), priority: z.number().int().min(0).max(1000).default(0), active: z.boolean().default(true),
   startsAt: z.string().datetime().nullable().optional(), expiresAt: z.string().datetime().nullable().optional(),
-}).superRefine((v, c) => { if (v.mediaType === "VIDEO" && !/^https?:\/\//i.test(v.mediaUrl)) c.addIssue({ code: "custom", path: ["mediaUrl"], message: "A video needs an https link to an .mp4 / .webm file." }); });
-const data = (b: z.infer<typeof body>) => ({ ...b, startsAt: b.startsAt ? new Date(b.startsAt) : null, expiresAt: b.expiresAt ? new Date(b.expiresAt) : null });
+}).superRefine((v, c) => { if (v.mediaType === "YOUTUBE" && !youtubeId(v.mediaUrl)) c.addIssue({ code: "custom", path: ["mediaUrl"], message: "Paste a valid YouTube link (watch, youtu.be, shorts or embed)." });
+  if (v.mediaType === "VIDEO" && !/^https?:\/\//i.test(v.mediaUrl)) c.addIssue({ code: "custom", path: ["mediaUrl"], message: "A video needs an https link to an .mp4 / .webm file." }); });
+// A YouTube promo is stored as its canonical watch link, whatever form the admin pasted.
+const data = (b: z.infer<typeof body>) => ({ ...b, mediaUrl: b.mediaType === "YOUTUBE" ? `https://www.youtube.com/watch?v=${youtubeId(b.mediaUrl)}` : b.mediaUrl, startsAt: b.startsAt ? new Date(b.startsAt) : null, expiresAt: b.expiresAt ? new Date(b.expiresAt) : null });
 const state = (p: any, now = new Date()) => !p.active ? "off" : p.startsAt && p.startsAt > now ? "scheduled" : p.expiresAt && p.expiresAt <= now ? "expired" : "live";
 const live = () => { const now = new Date(); return { active: true, AND: [{ OR: [{ startsAt: null }, { startsAt: { lte: now } }] }, { OR: [{ expiresAt: null }, { expiresAt: { gt: now } }] }] }; };
 
