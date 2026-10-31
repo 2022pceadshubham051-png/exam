@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { X } from "lucide-react";
-import { api } from "../lib/api";
+import { api } from "../lib/api"; import { loadPromo, YouTubeFrame, promoYtId, type Promo } from "./PromoMedia";
 
-type Promo = { id: string; mediaType: "IMAGE" | "VIDEO"; mediaUrl: string; linkUrl: string; newTab: boolean; showAlways: boolean };
 // Never interrupt a running exam, and never show inside the admin screens (admin is editing the promo there).
 const BLOCKED = /^\/(exam|admin)(\/|$)/;
 const seenKey = (id: string) => `ef_promo_seen:${id}`;
@@ -17,10 +16,10 @@ export default function PromoPopup() {
   useEffect(() => {
     let t = 0; let off = false;
     // A plain fetch (not api()) so it works for logged-out visitors and a 401 never redirects to /login.
-    fetch((((import.meta.env.VITE_API_URL as string | undefined) ?? "").replace(/\/$/, "")) + "/api/promo/active").then((r) => (r.ok ? r.json() : null)).then((p: Promo | null) => {
+    loadPromo().then((p: Promo | null) => {
       if (off || !p || (!p.showAlways && get(seenKey(p.id)))) return;
       setPromo(p); t = window.setTimeout(() => { if (off || BLOCKED.test(here.current)) return; setOpen(true); put(seenKey(p.id)); void api(`/promo/${p.id}/view`, "POST").catch(() => {}); }, 1200);
-    }).catch(() => {});
+    });
     return () => { off = true; window.clearTimeout(t); };
   }, []);
   useEffect(() => { // close if the student moves into an exam while it is open
@@ -35,14 +34,17 @@ export default function PromoPopup() {
   const go = () => { void api(`/promo/${promo.id}/click`, "POST").catch(() => {}); setOpen(false);
     const external = /^https?:\/\//i.test(promo.linkUrl) && new URL(promo.linkUrl).origin !== location.origin;
     if (promo.newTab || external) window.open(promo.linkUrl, "_blank", "noopener,noreferrer"); else location.href = promo.linkUrl; };
+  const yt = promoYtId(promo);
   return <div className="promo-back" role="dialog" aria-modal="true" aria-label="Promotion" onClick={(e) => e.target === e.currentTarget && setOpen(false)}>
     <div className="promo-box">
       <button className="promo-x" aria-label="Close" onClick={() => setOpen(false)}><X size={20} aria-hidden="true" /></button>
-      <button className="promo-media" onClick={go} aria-label="Open offer">
-        {promo.mediaType === "VIDEO"
-          ? <video src={promo.mediaUrl} autoPlay muted loop playsInline preload="auto" />
-          : <img src={promo.mediaUrl} alt="Promotion" />}
-      </button>
+      {yt ? <><div className="promo-yt"><YouTubeFrame id={yt} autoplay title="Promotion video" /></div>
+          <button className="btn btn-primary promo-cta" onClick={go}>Learn more</button></>
+        : <button className="promo-media" onClick={go} aria-label="Open offer">
+          {promo.mediaType === "VIDEO"
+            ? <video src={promo.mediaUrl} autoPlay muted loop playsInline preload="auto" />
+            : <img src={promo.mediaUrl} alt="Promotion" />}
+        </button>}
       <small className="promo-tag">Advertisement</small>
     </div>
   </div>;

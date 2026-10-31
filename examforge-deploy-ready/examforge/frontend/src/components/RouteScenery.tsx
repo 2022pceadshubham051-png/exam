@@ -66,39 +66,89 @@ export function scenery(g: Geo, seed: string, theme: Theme, band?: Band, lite = 
   const fMax = band ? Math.round((lite ? 0.03 : 0.05) * h) : 34;
   for (let t = 0; t < 160 && flowers.length < fMax; t++) { const x = r() * W, y = y0 + r() * h; if (!near(x, y, 30) && !trees.some((o) => Math.hypot(o.x - x, o.y - y) < o.r + 2)) flowers.push({ x, y, c: theme.dots[Math.floor(r() * theme.dots.length)] }); }
   const clouds = Array.from({ length: Math.max(1, Math.min(4, Math.round(h / 380))) }, (_, k) => ({ y: y0 + 40 + r() * Math.max(1, h - 80), s: 0.8 + r() * 0.7, dur: 70 + k * 21 + r() * 20, delay: -(r() * 70) }));
-  return { fields, trees, pond, flowers, rocks, clouds, y0, y1, h };
+  // extra detail (drawn after everything else, so the layout above never shifts for existing seeds)
+  const blotches = Array.from({ length: Math.ceil(h / 90) + 1 }, () => ({ x: r() * W, y: y0 + r() * h, rx: 50 + r() * 70, ry: 34 + r() * 50, dark: r() > 0.5 }));
+  const tufts: { x: number; y: number; s: number; k: number }[] = [];
+  for (let t = 0; t < 400 && tufts.length < Math.ceil(h / (lite ? 16 : 7)); t++) { const x = r() * W, y = y0 + r() * h; if (!near(x, y, 24) && !trees.some((o) => Math.hypot(o.x - x, o.y - y) < o.r)) tufts.push({ x, y, s: 0.7 + r() * 0.7, k: r() }); }
+  const bushes: { x: number; y: number; r: number; c: number }[] = [];
+  for (let t = 0; t < 120 && bushes.length < Math.ceil(h / (lite ? 90 : 55)); t++) { const x = r() * W, y = y0 + r() * h, rad = 4 + r() * 4; if (near(x, y, 26 + rad) || trees.some((o) => Math.hypot(o.x - x, o.y - y) < o.r + rad) || (pond && Math.hypot((pond.x - x) / (pond.rx + 10), (pond.y - y) / (pond.ry + 10)) < 1)) continue; bushes.push({ x, y, r: rad, c: Math.floor(r() * theme.leaf.length) }); }
+  const reeds = pond ? Array.from({ length: 7 }, (_, i) => { const a = Math.PI * (0.05 + 0.9 * (i / 6)) + r() * 0.25; return { x: pond!.x + Math.cos(a) * (pond!.rx + 1.5), y: pond!.y + Math.sin(a) * (pond!.ry + 1.5), hgt: 7 + r() * 6, lean: (r() - 0.5) * 4 }; }) : [];
+  const pads = pond ? Array.from({ length: 3 }, () => ({ x: pond!.x + (r() - 0.5) * pond!.rx * 1.2, y: pond!.y + (r() - 0.5) * pond!.ry * 1.1, s: 2.4 + r() * 1.8, a: r() * 6 })) : [];
+  return { fields, trees, pond, flowers, rocks, clouds, blotches, tufts, bushes, reeds, pads, y0, y1, h };
 }
 export type Scene = ReturnType<typeof scenery>;
 
-const Plant1 = ({ t, leaf }: { t: Tree; leaf: [string, string] }) => {
+const SH = "#0b2a12";
+const Plant1 = ({ t, id }: { t: Tree; id: string }) => {
   const { x, y, r } = t;
-  if (t.kind === "cactus") { const w = r * 0.72, hh = r * 2.1, top = y - hh / 2;
-    return <g><ellipse cx={x + 3} cy={y + hh / 2} rx={w * 1.1} ry={w * 0.45} fill="#000" opacity=".16" />
-      <rect x={x - w / 2 - r * 0.62} y={y - r * 0.2} width={r * 0.42} height={r * 0.95} rx={r * 0.21} fill={leaf[0]} /><rect x={x - w / 2 - r * 0.62} y={y + r * 0.45} width={r * 0.62} height={r * 0.34} rx={r * 0.17} fill={leaf[0]} />
-      <rect x={x + w / 2 + r * 0.2} y={y - r * 0.55} width={r * 0.42} height={r * 0.95} rx={r * 0.21} fill={leaf[0]} /><rect x={x + w / 2 - r * 0.02} y={y + r * 0.1} width={r * 0.62} height={r * 0.34} rx={r * 0.17} fill={leaf[0]} />
-      <rect x={x - w / 2} y={top} width={w} height={hh} rx={w / 2} fill={leaf[0]} /><rect x={x - w * 0.18} y={top + 2} width={w * 0.22} height={hh - 4} rx={w * 0.11} fill={leaf[1]} opacity=".75" /></g>; }
-  if (t.kind === "pine" || t.kind === "snowpine") { const s = r * 1.05, snow = t.kind === "snowpine";
-    return <g><ellipse cx={x + 3} cy={y + s * 0.95} rx={s * 0.95} ry={s * 0.32} fill="#000" opacity=".16" /><rect x={x - s * 0.1} y={y + s * 0.55} width={s * 0.2} height={s * 0.45} fill="#6b4a33" />
-      <polygon points={`${x},${y - s * 0.2} ${x + s * 1.05},${y + s * 0.78} ${x - s * 1.05},${y + s * 0.78}`} fill={leaf[0]} /><polygon points={`${x},${y - s * 0.2} ${x + s * 1.05},${y + s * 0.78} ${x + s * 0.15},${y + s * 0.78}`} fill={leaf[1]} opacity=".55" />
-      <polygon points={`${x},${y - s * 1.2} ${x + s * 0.8},${y + s * 0.1} ${x - s * 0.8},${y + s * 0.1}`} fill={leaf[0]} /><polygon points={`${x},${y - s * 1.2} ${x + s * 0.8},${y + s * 0.1} ${x + s * 0.1},${y + s * 0.1}`} fill={leaf[1]} opacity=".55" />
-      {snow && <><polygon points={`${x},${y - s * 1.2} ${x + s * 0.34},${y - s * 0.7} ${x - s * 0.34},${y - s * 0.7}`} fill="#fff" /><polygon points={`${x},${y - s * 0.2} ${x + s * 0.5},${y + s * 0.3} ${x - s * 0.5},${y + s * 0.3}`} fill="#fff" opacity=".92" /></>}</g>; }
-  return <g><ellipse cx={x + 3} cy={y + 4} rx={r} ry={r * 0.9} fill="#000" opacity=".16" /><circle cx={x} cy={y} r={r} fill={leaf[0]} /><circle cx={x - r * 0.22} cy={y - r * 0.25} r={r * 0.62} fill={leaf[1]} /><circle cx={x - r * 0.35} cy={y - r * 0.4} r={r * 0.22} fill="#fff" opacity=".22" /></g>;
+  if (t.kind === "cactus") { const w = r * 0.72, hh = r * 2.1, top = y - hh / 2, g = `url(#cx-${id}-${t.c})`;
+    return <g><ellipse cx={x + 3} cy={y + hh / 2} rx={w * 1.3} ry={w * 0.5} fill="#5a3d10" opacity=".22" />
+      <rect x={x - w / 2 - r * 0.62} y={y - r * 0.2} width={r * 0.42} height={r * 0.95} rx={r * 0.21} fill={g} /><rect x={x - w / 2 - r * 0.62} y={y + r * 0.45} width={r * 0.62} height={r * 0.34} rx={r * 0.17} fill={g} />
+      <rect x={x + w / 2 + r * 0.2} y={y - r * 0.55} width={r * 0.42} height={r * 0.95} rx={r * 0.21} fill={g} /><rect x={x + w / 2 - r * 0.02} y={y + r * 0.1} width={r * 0.62} height={r * 0.34} rx={r * 0.17} fill={g} />
+      <rect x={x - w / 2} y={top} width={w} height={hh} rx={w / 2} fill={g} />
+      {[-0.22, 0.12].map((o, i) => <line key={i} x1={x + w * o} x2={x + w * o} y1={top + 4} y2={top + hh - 4} stroke="#1d4a2a" strokeWidth=".6" opacity=".35" />)}
+      {[0.2, 0.45, 0.7].map((o, i) => <circle key={i} cx={x + (i % 2 ? 1 : -1) * w * 0.12} cy={top + hh * o} r=".7" fill="#fff6c8" opacity=".8" />)}</g>; }
+  if (t.kind === "pine" || t.kind === "snowpine") { const s = r * 1.05, snow = t.kind === "snowpine", g = `url(#pn-${id}-${t.c})`;
+    const tier = (cy: number, wd: number, hg: number) => <g key={cy}><polygon points={`${x},${cy - hg} ${x + wd},${cy} ${x - wd},${cy}`} fill={g} />
+      <path d={`M${x - wd} ${cy} Q${x} ${cy + hg * 0.28} ${x + wd} ${cy}`} fill="#000" opacity=".16" />
+      {snow && <path d={`M${x} ${cy - hg} L${x + wd * 0.55} ${cy - hg * 0.4} Q${x + wd * 0.25} ${cy - hg * 0.28} ${x} ${cy - hg * 0.42} Q${x - wd * 0.25} ${cy - hg * 0.28} ${x - wd * 0.55} ${cy - hg * 0.4} Z`} fill="#fff" opacity=".95" />}</g>;
+    return <g><ellipse cx={x + s * 0.55} cy={y + s * 0.95} rx={s * 1.05} ry={s * 0.3} fill={snow ? "#5c7c92" : SH} opacity=".22" /><rect x={x - s * 0.1} y={y + s * 0.55} width={s * 0.2} height={s * 0.45} fill="#5a3e2a" />
+      {tier(y + s * 0.8, s * 1.05, s * 0.9)}{tier(y + s * 0.25, s * 0.85, s * 0.85)}{tier(y - s * 0.3, s * 0.62, s * 0.8)}</g>; }
+  if (t.kind === "poplar") { const g = `url(#lf-${id}-${t.c})`, hh = r * 2.5, w = r * 0.62;
+    return <g><ellipse cx={x + r * 0.5} cy={y + hh * 0.42} rx={r * 0.9} ry={r * 0.3} fill={SH} opacity=".24" /><rect x={x - 0.7} y={y + hh * 0.3} width="1.4" height={hh * 0.16} fill="#5a3e2a" />
+      <path d={`M${x} ${y - hh * 0.55} C${x + w * 1.5} ${y - hh * 0.3} ${x + w * 1.3} ${y + hh * 0.3} ${x} ${y + hh * 0.36} C${x - w * 1.3} ${y + hh * 0.3} ${x - w * 1.5} ${y - hh * 0.3} ${x} ${y - hh * 0.55}Z`} fill={g} />
+      <path d={`M${x - w * 0.2} ${y - hh * 0.45} C${x - w * 0.9} ${y - hh * 0.2} ${x - w * 0.9} ${y + hh * 0.15} ${x - w * 0.3} ${y + hh * 0.25}`} stroke="#fff" strokeOpacity=".2" strokeWidth={r * 0.2} fill="none" strokeLinecap="round" /></g>; }
+  const g = `url(#lf-${id}-${t.c})`, lobes: [number, number, number][] = [[-0.5, 0.2, 0.58], [0.5, 0.15, 0.6], [-0.25, -0.35, 0.62], [0.3, -0.3, 0.6], [0, 0.05, 0.78]];
+  return <g><ellipse cx={x + r * 0.45} cy={y + r * 0.9} rx={r * 1.1} ry={r * 0.36} fill={SH} opacity=".24" /><path d={`M${x - r * 0.1} ${y + r * 0.95} L${x - r * 0.06} ${y + r * 0.2} L${x + r * 0.06} ${y + r * 0.2} L${x + r * 0.1} ${y + r * 0.95} Z`} fill="#5a3e2a" />
+    {lobes.map(([dx, dy, k], i) => <circle key={i} cx={x + dx * r} cy={y + dy * r} r={r * k} fill={g} />)}
+    <ellipse cx={x + r * 0.1} cy={y + r * 0.55} rx={r * 0.8} ry={r * 0.3} fill={SH} opacity=".13" />
+    <ellipse cx={x - r * 0.3} cy={y - r * 0.45} rx={r * 0.34} ry={r * 0.2} fill="#fff" opacity=".2" /><circle cx={x + r * 0.35} cy={y - r * 0.1} r={r * 0.09} fill="#fff" opacity=".12" />{(Math.round(x * 7 + y * 3) % 5 === 0) && <circle cx={x + r * 0.2} cy={y - r * 0.2} r={r * 0.85} fill="#ffd34d" opacity=".16" />}</g>;
 };
+
+const blade = (x: number, y: number, s: number, k: number) => { const h = 4 * s; return `M${x} ${y} q${-1 - k} ${-h * 0.6} ${-1.8 - k * 1.4} ${-h} M${x} ${y} q${0.3} ${-h * 0.7} ${0.4 + k} ${-h * 1.2} M${x} ${y} q${1} ${-h * 0.5} ${2 + k} ${-h * 0.85}`; };
+const darker = (hex: string) => { const n = parseInt(hex.slice(1), 16); const f = (v: number) => Math.max(0, Math.round(v * 0.78)).toString(16).padStart(2, "0"); return `#${f((n >> 16) & 255)}${f((n >> 8) & 255)}${f(n & 255)}`; };
 
 /** The static country (never re-rendered while the train moves or a card opens). */
 export const Country = memo(function Country({ geo, id, sc, theme }: { geo: Geo; id: string; sc: Scene; theme: Theme }) {
+  const P = sc.pond, grass = darker(theme.base), noisy = sc.h < 1400, desert = theme.id === "desert", snow = !!theme.frozen;
   return <>
-    <defs><pattern id={`m-${id}`} width="340" height="26" patternUnits="userSpaceOnUse"><rect width="340" height="13" fill="#fff" opacity={theme.stripe} /></pattern></defs>
-    <g className="rt-bg" data-theme={theme.id}><rect x="0" y={sc.y0} width={W} height={sc.h + 1} fill={theme.base} /><rect x="0" y={sc.y0} width={W} height={sc.h + 1} fill={`url(#m-${id})`} />
-      {sc.fields.map((f, i) => <g key={i}><rect x={f.x} y={f.y} width={f.w} height={f.h} rx="5" fill={f.c} />{Array.from({ length: Math.floor(f.h / 7) }, (_, j) => <line key={j} x1={f.x + 3} x2={f.x + f.w - 3} y1={f.y + 5 + j * 7} y2={f.y + 5 + j * 7} stroke={theme.furrow} strokeWidth="1.4" opacity=".7" />)}</g>)}
-      {sc.pond && <g><ellipse cx={sc.pond.x} cy={sc.pond.y} rx={sc.pond.rx + 3} ry={sc.pond.ry + 3} fill={theme.water.rim} /><ellipse cx={sc.pond.x} cy={sc.pond.y} rx={sc.pond.rx} ry={sc.pond.ry} fill={theme.water.fill} />
-        {theme.frozen ? <path d={`M${sc.pond.x - sc.pond.rx * 0.6} ${sc.pond.y - sc.pond.ry * 0.2} l${sc.pond.rx * 0.5} ${sc.pond.ry * 0.5} l${sc.pond.rx * 0.35} -${sc.pond.ry * 0.3} M${sc.pond.x + sc.pond.rx * 0.1} ${sc.pond.y - sc.pond.ry * 0.7} l${sc.pond.rx * 0.2} ${sc.pond.ry * 0.7}`} stroke="#fff" strokeWidth="1.2" fill="none" opacity=".85" />
-          : <ellipse className="rt-ripple" cx={sc.pond.x} cy={sc.pond.y} rx={sc.pond.rx * 0.55} ry={sc.pond.ry * 0.55} fill="none" stroke="#fff" strokeWidth="1.2" />}
-        <ellipse cx={sc.pond.x - sc.pond.rx * 0.3} cy={sc.pond.y - sc.pond.ry * 0.25} rx={sc.pond.rx * 0.4} ry={sc.pond.ry * 0.22} fill="#fff" opacity={theme.water.shine} /></g>}
-      {sc.flowers.map((f, i) => <circle key={i} cx={f.x} cy={f.y} r="1.6" fill={f.c} />)}
+    <defs>
+      <pattern id={`m-${id}`} width="340" height="26" patternUnits="userSpaceOnUse"><rect width="340" height="13" fill="#fff" opacity={theme.stripe * 0.7} /></pattern>
+      <linearGradient id={`sun-${id}`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#fff7d0" stopOpacity=".2" /><stop offset=".45" stopColor="#fff" stopOpacity="0" /><stop offset="1" stopColor="#0a1a40" stopOpacity=".16" /></linearGradient>
+      <radialGradient id={`bl-l-${id}`}><stop offset="0" stopColor="#fff" stopOpacity=".2" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></radialGradient>
+      <radialGradient id={`bl-d-${id}`}><stop offset="0" stopColor={snow ? "#8fb0c8" : "#0b3a1a"} stopOpacity=".16" /><stop offset="1" stopColor="#000" stopOpacity="0" /></radialGradient>
+      {theme.leaf.map((l, i) => <g key={i}>
+        <radialGradient id={`lf-${id}-${i}`} cx=".35" cy=".3" r=".85"><stop offset="0" stopColor={l[1]} /><stop offset=".7" stopColor={l[0]} /><stop offset="1" stopColor={darker(l[0])} /></radialGradient>
+        <linearGradient id={`pn-${id}-${i}`} x1="0" x2="1" y1="0" y2="0"><stop offset="0" stopColor={l[1]} /><stop offset=".55" stopColor={l[0]} /><stop offset="1" stopColor={darker(l[0])} /></linearGradient>
+        <linearGradient id={`cx-${id}-${i}`} x1="0" x2="1" y1="0" y2="0"><stop offset="0" stopColor={l[1]} /><stop offset=".5" stopColor={l[0]} /><stop offset="1" stopColor={darker(l[0])} /></linearGradient></g>)}
+      <radialGradient id={`pw-${id}`} cx=".4" cy=".35" r=".8"><stop offset="0" stopColor={theme.water.fill} stopOpacity=".78" /><stop offset=".75" stopColor={theme.water.fill} /><stop offset="1" stopColor={darker(theme.water.fill)} /></radialGradient>
+      <radialGradient id={`rk-${id}`} cx=".35" cy=".3" r=".9"><stop offset="0" stopColor="#c9cfcf" /><stop offset="1" stopColor="#7d8585" /></radialGradient>
+      <radialGradient id={`bs-${id}`} cx=".35" cy=".3" r=".9"><stop offset="0" stopColor={theme.leaf[0][1]} /><stop offset="1" stopColor={darker(theme.leaf[0][0])} /></radialGradient>
+      {noisy && <filter id={`nz-${id}`} x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".8" numOctaves="2" seed="4" /><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .55 -.18" /></filter>}
+    </defs>
+    <g className="rt-bg" data-theme={theme.id}><rect x="0" y={sc.y0} width={W} height={sc.h + 1} fill={theme.base} />
+      {sc.blotches.map((b, i) => <ellipse key={i} cx={b.x} cy={b.y} rx={b.rx} ry={b.ry} fill={`url(#bl-${b.dark ? "d" : "l"}-${id})`} />)}
+      <rect x="0" y={sc.y0} width={W} height={sc.h + 1} fill={`url(#m-${id})`} />
+      {noisy && <rect x="0" y={sc.y0} width={W} height={sc.h + 1} filter={`url(#nz-${id})`} opacity=".16" />}
+      {sc.fields.map((f, i) => <g key={i}><rect x={f.x + 1.5} y={f.y + 2.5} width={f.w} height={f.h} rx="5" fill="#000" opacity=".1" /><rect x={f.x} y={f.y} width={f.w} height={f.h} rx="5" fill={f.c} /><rect x={f.x} y={f.y} width={f.w} height={f.h} rx="5" fill="none" stroke={theme.furrow} strokeWidth="1.6" opacity=".9" />
+        {Array.from({ length: Math.floor(f.h / 6) }, (_, j) => <line key={j} x1={f.x + 3} x2={f.x + f.w - 3} y1={f.y + 4 + j * 6} y2={f.y + 4 + j * 6} stroke={theme.furrow} strokeWidth="1.8" strokeLinecap="round" opacity={j % 2 ? 0.55 : 0.85} />)}</g>)}
+      {sc.tufts.length > 0 && <path d={sc.tufts.map((u) => blade(u.x, u.y, u.s, u.k)).join(" ")} stroke={desert ? "#b9954f" : snow ? "#a9c4d8" : grass} strokeWidth=".9" strokeLinecap="round" fill="none" opacity=".75" />}
+      {P && <g><ellipse cx={P.x + 1.5} cy={P.y + 2.5} rx={P.rx + 6} ry={P.ry + 6} fill="#000" opacity=".08" /><ellipse cx={P.x} cy={P.y} rx={P.rx + 5} ry={P.ry + 5} fill={theme.water.rim} opacity=".55" /><ellipse cx={P.x} cy={P.y} rx={P.rx + 2.6} ry={P.ry + 2.6} fill={theme.water.rim} />
+        <ellipse cx={P.x} cy={P.y} rx={P.rx} ry={P.ry} fill={`url(#pw-${id})`} /><ellipse cx={P.x} cy={P.y + 1} rx={P.rx - 1} ry={P.ry - 1} fill="none" stroke="#000" strokeWidth="2" opacity=".1" />
+        {snow ? <path d={`M${P.x - P.rx * 0.6} ${P.y - P.ry * 0.2} l${P.rx * 0.5} ${P.ry * 0.5} l${P.rx * 0.35} -${P.ry * 0.3} M${P.x + P.rx * 0.1} ${P.y - P.ry * 0.7} l${P.rx * 0.2} ${P.ry * 0.7}`} stroke="#fff" strokeWidth="1.1" fill="none" opacity=".85" />
+          : <><ellipse className="rt-ripple" cx={P.x + P.rx * 0.15} cy={P.y + P.ry * 0.1} rx={P.rx * 0.5} ry={P.ry * 0.5} fill="none" stroke="#fff" strokeWidth="1" />
+            <path d={`M${P.x - P.rx * 0.5} ${P.y + P.ry * 0.35} q${P.rx * 0.2} -2 ${P.rx * 0.4} 0 M${P.x + P.rx * 0.1} ${P.y - P.ry * 0.4} q${P.rx * 0.2} -2 ${P.rx * 0.4} 0`} stroke="#fff" strokeWidth=".8" fill="none" opacity=".55" strokeLinecap="round" />
+            {!desert && sc.pads.map((l, i) => <g key={i}><ellipse cx={l.x} cy={l.y} rx={l.s} ry={l.s * 0.62} fill="#3f9a4e" /><path d={`M${l.x} ${l.y} L${l.x + Math.cos(l.a) * l.s} ${l.y + Math.sin(l.a) * l.s * 0.62}`} stroke={theme.water.fill} strokeWidth=".8" /></g>)}</>}
+        <ellipse cx={P.x - P.rx * 0.32} cy={P.y - P.ry * 0.3} rx={P.rx * 0.38} ry={P.ry * 0.2} fill="#fff" opacity={theme.water.shine} />
+        {!snow && sc.reeds.map((e, i) => <g key={i} stroke={desert ? "#8a9a4a" : "#3e8a4a"} strokeWidth="1" strokeLinecap="round" fill="none"><path d={`M${e.x} ${e.y} q${e.lean * 0.4} ${-e.hgt * 0.5} ${e.lean} ${-e.hgt}`} /><path d={`M${e.x + 1.2} ${e.y} q${-e.lean * 0.3} ${-e.hgt * 0.45} ${-e.lean * 0.5} ${-e.hgt * 0.8}`} /><ellipse cx={e.x + e.lean} cy={e.y - e.hgt} rx=".9" ry="2" fill="#7a5a36" stroke="none" /></g>)}</g>}
+      {sc.flowers.map((f, i) => <g key={i}>{[0, 1, 2, 3, 4].map((q) => <circle key={q} cx={f.x + Math.cos((q / 5) * 6.283) * 1.3} cy={f.y + Math.sin((q / 5) * 6.283) * 1.3} r=".95" fill={f.c} />)}<circle cx={f.x} cy={f.y} r=".8" fill={f.c === "#ffd166" ? "#e08a1e" : "#ffd166"} /></g>)}
       {sc.rocks.map((k, i) => { const p = (a: number, j: number, d: number) => `${(k.x + Math.cos(a) * k.s * (0.75 + k.j[j] * 0.35)).toFixed(1)},${(k.y + Math.sin(a) * k.s * 0.62 * (0.75 + k.j[j] * 0.35) + d).toFixed(1)}`;
-        return <g key={i}><ellipse cx={k.x + 3} cy={k.y + k.s * 0.5} rx={k.s} ry={k.s * 0.3} fill="#000" opacity=".16" /><polygon points={[0, 1, 2, 3, 4, 5].map((q) => p((q / 6) * Math.PI * 2, q, 0)).join(" ")} fill="#8d9494" /><polygon points={`${k.x},${k.y - k.s * 0.55} ${p(0.2, 1, 0)} ${p(2.6, 3, 0)}`} fill="#b3baba" /></g>; })}
-      {sc.trees.map((tr, i) => <Plant1 key={i} t={tr} leaf={theme.leaf[tr.c]} />)}</g>
+        return <g key={i}><ellipse cx={k.x + 3} cy={k.y + k.s * 0.5} rx={k.s * 1.05} ry={k.s * 0.3} fill="#000" opacity=".2" /><polygon points={[0, 1, 2, 3, 4, 5].map((q) => p((q / 6) * Math.PI * 2, q, 0)).join(" ")} fill={`url(#rk-${id})`} stroke="#5f6767" strokeWidth=".5" strokeLinejoin="round" /><polygon points={`${k.x},${k.y - k.s * 0.55} ${p(0.2, 1, 0)} ${p(2.6, 3, 0)}`} fill="#dfe4e4" opacity=".55" /></g>; })}
+      {sc.bushes.map((b, i) => <g key={i}><ellipse cx={b.x + 1.5} cy={b.y + b.r * 0.7} rx={b.r * 1.1} ry={b.r * 0.4} fill={SH} opacity=".2" /><circle cx={b.x - b.r * 0.5} cy={b.y} r={b.r * 0.7} fill={`url(#bs-${id})`} /><circle cx={b.x + b.r * 0.5} cy={b.y} r={b.r * 0.7} fill={`url(#bs-${id})`} /><circle cx={b.x} cy={b.y - b.r * 0.3} r={b.r * 0.8} fill={`url(#bs-${id})`} /><circle cx={b.x - b.r * 0.2} cy={b.y - b.r * 0.55} r={b.r * 0.25} fill="#fff" opacity=".18" />
+        {!desert && !snow && b.c === 0 && [[-0.4, -0.1], [0.3, -0.45], [0.5, 0.1]].map(([a, c], q) => <circle key={q} cx={b.x + a * b.r} cy={b.y + c * b.r} r=".9" fill="#ff7a8a" />)}</g>)}
+      {sc.tufts.filter((_, i) => i % 6 === 0).map((u, i) => <g key={i}><ellipse cx={u.x + 5} cy={u.y + 2} rx="1.6" ry="1" fill="#8d9494" /><ellipse cx={u.x + 4.8} cy={u.y + 1.6} rx="1" ry=".6" fill="#c3c9c9" /><ellipse cx={u.x + 8} cy={u.y + 3} rx="1.1" ry=".7" fill="#8d9494" /></g>)}
+      {[...sc.trees].sort((a, b) => a.y - b.y).map((tr, i) => <Plant1 key={i} t={tr} id={id} />)}
+      <rect x="0" y={sc.y0} width={W} height={sc.h + 1} fill={`url(#sun-${id})`} pointerEvents="none" /></g>
   </>;
 });
 

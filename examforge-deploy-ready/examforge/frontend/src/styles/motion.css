@@ -101,7 +101,7 @@
   .journey-train { position: absolute; bottom: 7px; left: calc(64px + (100% - 64px) * var(--p) / 100); transform: translateX(-100%); animation: train-run 1.8s var(--ease) both; }
   .journey .train { display: block; }
   .train .wheels circle { transform-box: fill-box; transform-origin: center; }
-  .train-loader { display: grid; gap: var(--s-2); justify-items: center; min-height: 40vh; align-content: center; padding: var(--s-6); }
+  .train-loader { display: grid; gap: 10px; justify-items: center; min-height: 30vh; align-content: center; padding: var(--s-6); }
   .train-loader .journey-track { width: min(320px, 80vw); overflow: hidden; }
   .loop-train { position: absolute; bottom: 7px; animation: train-loop 2.6s linear infinite; }
   .train .puff { opacity: 0; animation: puff 1.6s ease-out infinite; } .train .p2 { animation-delay: .5s; } .train .p3 { animation-delay: 1s; }
@@ -215,3 +215,42 @@
   }
 }
 
+
+@layer components {
+  /* mini vehicles: moving parts */
+  @keyframes wspin { to { transform: rotate(360deg); } }
+  @keyframes rod-swing { 0%, 100% { transform: translate(-1px, -1px); } 25% { transform: translate(0, 1px); } 50% { transform: translate(1px, -1px); } 75% { transform: translate(0, -2px); } }
+  @keyframes lg-thigh { from { transform: rotate(-42deg); } to { transform: rotate(38deg); } }
+  @keyframes lg-shin { from { transform: rotate(6deg); } to { transform: rotate(78deg); } }
+  @keyframes ar-up { from { transform: rotate(-48deg); } to { transform: rotate(46deg); } }
+  @keyframes ar-fa { from { transform: rotate(-95deg); } to { transform: rotate(-45deg); } }
+  @keyframes bk-jig { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-.5px); } }
+  @keyframes spd { from { transform: translateX(6px); opacity: 0; } 50% { opacity: .6; } to { transform: translateX(-8px); opacity: 0; } }
+  .wspin { animation: wspin .45s linear infinite; }
+  .rod { animation: rod-swing .45s linear infinite; }
+  .lg-f { animation: lg-thigh .3s ease-in-out infinite alternate; } .lg-b { animation: lg-thigh .3s ease-in-out infinite alternate-reverse; }
+  .lg-fs { animation: lg-shin .3s ease-in-out -.15s infinite alternate; } .lg-bs { animation: lg-shin .3s ease-in-out -.15s infinite alternate-reverse; }
+  .ar-f { animation: ar-up .3s ease-in-out infinite alternate-reverse; } .ar-b { animation: ar-up .3s ease-in-out infinite alternate; }
+  .fa-f { animation: ar-fa .3s ease-in-out infinite alternate; } .fa-b { animation: ar-fa .3s ease-in-out infinite alternate-reverse; }
+  .bk { animation: bk-jig .4s ease-in-out infinite; } .spd { animation: spd .5s linear infinite; }
+  .arrived .wspin, .arrived .rod, .arrived .bk { animation-play-state: paused; }
+  /* loading scene */
+  @keyframes rn-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.6px); } }
+  @keyframes tr-flick { 0%, 100% { opacity: .9; } 50% { opacity: .6; } }
+  .train .p4 { animation-delay: 1.4s; }
+  @media (prefers-reduced-motion: reduce) { .ld-l, .ld-wing, .ld-mill, .ld-rays, .rn-body, .rn-tail, .tr-beam, .wspin, .rod, .bk, .spd, .lg-f, .lg-b, .lg-fs, .lg-bs, .ar-f, .ar-b, .fa-f, .fa-b, .ld-trav .train { animation: none; } }
+  .reduce-motion .ld-l, .reduce-motion .ld-wing, .reduce-motion .ld-mill, .reduce-motion .ld-rays, .reduce-motion .rn-body, .reduce-motion .rn-tail, .reduce-motion .tr-beam, .reduce-motion .wspin, .reduce-motion .rod, .reduce-motion .bk, .reduce-motion .spd, .reduce-motion .lg-f, .reduce-motion .lg-b, .reduce-motion .lg-fs, .reduce-motion .lg-bs, .reduce-motion .ar-f, .reduce-motion .ar-b, .reduce-motion .fa-f, .reduce-motion .fa-b, .reduce-motion .ld-trav .train { animation: none; }
+}
+  .rn-tail { transform-origin: 37px 5px; animation: lg-thigh .3s ease-in-out infinite alternate; } .tr-beam { animation: tr-flick .8s ease-in-out infinite; } .rn-body { animation: rn-bob .3s ease-in-out infinite; }
+/* compact loader */
+.ld-mini { position: relative; width: 132px; height: 40px; overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent); mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent); }
+.ld-trav { position: absolute; left: 50%; bottom: 7px; transform: translateX(-50%) scale(.62); transform-origin: 50% 100%; line-height: 0; animation: ld-bob .5s ease-in-out infinite; }
+.ld-rail { position: absolute; left: 0; right: 0; bottom: 0; height: 8px; background: linear-gradient(var(--border-strong), var(--border-strong)) 0 0 / 100% 1.5px no-repeat, repeating-linear-gradient(90deg, var(--border-strong) 0 2px, transparent 2px 9px) 0 3px / 100% 5px no-repeat; animation: ld-rail .55s linear infinite; }
+.ld-library .ld-rail { background: linear-gradient(var(--border-strong), var(--border-strong)) 0 0 / 100% 1.5px no-repeat, repeating-linear-gradient(90deg, transparent 0 14px, var(--border-strong) 14px 15px) 0 3px / 100% 5px no-repeat; }
+.ld-ground .ld-rail { height: 6px; background: linear-gradient(var(--border-strong), var(--border-strong)) 0 0 / 100% 1.5px no-repeat, repeating-linear-gradient(90deg, var(--border-strong) 0 8px, transparent 8px 18px) 0 3px / 100% 1.5px no-repeat; animation-duration: .4s; }
+.ld-text { margin: 0; font-size: var(--fs-xs); letter-spacing: .04em; color: var(--muted); }
+@keyframes ld-bob { 0%, 100% { transform: translateX(-50%) scale(.62) translateY(0); } 50% { transform: translateX(-50%) scale(.62) translateY(-1px); } }
+@keyframes ld-rail { to { background-position: -9px 0, -9px 3px; } }
+
+@media (prefers-reduced-motion: reduce) { .ld-trav, .ld-rail { animation: none; } }
+.reduce-motion .ld-trav, .reduce-motion .ld-rail { animation: none; }

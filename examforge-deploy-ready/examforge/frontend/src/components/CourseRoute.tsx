@@ -1,4 +1,4 @@
-import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from "react"; import { Link } from "react-router-dom";
+import { memo, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from "react"; import { Link } from "react-router-dom";
 import { Check, Lock, Flag, Clock, PlayCircle, RotateCcw, X, ClipboardCheck, ArrowLeft, ChevronRight, TrainFront, Map as MapIcon, ListOrdered, Route as RouteIcon, LocateFixed, Award } from "lucide-react";
 import { confetti } from "./Confetti"; import { toast } from "./ui"; import { sfx } from "../lib/game"; import { themeFor, type Theme } from "../lib/themes"; import LazyMount from "./LazyMount";
 import { W, makeGeo, at, heading, clamp, scenery, bandsFor, Country, Clouds, type Geo } from "./RouteScenery";
@@ -29,40 +29,68 @@ const reduced = () => typeof document !== "undefined" && (document.documentEleme
 
 /* ------------------------------------------------------------------ the train, seen from above */
 const CARS: [number, "engine" | "coach"][] = [[0, "engine"], [-28, "coach"], [-53, "coach"], [-78, "coach"]];
+const HALF = { engine: 14, coach: 11.5 }; // half a car's length: each car is laid along the chord between its two ends, so it sits properly on a curve
+const PUFF_Y = [-3, 4, -1.5, 5, -4.5];
 
-/** The train. It is driven straight on the SVG (no React re-render per frame): smooth-step easing, a little sway while rolling, smoke that speeds up, a glowing trail behind it. */
+/** The train. It is driven straight on the SVG (no React re-render per frame): smootherstep easing, cars that follow the curve end to end, a soft sway while rolling,
+ *  smoke and a headlight that react to speed, steam hissing out of the cylinders on arrival, and a glowing trail behind it. */
 function Train({ g, target, from, held, trail, onArrive }: { g: Geo; target: number; from: number; held: boolean; trail: RefObject<SVGGElement>; onArrive: () => void }) {
-  const root = useRef<SVGGElement>(null), cars = useRef<(SVGGElement | null)[]>([]), pos = useRef(from), raf = useRef(0), arrive = useRef(onArrive); arrive.current = onArrive;
+  const root = useRef<SVGGElement>(null), cars = useRef<(SVGGElement | null)[]>([]), pos = useRef(from), raf = useRef(0), arrive = useRef(onArrive), hiss = useRef(0); arrive.current = onArrive;
+  const id = "tr" + useId().replace(/[^a-zA-Z0-9]/g, "");
   const place = (L: number, sway: number) => {
-    CARS.forEach(([off], i) => { const el = cars.current[i]; if (!el) return; const s = L + off, p = at(g, s), a = heading(g, s), w = sway * Math.sin(i * 1.9 + performance.now() / 70);
-      el.setAttribute("transform", `translate(${p.x.toFixed(2)} ${p.y.toFixed(2)}) rotate(${a.toFixed(2)}) translate(0 ${w.toFixed(2)})`); });
+    const now = performance.now();
+    CARS.forEach(([off, kind], i) => { const el = cars.current[i]; if (!el) return;
+      const s = L + off, h = HALF[kind], f = at(g, s + h), r = at(g, s - h), a = (Math.atan2(f.y - r.y, f.x - r.x) * 180) / Math.PI, w = sway * Math.sin(i * 1.9 + now / 95);
+      el.setAttribute("transform", `translate(${((f.x + r.x) / 2).toFixed(2)} ${((f.y + r.y) / 2).toFixed(2)}) rotate(${a.toFixed(2)}) translate(0 ${w.toFixed(2)})`); });
     if (trail.current) trail.current.style.strokeDashoffset = String(1000 - 1000 * clamp((L - 4) / g.total, 0, 1));
   };
   useLayoutEffect(() => { place(pos.current, 0); }, [g]); // eslint-disable-line
+  useEffect(() => () => clearTimeout(hiss.current), []);
   useEffect(() => {
     cancelAnimationFrame(raf.current); const el = root.current, start = pos.current, delta = target - start;
     const stop = () => { if (el) delete el.dataset.go; };
     if (Math.abs(delta) < 1 || reduced()) { pos.current = target; place(target, 0); stop(); return; }
-    const dur = clamp((Math.abs(delta) / 70) * 1000, 1500, 4800), t0 = performance.now() + 420;
+    const dur = clamp((Math.abs(delta) / 62) * 1000, 1800, 5200), t0 = performance.now() + 420;
     const step = (now: number) => {
       const k = clamp((now - t0) / dur, 0, 1), e = k * k * k * (k * (6 * k - 15) + 10), speed = (30 * k * k * (1 - k) * (1 - k)) / 1.875; // smootherstep: zero speed AND zero acceleration at both ends
-      pos.current = start + delta * e; place(pos.current, 0.3 * speed);
+      pos.current = start + delta * e; place(pos.current, 0.22 * speed);
       if (el) { if (k > 0 && k < 1) { el.dataset.go = "1"; el.style.setProperty("--spd", speed.toFixed(2)); } else stop(); }
-      if (k < 1) raf.current = requestAnimationFrame(step); else { place(target, 0); arrive.current(); }
+      if (k < 1) raf.current = requestAnimationFrame(step);
+      else { place(target, 0); if (el) { el.dataset.arr = "1"; clearTimeout(hiss.current); hiss.current = window.setTimeout(() => delete el.dataset.arr, 1600); } arrive.current(); }
     };
     raf.current = requestAnimationFrame(step); return () => cancelAnimationFrame(raf.current);
   }, [target, g]); // eslint-disable-line
+  const u = (n: string) => `url(#${id}-${n})`;
   return <g ref={root} className={`rt-train ${held ? "held" : ""}`}>
+    <defs>
+      <linearGradient id={`${id}-sh`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#000" stopOpacity=".3" /><stop offset=".34" stopColor="#fff" stopOpacity=".26" /><stop offset=".55" stopColor="#fff" stopOpacity=".05" /><stop offset="1" stopColor="#000" stopOpacity=".34" /></linearGradient>
+      <linearGradient id={`${id}-bm`} x1="0" y1="0" x2="1" y2="0"><stop offset="0" style={{ stopColor: "var(--gold)" }} stopOpacity=".95" /><stop offset="1" style={{ stopColor: "var(--gold)" }} stopOpacity="0" /></linearGradient>
+      <radialGradient id={`${id}-sm`}><stop offset="0" stopColor="#fff" stopOpacity=".95" /><stop offset=".6" stopColor="#fff" stopOpacity=".5" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></radialGradient>
+      <radialGradient id={`${id}-br`} cx=".35" cy=".3" r=".8"><stop offset="0" stopColor="#fff2b8" /><stop offset="1" style={{ stopColor: "var(--gold)" }} /></radialGradient>
+    </defs>
     {CARS.map(([, kind], i) => <g key={i} ref={(el) => { cars.current[i] = el; }} className="rt-car">
       {kind === "engine" ? <>
-        <polygon className="rt-beam" points="14,0 60,-18 60,18" />
-        <rect x="-13" y="-4" width="30" height="13" rx="5" transform="translate(2.2 3.4)" fill="#000" opacity=".22" /><rect x="-17" y="-1.2" width="3" height="2.4" fill="#2b313c" />
-        <rect x="-15" y="-6.5" width="30" height="13" rx="4.5" fill="var(--brand)" /><rect x="-15" y="-6.5" width="11" height="13" rx="3" fill="var(--brand-hover)" />
-        <rect x="-3" y="-4.6" width="17" height="9.2" rx="4" fill="var(--brand-2)" /><rect x="-13" y="-0.8" width="27" height="1.6" fill="var(--gold)" /><circle cx="2" cy="0" r="2.1" fill="var(--gold)" /><circle cx="9" cy="0" r="2.7" fill="#1d2230" /><circle cx="9" cy="0" r="1.3" fill="#6b7585" />
-        <rect x="-12" y="-4" width="6" height="8" rx="1.5" fill="#1d2230" opacity=".55" /><circle className="rt-lamp" cx="15" cy="-3.4" r="1.7" fill="#fff3b0" /><circle className="rt-lamp" cx="15" cy="3.4" r="1.7" fill="#fff3b0" />
-        <g className="rt-smoke"><circle cx="9" cy="0" r="3" /><circle cx="9" cy="0" r="3" /><circle cx="9" cy="0" r="3" /></g></>
-      : <><rect x="-9.5" y="-4" width="23" height="12" rx="3" transform="translate(2.2 3.4)" fill="#000" opacity=".22" /><rect x="11" y="-1.1" width="4.5" height="2.2" fill="#2b313c" />
-        <rect x="-11.5" y="-6" width="23" height="12" rx="3" fill="var(--brand-2)" /><rect x="-9.5" y="-4" width="19" height="8" rx="2" fill="var(--brand-soft)" /><path d="M-4 -4v8M2 -4v8M8 -4v8" stroke="var(--brand-2)" strokeWidth="1.2" opacity=".7" /></>}
+        <polygon className="rt-beam" fill={u("bm")} points="15,-2.5 82,-24 82,24 15,2.5" />
+        <rect x="-13" y="-4" width="31" height="13" rx="5.5" transform="translate(2.4 3.6)" fill="#000" opacity=".2" />
+        <rect x="-19" y="-1" width="4" height="2" rx=".8" fill="#2b313c" />
+        <rect x="-16" y="-7.3" width="33.5" height="14.6" rx="4.8" fill="#1b2029" />
+        <rect x="-15.4" y="-6.5" width="12.6" height="13" rx="3.2" fill="var(--brand-hover)" /><rect x="-15.4" y="-6.5" width="12.6" height="13" rx="3.2" fill={u("sh")} />
+        <path d="M-15 0H-3.4" stroke="#000" strokeOpacity=".22" strokeWidth=".9" /><rect x="-13.2" y="-6.1" width="5.4" height="1.5" rx=".7" fill="#cfeaff" opacity=".9" /><rect x="-13.2" y="4.6" width="5.4" height="1.5" rx=".7" fill="#cfeaff" opacity=".9" />
+        <rect x="-3.2" y="-5.4" width="19.4" height="10.8" rx="5.2" fill="var(--brand)" /><rect x="-3.2" y="-5.4" width="19.4" height="10.8" rx="5.2" fill={u("sh")} />
+        <path d="M2.2 -5.1v10.2M7.6 -5.1v10.2M13 -4.7v9.4" stroke="#000" strokeOpacity=".2" strokeWidth=".9" /><rect x="-2" y="-.6" width="17" height="1.2" rx=".6" fill="var(--gold)" opacity=".85" />
+        <circle cx="-.2" cy="0" r="1.8" fill="var(--brand-2)" /><circle cx="4.8" cy="0" r="2.6" fill={u("br")} /><circle cx="4.2" cy="-.7" r=".8" fill="#fff" opacity=".7" />
+        <circle cx="12" cy="0" r="3.1" fill="#262d39" /><circle cx="12" cy="0" r="3.1" fill="none" stroke="#7d8798" strokeWidth=".7" /><circle cx="12" cy="0" r="1.7" fill="#0b0e14" />
+        <rect x="15.6" y="-6.2" width="2.2" height="12.4" rx=".9" fill="#2b313c" /><circle cx="17.4" cy="-4.3" r="1.3" fill="#a9b2bf" /><circle cx="17.4" cy="4.3" r="1.3" fill="#a9b2bf" />
+        <circle cx="14.6" cy="-3.5" r="3.6" fill="#fff3b0" opacity=".22" /><circle cx="14.6" cy="3.5" r="3.6" fill="#fff3b0" opacity=".22" />
+        <circle className="rt-lamp" cx="14.8" cy="-3.5" r="1.6" fill="#fff8d0" /><circle className="rt-lamp" cx="14.8" cy="3.5" r="1.6" fill="#fff8d0" />
+        <g className="rt-hiss"><circle cx="6" cy="-7" r="3" fill={u("sm")} style={{ "--k": 0, "--s": -1 } as CSSProperties} /><circle cx="6" cy="7" r="3" fill={u("sm")} style={{ "--k": 0, "--s": 1 } as CSSProperties} /><circle cx="1" cy="-7" r="2.6" fill={u("sm")} style={{ "--k": 1, "--s": -1 } as CSSProperties} /><circle cx="1" cy="7" r="2.6" fill={u("sm")} style={{ "--k": 1, "--s": 1 } as CSSProperties} /></g>
+        <g className="rt-smoke">{PUFF_Y.map((y, k) => <circle key={k} cx="12" cy="0" r="3.2" fill={u("sm")} style={{ "--k": k, "--y": y } as CSSProperties} />)}</g></>
+      : <><rect x="-9.5" y="-4" width="23" height="12" rx="3" transform="translate(2.4 3.6)" fill="#000" opacity=".2" /><rect x="11" y="-1.1" width="5" height="2.2" rx=".8" fill="#2b313c" />
+        <rect x="-12" y="-6.6" width="24" height="13.2" rx="3.6" fill="#1b2029" />
+        <rect x="-11.4" y="-6" width="22.8" height="12" rx="3" fill="var(--brand-2)" /><rect x="-11.4" y="-6" width="22.8" height="12" rx="3" fill={u("sh")} />
+        <rect x="-9.6" y="-4.2" width="19.2" height="8.4" rx="2.1" fill="var(--brand-soft)" /><rect x="-9.6" y="-4.2" width="19.2" height="8.4" rx="2.1" fill={u("sh")} opacity=".7" />
+        <path d="M-8.6 0H8.6" stroke="var(--brand-2)" strokeWidth=".8" opacity=".4" /><rect x="-6.6" y="-1.2" width="3.2" height="2.4" rx=".9" fill="var(--brand-2)" opacity=".5" /><rect x="-.4" y="-1.2" width="3.2" height="2.4" rx=".9" fill="var(--brand-2)" opacity=".5" /><rect x="5.8" y="-1.2" width="3.2" height="2.4" rx=".9" fill="var(--brand-2)" opacity=".5" />
+        <path d="M-9.4 -5.1H9.4M-9.4 5.1H9.4" stroke="#cfeaff" strokeWidth="1.2" strokeDasharray="2.7 1.3" opacity=".9" /></>}
     </g>)}
   </g>;
 }
@@ -76,9 +104,9 @@ function Line({ s, stops, here, complete, spot, active, lid, open, t, sel, setSe
   const n = stops.length, geo = useMemo(() => makeGeo(n), [n]), trail = useRef<SVGGElement>(null);
   const bands = useMemo(() => (parts ? bandsFor(geo, parts.map((p) => p.count)) : null), [geo, parts]);
   const scenes = useMemo(() => (parts && bands ? parts.map((p, k) => scenery(geo, p.id, p.theme, bands[k], true)) : [scenery(geo, s.id, theme)]), [geo, s.id, theme, parts, bands]);
-  const target = !active ? null : here && spot ? geo.nodes[spot.idx].s - 34 : complete ? geo.nodes[n - 1].s + 56 : null;
+  const target = !active ? null : here && spot ? geo.nodes[spot.idx].s - 48 : complete ? geo.nodes[n - 1].s + 56 : null;
   // the train rolls in on the last stretch (a run-up before the previous stop), so opening a subject always shows it arriving
-  const [from] = useState(() => (here && spot ? Math.max(-70, (spot.idx > 0 ? geo.nodes[spot.idx - 1].s - 34 : -70) - 60) : complete ? Math.max(-70, geo.nodes[n - 1].s - 240) : -70));
+  const [from] = useState(() => (here && spot ? Math.max(-70, (spot.idx > 0 ? geo.nodes[spot.idx - 1].s - 48 : -70) - 60) : complete ? Math.max(-70, geo.nodes[n - 1].s - 240) : -70));
   const held = here && !!spot?.held, arriveAt = here && spot ? spot.idx : complete ? n - 1 : -1;
   const [arrived, setArrived] = useState(-1); const tm = useRef(0);
   useEffect(() => () => clearTimeout(tm.current), []);
