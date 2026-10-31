@@ -2,7 +2,7 @@ import React, { Component, Suspense, lazy, type ReactElement, type ErrorInfo } f
 import { createRoot } from "react-dom/client"; import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import "@fontsource-variable/archivo";
 import "@fontsource/hind/400.css"; import "@fontsource/hind/500.css"; import "@fontsource/hind/600.css"; import "@fontsource/hind/700.css";
-import "./index.css";
+import "./index.css"; import "./professional.css";
 import Login from "./pages/Login"; import PublicCourse from "./pages/PublicCourse"; import { Terms, Refund } from "./pages/Legal"; import { VerifyEmail, ForgotPassword, ResetPassword } from "./pages/AuthExtra"; import Landing from "./pages/Landing"; import NotFound from "./pages/NotFound";
 import { About, Contact, Privacy, TipsList, TipPage } from "./pages/Info";
 import { getMe } from "./lib/auth"; import { api } from "./lib/api"; import { captureRef } from "./lib/engage"; import Splash from "./components/Splash"; import PromoPopup from "./components/PromoPopup"; import InstallPrompt from "./components/InstallPrompt"; import { ToastHost, initReveal } from "./components/ui"; import { initTheme } from "./lib/theme";

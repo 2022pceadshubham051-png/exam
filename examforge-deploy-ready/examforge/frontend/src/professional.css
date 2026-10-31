@@ -1,0 +1,55 @@
+/* ExamForge professional polish layer. Loaded last: refines depth, typography, interaction and rhythm without changing layout or tokens. */
+@layer components {
+  html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; scroll-behavior: smooth; }
+  body { font-feature-settings: "kern", "liga"; letter-spacing: -.003em; line-height: 1.6; }
+  h1, h2, h3 { letter-spacing: -.022em; line-height: 1.12; text-wrap: balance; }
+  p { text-wrap: pretty; }
+  ::selection { background: color-mix(in srgb, var(--brand) 28%, transparent); }
+  * { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+
+  /* depth: soft layered shadows instead of flat borders alone */
+  :root { --shadow-1: 0 1px 2px rgb(16 28 44 / .05), 0 1px 1px rgb(16 28 44 / .03); --shadow-2: 0 10px 30px -8px rgb(16 28 44 / .16), 0 2px 6px rgb(16 28 44 / .05); }
+  .card { border-color: color-mix(in srgb, var(--border) 85%, transparent); border-radius: 16px; box-shadow: var(--shadow-1); transition: box-shadow var(--dur-2) var(--ease), transform var(--dur-2) var(--ease), border-color var(--dur-2); }
+  a.card:hover, .card.hover:hover, button.card:hover { box-shadow: var(--shadow-2); transform: translateY(-2px); border-color: var(--border-strong); }
+
+  /* buttons */
+  .btn { border-radius: 10px; font-weight: 600; letter-spacing: .005em; transition: background var(--dur-2) var(--ease), box-shadow var(--dur-2) var(--ease), transform var(--dur-1) var(--ease), border-color var(--dur-2); }
+  .btn:active:not(:disabled) { transform: translateY(1px) scale(.99); }
+  .btn:disabled { opacity: .55; cursor: not-allowed; }
+  .btn-primary { background-image: linear-gradient(180deg, color-mix(in srgb, var(--brand-2) 55%, var(--brand)), var(--brand)); box-shadow: 0 1px 0 rgb(255 255 255 / .18) inset, 0 6px 16px -6px color-mix(in srgb, var(--brand) 70%, transparent); }
+  .btn-primary:hover:not(:disabled) { box-shadow: 0 1px 0 rgb(255 255 255 / .18) inset, 0 10px 22px -6px color-mix(in srgb, var(--brand) 75%, transparent); transform: translateY(-1px); }
+
+  /* forms */
+  .input, select, textarea { border-radius: 10px; transition: border-color var(--dur-2), box-shadow var(--dur-2); }
+  .input:focus, select:focus, textarea:focus { border-color: var(--brand); box-shadow: var(--ring); outline: none; }
+  .label { font-weight: 600; font-size: .85rem; margin-bottom: 6px; }
+
+  /* accessible, consistent focus */
+  :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 6px; }
+
+  /* navigation: frosted bar */
+  header, .nav, .pub-nav, .lp-nav { backdrop-filter: saturate(1.4) blur(12px); -webkit-backdrop-filter: saturate(1.4) blur(12px); background-color: color-mix(in srgb, var(--surface) 82%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--border) 80%, transparent); }
+
+  /* pills, tables, modals */
+  .pill { border-radius: 999px; font-weight: 600; letter-spacing: .01em; }
+  table { border-collapse: separate; border-spacing: 0; }
+  th { font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 700; }
+  tbody tr { transition: background var(--dur-1); } tbody tr:hover { background: color-mix(in srgb, var(--brand-soft) 55%, transparent); }
+  [role="dialog"] > div, .modal { border-radius: 18px; box-shadow: var(--shadow-3); }
+
+  /* landing: calmer hero backdrop + preview depth */
+  .lp-preview { border-radius: 18px; box-shadow: 0 30px 70px -24px rgb(16 28 44 / .35), 0 4px 12px rgb(16 28 44 / .06); border: 1px solid var(--border); }
+  .lp-preview, .lp-demo { transform: translateZ(0); }
+  body:has(.lp-preview) { background-repeat: no-repeat; background-image: radial-gradient(900px 420px at 80% -80px, color-mix(in srgb, var(--brand) 11%, transparent), transparent 70%), radial-gradient(700px 360px at 0 0, color-mix(in srgb, var(--gold) 9%, transparent), transparent 70%); }
+
+  /* sponsored / ad blocks */
+  .ad-wrap { margin: 20px 0; padding: 14px; border: 1px dashed var(--border-strong); border-radius: 16px; background: color-mix(in srgb, var(--surface) 70%, transparent); }
+  .ad-wrap small { font-weight: 600; }
+  .yt-frame { box-shadow: var(--shadow-2); }
+
+  /* footer */
+  footer { color: var(--muted); } footer a { transition: color var(--dur-1); } footer a:hover { color: var(--brand); }
+  img, video { max-width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .card, .btn { transition: none; transform: none !important; } }
+@media print { header, nav, .ad-wrap, .promo-back { display: none !important; } }

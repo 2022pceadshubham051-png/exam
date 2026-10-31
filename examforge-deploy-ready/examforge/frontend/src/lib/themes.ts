@@ -1,6 +1,6 @@
 /** Look of a subject's railway map. A teacher can pick one per subject; otherwise it is chosen from the subject name (and, failing that, from its id) so a course is not all green. */
 export type ThemeId = "farm" | "desert" | "mountain" | "snow";
-export type Plant = "round" | "cactus" | "pine" | "snowpine";
+export type Plant = "round" | "cactus" | "pine" | "snowpine" | "poplar";
 export type Theme = {
   id: ThemeId; label: string; emoji: string;
   base: string; stripe: number; patch: [string, string]; furrow: string;
@@ -10,7 +10,7 @@ export type Theme = {
 
 export const THEMES: Record<ThemeId, Theme> = {
   farm: { id: "farm", label: "Farm", emoji: "🌾", base: "#7fc962", stripe: 0.07, patch: ["#a8d97a", "#c4e08a"], furrow: "#8cc05f", water: { fill: "#58b6e6", rim: "#d8c79a", shine: 0.45 },
-    dots: ["#fff", "#ffd166", "#ff9ec4"], plants: ["round"], leaf: [["#2e8b4f", "#45ad69"], ["#277a46", "#3c9a5c"], ["#3a9a55", "#58bd78"]], cloud: "#fff", cloudOpacity: 1 },
+    dots: ["#fff", "#ffd166", "#ff9ec4"], plants: ["round", "round", "poplar"], leaf: [["#2e8b4f", "#45ad69"], ["#277a46", "#3c9a5c"], ["#3a9a55", "#58bd78"]], cloud: "#fff", cloudOpacity: 1 },
   desert: { id: "desert", label: "Desert", emoji: "🏜️", base: "#ecd08f", stripe: 0.16, patch: ["#f3dca3", "#e2bf74"], furrow: "#d3ad63", water: { fill: "#4fb8c9", rim: "#7fb35a", shine: 0.4 },
     dots: ["#c9a057", "#fff3cf", "#b98b44"], plants: ["cactus", "round"], leaf: [["#4f9a5b", "#6cb775"], ["#3f8650", "#5aa468"], ["#8a9a4a", "#a9b963"]], cloud: "#fff6e0", cloudOpacity: 0.85 },
   mountain: { id: "mountain", label: "Mountain", emoji: "⛰️", base: "#98b58e", stripe: 0.09, patch: ["#b4c2a8", "#a3b39a"], furrow: "#8a9c82", water: { fill: "#6fb3da", rim: "#bdb8aa", shine: 0.45 },
