@@ -1,6 +1,9 @@
 // Hindi (Devanagari) for the engagement screens. Keys are the English text; {name} placeholders are filled in by tr().
 // A test (i18n.coverage.test.ts) fails if a t("...") string in these screens has no Hindi, or if Hindi is not written in Devanagari.
 export const hiMore: Record<string, string> = {
+  // App-style home
+  "For You": "आपके लिए", "Mock Tests": "मॉक टेस्ट", "Notebook": "नोटबुक", "Search tests, courses…": "टेस्ट, कोर्स खोजें…", "Explore courses": "कोर्स देखें", "In progress": "जारी है", "Next test": "अगला टेस्ट", "Weak topic": "कमज़ोर टॉपिक",
+  "{name}, pick up where you left off?": "{name}, जहाँ छोड़ा था वहीं से शुरू करें?", "Featured": "ख़ास कोर्स", "Today": "आज",
   // Courses
   // Course route (railway)
   "Open lecture": "लेक्चर खोलें", "Not started": "शुरू नहीं हुआ", "Locked": "लॉक", "{n} min": "{n} मिनट", "Close": "बंद करें", "Tap a station to see its lecture.": "किसी स्टेशन पर टैप करके उसका लेक्चर देखें।",

@@ -29,7 +29,7 @@ export default function Login() {
     localStorage.setItem("token", r.token); const calm = document.documentElement.classList.contains("reduce-motion") || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches; if (!calm) { setSent(true); await new Promise((ok) => setTimeout(ok, 750)); } const t = new URLSearchParams(location.search).get("test");
     if (r.user.role !== "ADMIN") { const p = await loadProfile(true).catch(() => null); if (p && !p.onboarded) { nav(`/welcome${t ? `?test=${t}` : ""}`, { replace: true }); return; } }
     let after: string | null = null; try { after = sessionStorage.getItem("ef_after_login"); sessionStorage.removeItem("ef_after_login"); } catch { /* ignore */ }
-    nav(t ? `/exam/${t}` : after && r.user.role !== "ADMIN" ? after : r.user.role === "ADMIN" ? "/admin" : "/home", { replace: true });
+    nav(t ? `/exam/${t}` : after && r.user.role !== "ADMIN" ? after : r.user.role === "ADMIN" ? "/admin" : "/courses", { replace: true });
   };
   const submit = async (e: FormEvent) => {
     e.preventDefault(); if (busy) return; setErr(""); setUnverified(null); setBusy(true);

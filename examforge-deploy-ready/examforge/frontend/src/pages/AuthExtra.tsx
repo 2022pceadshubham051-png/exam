@@ -4,7 +4,7 @@ import { api } from "../lib/api"; import { BrandLockup } from "../components/Log
 
 const Frame = ({ children }: { children: ReactNode }) => <div className="auth auth-solo"><section className="auth-form"><div className="card card-pad stack fade-in" style={{ gap: 16, maxWidth: 440, margin: "0 auto" }}>
   <Link to="/" aria-label="ExamForge home" className="brand"><BrandLockup size={34} /></Link>{children}</div></section></div>;
-const landing = (r: any) => { localStorage.setItem("token", r.token); const after = (() => { try { const a = sessionStorage.getItem("ef_after_login"); sessionStorage.removeItem("ef_after_login"); return a; } catch { return null; } })(); return r.user.role === "ADMIN" ? "/admin" : after ?? "/home"; };
+const landing = (r: any) => { localStorage.setItem("token", r.token); const after = (() => { try { const a = sessionStorage.getItem("ef_after_login"); sessionStorage.removeItem("ef_after_login"); return a; } catch { return null; } })(); return r.user.role === "ADMIN" ? "/admin" : after ?? "/courses"; };
 
 /** The link in the verification email lands here: confirms the address and signs the student in. */
 export function VerifyEmail() {

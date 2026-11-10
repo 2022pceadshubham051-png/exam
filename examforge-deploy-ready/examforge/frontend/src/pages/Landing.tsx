@@ -133,7 +133,7 @@ export default function Landing() {
     root.dataset.skin = k; setPick(next); setSkin(next ? k : undefined);
   };
   useEffect(() => () => { document.documentElement.dataset.skin = getSkin(); }, []);
-  const me = getMe(); if (me) return <Navigate to={me.role === "ADMIN" ? "/admin" : "/dashboard"} replace />;
+  const me = getMe(); if (me) return <Navigate to={me.role === "ADMIN" ? "/admin" : "/courses"} replace />;
   return <PublicShell>
     <div className="lp">
       <section className="lp-hero" aria-labelledby="hero-h">

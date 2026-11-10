@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"; import { Link, useParams, useSearchParams } from "react-router-dom";
 import { GraduationCap, PlayCircle, CircleCheck, Circle, FileText, ExternalLink, ChevronLeft, ChevronRight, Hourglass, Search, Hand, TrainFront, BookOpen, CloudDownload, CloudOff, Share2, Link2, WifiOff, Download, Trash2, ClipboardCheck, History } from "lucide-react";
-import Shell from "../components/Shell"; import Poster from "../components/Poster"; import { Empty, PageHeader, SkeletonRows, toast } from "../components/ui";
+import { CoursesHero } from "../components/HomeUI"; import { cachedProfile } from "../lib/profile"; import Shell from "../components/Shell"; import Poster from "../components/Poster"; import { Empty, PageHeader, SkeletonRows, toast } from "../components/ui";
 import Certificate from "../components/Certificate"; import { confetti } from "../components/Confetti"; import { sfx } from "../lib/game";
 import Notes from "../components/Notes"; import CoursePlayer, { type PlayerApi } from "../components/CoursePlayer"; import LessonNotes, { type LessonNote } from "../components/LessonNotes";
 import CourseRoute, { trainSpot, buildStops } from "../components/CourseRoute"; import Doubts from "../components/Doubts"; import CourseReviews, { RatingLine } from "../components/CourseReviews"; import EnrollBox from "../components/EnrollBox"; import PushToggle from "../components/PushToggle";
@@ -24,16 +24,8 @@ export default function Courses() {
   const mine = useMemo(() => (list ?? []).filter((c) => c.enrollment), [list]);
   const exams = useMemo(() => [...new Set((list ?? []).map((c) => c.examName).filter(Boolean))] as string[], [list]);
   const shown = useMemo(() => { const n = q.trim().toLowerCase(); return (tab === "mine" ? mine : list ?? []).filter((c) => (!exam || c.examName === exam) && (!n || `${c.title} ${c.examName ?? ""} ${c.description ?? ""}`.toLowerCase().includes(n))); }, [tab, mine, list, q, exam]);
-  return <Shell><div className="stack stagger" style={{ gap: 20 }}>
-    <PageHeader title={t("Courses")} sub={t("Video lessons with notes, made for your exam.")} actions={<div className="row" style={{ gap: 8, flexWrap: "wrap" }}><PushToggle /><Link className="btn btn-sm" to="/offline-notes"><CloudDownload size={15} aria-hidden="true" />{t("Offline notes")}</Link></div>} />
-    <nav className="seg" aria-label={t("Courses")}>
-      <button type="button" className={tab === "all" ? "on" : ""} onClick={() => setTab("all")}>{t("All courses")}</button>
-      <button type="button" className={tab === "mine" ? "on" : ""} onClick={() => setTab("mine")}>{t("My courses")}{mine.length ? ` (${mine.length})` : ""}</button>
-    </nav>
-    <div className="course-filter">
-      <label className="course-search"><Search size={16} aria-hidden="true" /><input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("Search courses")} aria-label={t("Search courses")} /></label>
-      {exams.length > 1 && <div className="chip-row" role="group" aria-label={t("All exams")}><button type="button" className={`cf-chip ${exam === "" ? "on" : ""}`} onClick={() => setExam("")}>{t("All exams")}</button>{exams.map((x) => <button key={x} type="button" className={`cf-chip ${exam === x ? "on" : ""}`} onClick={() => setExam(exam === x ? "" : x)}>{x}</button>)}</div>}
-    </div>
+  return <Shell hero><div className="stack stagger" style={{ gap: 20 }}>
+    <CoursesHero t={t} name={cachedProfile()?.name} q={q} setQ={setQ} tab={tab} setTab={setTab} mineCount={mine.length} exams={exams} exam={exam} setExam={setExam} actions={<><PushToggle /><Link className="btn btn-sm" to="/offline-notes"><CloudDownload size={15} aria-hidden="true" />{t("Offline notes")}</Link></>} />
     {err && <div className="alert alert-bad" role="alert">{err}</div>}
     {!list ? <SkeletonRows rows={3} /> : shown.length ? <div className="course-grid">{shown.map((c) => <Link key={c.id} to={`/courses/${c.slug ?? c.id}`} className="card course-card tap-card">
       <Poster src={c.posterUrl} title={c.title} />

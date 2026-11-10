@@ -15,7 +15,7 @@ function ProfileForm() {
   const [exams, setExams] = useState<string[]>(COMMON); const [err, setErr] = useState(""); const [busy, setBusy] = useState(false); const [errs, setErrs] = useState<Record<string, string>>({});
   useEffect(() => {
     loadProfile(true).then((u) => {
-      if (u.onboarded) { nav(takeAfterLogin() ?? "/home", { replace: true }); return; }
+      if (u.onboarded) { nav(takeAfterLogin() ?? "/courses", { replace: true }); return; }
       setP(u); setName(u.name ?? ""); setAge(u.age ? String(u.age) : ""); setScore(u.targetScore ? String(u.targetScore) : "");
       if (u.targetExam) { if (COMMON.includes(u.targetExam)) setExam(u.targetExam); else { setExam("__other"); setOther(u.targetExam); } }
     }).catch((e) => setErr(e.message));
@@ -34,7 +34,7 @@ function ProfileForm() {
       const r = await api<Profile>("/me", "PUT", { ...(p?.needsName ? { name: name.trim() } : {}), age: a, targetExam: target, targetScore: score ? Number(score) : null });
       setProfile(r); void refreshCoins();
       if (r.welcomeCoins) { sfx("win"); toast(`Welcome! ${r.welcomeCoins} coins added to your account.`, "gold"); }
-      const t = qs.get("test"); nav(t ? `/exam/${t}` : takeAfterLogin() ?? "/home", { replace: true });
+      const t = qs.get("test"); nav(t ? `/exam/${t}` : takeAfterLogin() ?? "/courses", { replace: true });
     } catch (x: any) { setErr(x.message || "Could not save. Please try again."); } finally { setBusy(false); }
   };
   if (!p && !err) return <div className="card card-pad" role="status"><p className="sub">Loading</p></div>;

@@ -8,7 +8,7 @@ const kind = (a: any) => (a.mode === "PRACTICE" ? (a.adaptiveQuestionIds ? "Adap
 
 export default function Dashboard() {
   const [prof, setProf] = useState<Profile | null>(null); const [scope, setScope] = useState<"mine" | "all">("mine");
-  const [tests, setTests] = useState<any[] | null>(null); const [hist, setHist] = useState<any[] | null>(null); const [q, setQ] = useState(""); const [diffFilter, setDiffFilter] = useState("ALL"); const [err, setErr] = useState("");
+  const [tests, setTests] = useState<any[] | null>(null); const [hist, setHist] = useState<any[] | null>(null); const [q, setQ] = useState(() => new URLSearchParams(location.search).get("q") ?? ""); const [diffFilter, setDiffFilter] = useState("ALL"); const [err, setErr] = useState("");
   const [sel, setSel] = useState<Set<string>>(new Set()); const [histMode, setHistMode] = useState<"all" | "EXAM" | "PRACTICE">("all"); const [histTest, setHistTest] = useState("ALL");
   const [ask, setAsk] = useState<null | { title: string; body: any; label: string }>(null); const [note, setNote] = useState<null | { ok: boolean; m: string }>(null); const [busyDel, setBusyDel] = useState(false); const [showAll, setShowAll] = useState(false);
   useEffect(() => { loadProfile().then(setProf).catch(() => {}); }, []);
