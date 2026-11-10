@@ -618,3 +618,20 @@ model Promo {
   createdAt DateTime @default(now())
   @@index([active, priority])
 }
+
+/// Home screen banners the admin manages: HOME = the sliding ad carousel (click goes to a course / exam / any link), PLAN = cover photos for the "Today's plan" card.
+model Banner {
+  id String @id @default(cuid())
+  title String // admin-only label
+  placement String @default("HOME") // HOME | PLAN
+  imageUrl String @db.Text // https URL or uploaded data URL
+  linkUrl String @default("") @db.Text // "/courses/ID", "/exam/ID" (in-app) or https://… ; optional for PLAN
+  priority Int @default(0)
+  active Boolean @default(true)
+  startsAt DateTime?
+  expiresAt DateTime?
+  views Int @default(0)
+  clicks Int @default(0)
+  createdAt DateTime @default(now())
+  @@index([placement, active, priority])
+}

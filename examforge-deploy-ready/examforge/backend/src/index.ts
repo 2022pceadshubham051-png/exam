@@ -1,6 +1,6 @@
 import "./lib/asyncErrors";
 import express from "express"; import bcrypt from "bcrypt"; import { prisma } from "./lib/db"; import helmet from "helmet"; import cors from "cors"; import compression from "compression"; import rateLimit from "express-rate-limit";
-import { tests } from "./routes/tests"; import { progress } from "./routes/progress"; import { auth } from "./routes/auth"; import { attempts } from "./routes/attempts"; import { questions } from "./routes/questions"; import { coach } from "./routes/coach"; import { lecturePace } from "./routes/lecturePace"; import { me } from "./routes/me"; import { shop } from "./routes/shop"; import { rooms } from "./routes/rooms"; import { sync } from "./routes/sync"; import { daily } from "./routes/daily"; import { duels } from "./routes/duels"; import { streak } from "./routes/streak"; import { ai } from "./routes/ai"; import { invite } from "./routes/invite"; import { league } from "./routes/league"; import { reports } from "./routes/reports"; import { courses } from "./routes/courses"; import { courseAdmin } from "./routes/courseAdmin"; import { courseStudent } from "./routes/courseStudent"; import { publicCourses } from "./routes/publicCourses"; import { promos } from "./routes/promos";
+import { banners } from "./routes/banners"; import { tests } from "./routes/tests"; import { progress } from "./routes/progress"; import { auth } from "./routes/auth"; import { attempts } from "./routes/attempts"; import { questions } from "./routes/questions"; import { coach } from "./routes/coach"; import { lecturePace } from "./routes/lecturePace"; import { me } from "./routes/me"; import { shop } from "./routes/shop"; import { rooms } from "./routes/rooms"; import { sync } from "./routes/sync"; import { daily } from "./routes/daily"; import { duels } from "./routes/duels"; import { streak } from "./routes/streak"; import { ai } from "./routes/ai"; import { invite } from "./routes/invite"; import { league } from "./routes/league"; import { reports } from "./routes/reports"; import { courses } from "./routes/courses"; import { courseAdmin } from "./routes/courseAdmin"; import { courseStudent } from "./routes/courseStudent"; import { publicCourses } from "./routes/publicCourses"; import { promos } from "./routes/promos";
 const app = express();
 // Behind Vercel/Render proxies: without this every user shares one rate-limit bucket.
 app.set("trust proxy", 1);
@@ -16,6 +16,7 @@ app.use("/api/auth/login", (req, _res, next) => { const u = process.env.ADMIN_US
 app.use("/api/auth", rateLimit({ windowMs: 15 * 60_000, max: 50 }), auth);
 // Promo popup: public reads + admin-only writes (guards are inside the router). Mounted before the routers that require login for everything.
 app.use("/api", promos);
+app.use("/api", banners);
 app.use("/api/questions", questions);
 app.use("/api/tests", tests);
 app.use("/api/lecture-pace", lecturePace);
