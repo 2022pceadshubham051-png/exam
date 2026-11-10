@@ -5,10 +5,11 @@
   .brand:hover { text-decoration: none; }
   .logo-mark { flex: none; display: block; object-fit: contain; }
   .logo-fallback { flex: none; display: grid; place-items: center; border-radius: 22%; background: #1d1442; color: var(--gold); font-weight: 800; }
-  .wordmark { font-size: 1.2rem; letter-spacing: -.02em; line-height: 1; }
+  .wordmark { font-family: var(--font-display); font-size: 1.38rem; font-weight: 900; letter-spacing: -.035em; line-height: 1; -webkit-text-stroke: .4px currentColor; paint-order: stroke fill; }
+  .wordmark .wm-exam, .wordmark .wm-forge { font-weight: 900; }
   .wm-exam { color: var(--text); }
   .wm-forge { color: var(--gold-text); }
-  .on-dark .wm-exam { color: #fff; } .on-dark .wm-forge { color: #f2c14e; }
+  .on-dark .wm-exam { color: #fff; } .on-dark .wm-forge { color: #f2c14e; } .on-dark .wordmark { text-shadow: 0 2px 8px rgb(0 0 0 / .35); font-size: 1.5rem; }
   .brand-tag { display: block; margin-top: 3px; font-size: .62rem; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); }
   .on-dark .brand-tag { color: #bdb4e6; }
 

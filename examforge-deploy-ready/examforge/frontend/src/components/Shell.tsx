@@ -6,7 +6,7 @@ import { startSync } from "../lib/sync"; import { loadProfile, refreshCoins, cac
 export const Logo = ({ size = 34 }: { size?: number }) => <BrandLockup size={size} />;
 
 let lastPill: { x: number; w: number } | null = null;
-export default function Shell({ children, narrow }: { children: ReactNode; narrow?: boolean }) {
+export default function Shell({ children, narrow, hero }: { children: ReactNode; narrow?: boolean; hero?: boolean }) {
   const me = getMe(); const nav = useNavigate(); const [coins, setC] = useState(cachedCoins()); const [gain, setGain] = useState(0); const prevCoins = useRef<any>(cachedCoins()); const [pname, setPname] = useState(cachedProfile()?.name);
   useEffect(() => {
     if (!me || me.role === "ADMIN") return;
@@ -26,16 +26,16 @@ export default function Shell({ children, narrow }: { children: ReactNode; narro
   }, [loc.pathname]);
   return <>
     <a className="skip-link" href="#main">Skip to content</a>
-    <header className="nav"><div className="nav-in">
-      <Link to="/home" className="brand" aria-label="ExamForge home"><BrandLockup size={32} /></Link>
+    <header className={`nav ${hero ? "nav-hero" : ""}`}><div className="nav-in">
+      <Link to="/courses" className="brand" aria-label="ExamForge home"><BrandLockup size={32} onDark /></Link>
       <nav className={`nav-links app-nav ${pill ? "has-pill" : ""}`} aria-label="Main" ref={navRef}>{pill && <span className="nav-pill" aria-hidden="true" style={{ transform: `translateX(${pill.x}px)`, width: pill.w }} />}
         {admin ? <><NavLink to="/admin" end className={cls}><ShieldCheck size={17} aria-hidden="true" /><span>Admin</span></NavLink><NavLink to="/admin/courses" className={cls}><GraduationCap size={17} aria-hidden="true" /><span>Courses</span></NavLink></> : <>
+          <NavLink to="/courses" className={grp(["/courses"])}><GraduationCap size={17} aria-hidden="true" /><span>{t("Courses")}</span></NavLink>
           <NavLink to="/home" className={cls}><House size={17} aria-hidden="true" /><span>{t("Home")}</span></NavLink>
           <NavLink to="/dashboard" className={grp(["/dashboard", "/leaderboard", "/daily", "/duel", "/league"])}><LayoutDashboard size={17} aria-hidden="true" /><span>{t("Practice")}</span></NavLink>
-          <NavLink to="/courses" className={grp(["/courses"])}><GraduationCap size={17} aria-hidden="true" /><span>{t("Courses")}</span></NavLink>
           <NavLink to="/coach" className={cls}><Compass size={17} aria-hidden="true" /><span>{t("Coach")}</span></NavLink>
-          <NavLink to="/lecture-pace" className={grp(["/lecture-pace"])}><Timer size={17} aria-hidden="true" /><span>{t("Lecture Pace")}</span></NavLink>
-          <NavLink to="/rooms" className={grp(["/rooms"])}><Users size={17} aria-hidden="true" /><span>{t("Rooms")}</span></NavLink>
+          <NavLink to="/lecture-pace" className={() => grp(["/lecture-pace"])() + " nav-m-extra"}><Timer size={17} aria-hidden="true" /><span>{t("Lecture Pace")}</span></NavLink>
+          <NavLink to="/rooms" className={() => grp(["/rooms"])() + " nav-m-extra"}><Users size={17} aria-hidden="true" /><span>{t("Rooms")}</span></NavLink>
           <NavLink to="/profile" className={grp(["/profile", "/progress", "/notebook", "/shop", "/revise"])}><UserRound size={17} aria-hidden="true" /><span>{t("Me")}</span></NavLink></>}
       </nav>
       <UserMenu name={admin ? "Admin" : pname} admin={admin} />

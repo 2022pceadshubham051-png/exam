@@ -14,7 +14,7 @@ export default function PublicShell({ children, narrow }: { children: ReactNode;
       <Link to="/" className="brand" aria-label={`${SITE} home`}><BrandLockup size={32} /></Link>
       <nav className="nav-links" aria-label="Main"><Link className="nav-link" to="/tips">Exam tips</Link><Link className="nav-link" to="/about">About</Link></nav>
       <span style={{ flex: 1 }} />
-      <Link className="btn btn-primary btn-sm" to={me ? (me.role === "ADMIN" ? "/admin" : "/dashboard") : "/login"}>{me ? "Open dashboard" : "Log in / Register"}</Link>
+      <Link className="btn btn-primary btn-sm" to={me ? (me.role === "ADMIN" ? "/admin" : "/courses") : "/login"}>{me ? "Open dashboard" : "Log in / Register"}</Link>
     </div></header>
     <main id="main" tabIndex={-1} className={narrow ? "page-narrow fade-in" : "page fade-in"}>{children}</main>
     <SiteFooter />
